@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ampel.model.operator.AnyOf &#8212; ampel-core 0.8.3-beta.3 documentation</title>
+    <title>ampel.model.ingest.IngestDirective &#8212; ampel-core 0.8.3-beta.3 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/sphinxdoc.css" />
     <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
@@ -24,7 +24,7 @@
              accesskey="I">index</a></li>
         <li class="nav-item nav-item-0"><a href="../../../../index.html">ampel-core 0.8.3-beta.3 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../../index.html" accesskey="U">Module code</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">ampel.model.operator.AnyOf</a></li> 
+        <li class="nav-item nav-item-this"><a href="">ampel.model.ingest.IngestDirective</a></li> 
       </ul>
     </div>  
 
@@ -33,32 +33,47 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <h1>Source code for ampel.model.operator.AnyOf</h1><div class="highlight"><pre>
+  <h1>Source code for ampel.model.ingest.IngestDirective</h1><div class="highlight"><pre>
 <span></span><span class="ch">#!/usr/bin/env python</span>
 <span class="c1"># -*- coding: utf-8 -*-</span>
-<span class="c1"># File:                Ampel-interface/ampel/model/operator/AnyOf.py</span>
+<span class="c1"># File:                Ampel-core/ampel/model/ingest/IngestDirective.py</span>
 <span class="c1"># License:             BSD-3-Clause</span>
 <span class="c1"># Author:              valery brinnel &lt;firstname.lastname@gmail.com&gt;</span>
-<span class="c1"># Date:                15.10.2018</span>
-<span class="c1"># Last Modified Date:  18.03.2021</span>
+<span class="c1"># Date:                20.05.2021</span>
+<span class="c1"># Last Modified Date:  20.05.2021</span>
 <span class="c1"># Last Modified By:    valery brinnel &lt;firstname.lastname@gmail.com&gt;</span>
 
-<span class="kn">import</span> <span class="nn">collections</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Generic</span>
-<span class="kn">from</span> <span class="nn">ampel.types</span> <span class="kn">import</span> <span class="n">T</span>
-<span class="kn">from</span> <span class="nn">ampel.model.operator.AllOf</span> <span class="kn">import</span> <span class="n">AllOf</span>
-<span class="kn">from</span> <span class="nn">ampel.base.AmpelGenericModel</span> <span class="kn">import</span> <span class="n">AmpelGenericModel</span>
+<span class="kn">from</span> <span class="nn">ampel.types</span> <span class="kn">import</span> <span class="n">ChannelId</span>
+<span class="kn">from</span> <span class="nn">ampel.model.ingest.IngestBody</span> <span class="kn">import</span> <span class="n">IngestBody</span>
+<span class="kn">from</span> <span class="nn">ampel.model.ingest.FilterModel</span> <span class="kn">import</span> <span class="n">FilterModel</span>
+<span class="kn">from</span> <span class="nn">ampel.base.AmpelBaseModel</span> <span class="kn">import</span> <span class="n">AmpelBaseModel</span>
 
 
-<div class="viewcode-block" id="AnyOf"><a class="viewcode-back" href="../../../../api.html#ampel.model.operator.AnyOf.AnyOf">[docs]</a><span class="k">class</span> <span class="nc">AnyOf</span><span class="p">(</span><span class="n">AmpelGenericModel</span><span class="p">,</span> <span class="n">Generic</span><span class="p">[</span><span class="n">T</span><span class="p">]):</span>
+<div class="viewcode-block" id="IngestDirective"><a class="viewcode-back" href="../../../../api.html#ampel.model.ingest.IngestDirective.IngestDirective">[docs]</a><span class="k">class</span> <span class="nc">IngestDirective</span><span class="p">(</span><span class="n">AmpelBaseModel</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    channel</span>
+<span class="sd">    filter</span>
+<span class="sd">    ingest</span>
+<span class="sd">      stock_t2</span>
+<span class="sd">      point_t2        &lt;- based on input dps list</span>
+<span class="sd">      combine         &lt;- same</span>
+<span class="sd">        state_t2      &lt;- based on dps list returned by combine</span>
+<span class="sd">        point_t2      &lt;- same</span>
+<span class="sd">      mux             &lt;- based on input dps list</span>
+<span class="sd">        insert</span>
+<span class="sd">          point_t2    &lt;- based on &lt;datapoints insert&gt; result from muxer (first list)</span>
+<span class="sd">        combine</span>
+<span class="sd">          state_t2    &lt;- based on &lt;datapoints combine&gt; result from muxer (second list)</span>
+<span class="sd">          point_t2    &lt;- same</span>
+<span class="sd">	&quot;&quot;&quot;</span>
 
-	<span class="c1">#: Select items by logical OR</span>
-	<span class="n">any_of</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">T</span> <span class="o">|</span> <span class="n">AllOf</span><span class="p">[</span><span class="n">T</span><span class="p">]]</span>
+	<span class="c1">#: Channel for which to create documents</span>
+	<span class="n">channel</span><span class="p">:</span> <span class="n">ChannelId</span>
 
-	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-		<span class="k">if</span> <span class="s1">&#39;any_of&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;any_of&#39;</span><span class="p">],</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">Sequence</span><span class="p">):</span>
-			<span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;any_of&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;any_of&#39;</span><span class="p">]]</span>
-		<span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+	<span class="c1">#: Potientially filter input datapoints</span>
+	<span class="nb">filter</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">FilterModel</span> <span class="o">=</span> <span class="kc">None</span>
+
+	<span class="n">ingest</span><span class="p">:</span> <span class="n">IngestBody</span> <span class="o">=</span> <span class="n">IngestBody</span><span class="p">()</span></div>
 </pre></div>
 
             <div class="clearer"></div>
@@ -92,7 +107,7 @@
              >index</a></li>
         <li class="nav-item nav-item-0"><a href="../../../../index.html">ampel-core 0.8.3-beta.3 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">ampel.model.operator.AnyOf</a></li> 
+        <li class="nav-item nav-item-this"><a href="">ampel.model.ingest.IngestDirective</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">

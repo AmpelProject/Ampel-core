@@ -1,16 +1,17 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ampel.t3.T3Processor &#8212; ampel-core 0.7.6 documentation</title>
+    <title>ampel.t3.T3Processor &#8212; ampel-core 0.8.3-beta.3 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/sphinxdoc.css" />
     <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
     <script src="../../../_static/jquery.js"></script>
     <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
@@ -21,7 +22,7 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.7.6 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.8.3-beta.3 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">ampel.t3.T3Processor</a></li> 
       </ul>
@@ -35,260 +36,146 @@
   <h1>Source code for ampel.t3.T3Processor</h1><div class="highlight"><pre>
 <span></span><span class="ch">#!/usr/bin/env python</span>
 <span class="c1"># -*- coding: utf-8 -*-</span>
-<span class="c1"># File              : Ampel-core/ampel/t3/T3Processor.py</span>
-<span class="c1"># License           : BSD-3-Clause</span>
-<span class="c1"># Author            : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
-<span class="c1"># Date              : 26.02.2018</span>
-<span class="c1"># Last Modified Date: 21.06.2020</span>
-<span class="c1"># Last Modified By  : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
+<span class="c1"># File:                Ampel-core/ampel/t3/T3Processor.py</span>
+<span class="c1"># License:             BSD-3-Clause</span>
+<span class="c1"># Author:              valery brinnel &lt;firstname.lastname@gmail.com&gt;</span>
+<span class="c1"># Date:                26.02.2018</span>
+<span class="c1"># Last Modified Date:  25.07.2022</span>
+<span class="c1"># Last Modified By:    valery brinnel &lt;firstname.lastname@gmail.com&gt;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">importlib</span> <span class="kn">import</span> <span class="n">import_module</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Annotated</span>
 
-<span class="kn">from</span> <span class="nn">ampel.abstract.AbsProcessorUnit</span> <span class="kn">import</span> <span class="n">AbsProcessorUnit</span>
-<span class="kn">from</span> <span class="nn">ampel.log</span> <span class="kn">import</span> <span class="n">AmpelLogger</span><span class="p">,</span> <span class="n">LogFlag</span><span class="p">,</span> <span class="n">DBEventDoc</span><span class="p">,</span> <span class="n">SHOUT</span>
-<span class="kn">from</span> <span class="nn">ampel.log.utils</span> <span class="kn">import</span> <span class="n">report_exception</span>
-<span class="kn">from</span> <span class="nn">ampel.model.t3.T3Directive</span> <span class="kn">import</span> <span class="n">T3Directive</span>
-<span class="kn">from</span> <span class="nn">ampel.t3.load.AbsT3Loader</span> <span class="kn">import</span> <span class="n">AbsT3Loader</span>
-<span class="kn">from</span> <span class="nn">ampel.t3.run.AbsT3UnitRunner</span> <span class="kn">import</span> <span class="n">AbsT3UnitRunner</span>
-<span class="kn">from</span> <span class="nn">ampel.t3.select.AbsT3Selector</span> <span class="kn">import</span> <span class="n">AbsT3Selector</span>
-<span class="kn">from</span> <span class="nn">ampel.t3.complement.AbsT3DataAppender</span> <span class="kn">import</span> <span class="n">AbsT3DataAppender</span>
-<span class="kn">from</span> <span class="nn">ampel.t3.context.AbsT3RunContextAppender</span> <span class="kn">import</span> <span class="n">AbsT3RunContextAppender</span>
-<span class="kn">from</span> <span class="nn">ampel.util.collections</span> <span class="kn">import</span> <span class="n">chunks</span>
-
-
-<div class="viewcode-block" id="T3Processor"><a class="viewcode-back" href="../../../api.html#ampel.t3.T3Processor.T3Processor">[docs]</a><span class="k">class</span> <span class="nc">T3Processor</span><span class="p">(</span><span class="n">AbsProcessorUnit</span><span class="p">):</span>
-	<span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">	:param update_journal: Record the invocation of this event in the stock journal</span>
-<span class="sd">	:param update_events: Record this event in the events collection</span>
-<span class="sd">	:param extra_journal_tag:</span>
-<span class="sd">	  tag(s) to add to the :class:`~ampel.content.JournalRecord.JournalRecord`</span>
-<span class="sd">	  of each selected stock</span>
-
-<span class="sd">	.. note:: by default, :func:`run` add entries to the journals of selected</span>
-<span class="sd">	  stocks, store log records in the database, and records the invocation in</span>
-<span class="sd">	  the events collection. To run an &quot;anonymous&quot; event that does not change</span>
-<span class="sd">	  the state of the database:</span>
-<span class="sd">	</span>
-<span class="sd">	  - use a log_profile without db logging (profiles are defined under &#39;logging&#39; in the ampel config)</span>
-<span class="sd">	  - set update_journal = False (no update to the transient doc)</span>
-<span class="sd">	  - set update_events = False (no update to the events collection)</span>
-<span class="sd">	  - set raise_exc = True (troubles collection will not be populated if an exception occurs)</span>
-<span class="sd">	&quot;&quot;&quot;</span>
-
-	<span class="c1">#: T3 processing sequences</span>
-	<span class="n">directives</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">T3Directive</span><span class="p">]</span>
-	<span class="c1">#: number of stocks to load at once</span>
-	<span class="n">chunk_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">200</span>
+<span class="kn">from</span> <span class="nn">ampel.types</span> <span class="kn">import</span> <span class="n">OneOrMany</span>
+<span class="kn">from</span> <span class="nn">ampel.abstract.AbsEventUnit</span> <span class="kn">import</span> <span class="n">AbsEventUnit</span>
+<span class="kn">from</span> <span class="nn">ampel.abstract.AbsT3Supplier</span> <span class="kn">import</span> <span class="n">AbsT3Supplier</span>
+<span class="kn">from</span> <span class="nn">ampel.abstract.AbsT3ControlUnit</span> <span class="kn">import</span> <span class="n">AbsT3ControlUnit</span>
+<span class="kn">from</span> <span class="nn">ampel.abstract.AbsProcessorTemplate</span> <span class="kn">import</span> <span class="n">AbsProcessorTemplate</span>
+<span class="kn">from</span> <span class="nn">ampel.view.T3Store</span> <span class="kn">import</span> <span class="n">T3Store</span>
+<span class="kn">from</span> <span class="nn">ampel.view.T3DocView</span> <span class="kn">import</span> <span class="n">T3DocView</span>
+<span class="kn">from</span> <span class="nn">ampel.model.UnitModel</span> <span class="kn">import</span> <span class="n">UnitModel</span>
+<span class="kn">from</span> <span class="nn">ampel.model.t3.T3IncludeDirective</span> <span class="kn">import</span> <span class="n">T3IncludeDirective</span>
+<span class="kn">from</span> <span class="nn">ampel.core.EventHandler</span> <span class="kn">import</span> <span class="n">EventHandler</span>
+<span class="kn">from</span> <span class="nn">ampel.log</span> <span class="kn">import</span> <span class="n">AmpelLogger</span><span class="p">,</span> <span class="n">LogFlag</span><span class="p">,</span> <span class="n">SHOUT</span>
 
 
-	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-		<span class="n">update_journal</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-		<span class="n">update_events</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-		<span class="n">extra_journal_tag</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-		<span class="o">**</span><span class="n">kwargs</span>
-	<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-		<span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">		Note that update_journal, update_event and extra_journal_tag are admin run options and</span>
-<span class="sd">		should be set only on command line. They are thus not defined as part of the underlying model.</span>
-<span class="sd">		&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="T3Processor"><a class="viewcode-back" href="../../../api.html#ampel.t3.T3Processor.T3Processor">[docs]</a><span class="k">class</span> <span class="nc">T3Processor</span><span class="p">(</span><span class="n">AbsEventUnit</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
+
+	<span class="n">template</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
+	<span class="n">include</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">T3IncludeDirective</span>
+	<span class="n">execute</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">OneOrMany</span><span class="p">[</span><span class="n">UnitModel</span><span class="p">],</span> <span class="n">AbsT3ControlUnit</span><span class="p">]</span>
+
+
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+		<span class="k">if</span> <span class="s1">&#39;template&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+			<span class="n">tpl_name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;template&quot;</span><span class="p">)</span>
+			<span class="n">ctx</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;context&quot;</span><span class="p">)</span>
+			<span class="k">if</span> <span class="n">ctx</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+				<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Context required&quot;</span><span class="p">)</span>
+
+			<span class="k">if</span> <span class="n">tpl_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ctx</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;template&#39;</span><span class="p">,</span> <span class="p">[]):</span>
+				<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown process template: </span><span class="si">{</span><span class="n">tpl_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+			<span class="n">fqn</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s1">&#39;template&#39;</span><span class="p">][</span><span class="n">tpl_name</span><span class="p">]</span>
+			<span class="n">class_name</span> <span class="o">=</span> <span class="n">fqn</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+			<span class="n">Tpl</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">import_module</span><span class="p">(</span><span class="n">fqn</span><span class="p">),</span> <span class="n">class_name</span><span class="p">)</span>
+			<span class="k">if</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">Tpl</span><span class="p">,</span> <span class="n">AbsProcessorTemplate</span><span class="p">):</span>
+				<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unexpected template type: </span><span class="si">{</span><span class="n">Tpl</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+			<span class="n">tpl</span> <span class="o">=</span> <span class="n">Tpl</span><span class="p">(</span>
+				<span class="o">**</span><span class="p">{</span>
+					<span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+					<span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">AbsEventUnit</span><span class="o">.</span><span class="n">_annots</span>
+				<span class="p">}</span>
+			<span class="p">)</span>
+			<span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+				<span class="n">tpl</span><span class="o">.</span><span class="n">get_model</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">_config</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">dict</span><span class="p">()[</span><span class="s1">&#39;config&#39;</span><span class="p">]</span>
+			<span class="p">)</span>
+			<span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;context&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ctx</span>
 
 		<span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-		<span class="bp">self</span><span class="o">.</span><span class="n">update_journal</span> <span class="o">=</span> <span class="n">update_journal</span>
-		<span class="bp">self</span><span class="o">.</span><span class="n">update_events</span> <span class="o">=</span> <span class="n">update_events</span>
-		<span class="bp">self</span><span class="o">.</span><span class="n">extra_journal_tag</span> <span class="o">=</span> <span class="n">extra_journal_tag</span>
 
-		<span class="k">if</span> <span class="s1">&#39;db&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;logging.</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">log_profile</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">raise_exc</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-			<span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;update_journal&quot;</span><span class="p">,</span> <span class="s2">&quot;update_events&quot;</span><span class="p">):</span>
-				<span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">el</span><span class="p">):</span>
-					<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-						<span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">el</span><span class="si">}</span><span class="s2"> cannot be True without a logger associated with a db logging handler&quot;</span>
-					<span class="p">)</span>
+	<span class="k">def</span> <span class="nf">proceed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_hdlr</span><span class="p">:</span> <span class="n">EventHandler</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 
-
-<div class="viewcode-block" id="T3Processor.run"><a class="viewcode-back" href="../../../api.html#ampel.t3.T3Processor.T3Processor.run">[docs]</a>	<span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-
-		<span class="n">event_doc</span> <span class="o">=</span> <span class="kc">None</span>
-		<span class="n">run_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">new_run_id</span><span class="p">()</span>
-		<span class="n">exc</span> <span class="o">=</span> <span class="kc">None</span>
-		<span class="n">logger</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="n">event_hdlr</span><span class="o">.</span><span class="n">set_tier</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+		<span class="n">logger</span> <span class="o">=</span> <span class="n">AmpelLogger</span><span class="o">.</span><span class="n">from_profile</span><span class="p">(</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_profile</span><span class="p">,</span> <span class="n">event_hdlr</span><span class="o">.</span><span class="n">get_run_id</span><span class="p">(),</span>
+			<span class="n">base_flag</span> <span class="o">=</span> <span class="n">LogFlag</span><span class="o">.</span><span class="n">T3</span> <span class="o">|</span> <span class="n">LogFlag</span><span class="o">.</span><span class="n">CORE</span> <span class="o">|</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_log_flag</span><span class="p">,</span>
+			<span class="n">force_refresh</span> <span class="o">=</span> <span class="kc">True</span>
+		<span class="p">)</span>
 
 		<span class="k">try</span><span class="p">:</span>
 
-			<span class="n">logger</span> <span class="o">=</span> <span class="n">AmpelLogger</span><span class="o">.</span><span class="n">from_profile</span><span class="p">(</span>
-				<span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_profile</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span>
-				<span class="n">base_flag</span> <span class="o">=</span> <span class="n">LogFlag</span><span class="o">.</span><span class="n">T3</span> <span class="o">|</span> <span class="n">LogFlag</span><span class="o">.</span><span class="n">CORE</span> <span class="o">|</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_log_flag</span><span class="p">,</span>
-				<span class="n">force_refresh</span> <span class="o">=</span> <span class="kc">True</span>
-			<span class="p">)</span>
+			<span class="c1"># Feedback</span>
+			<span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">SHOUT</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;Running </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">process_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
-			<span class="c1"># Admins have the option to to run a T3 process silently/anonymously</span>
-			<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">update_events</span><span class="p">:</span>
+			<span class="n">loader</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">loader</span>
+			<span class="n">t3s</span> <span class="o">=</span> <span class="n">T3Store</span><span class="p">()</span>
 
-				<span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">process_name</span><span class="p">:</span>
-					<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Parameter process_name must be defined&quot;</span><span class="p">)</span>
+			<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">include</span><span class="p">:</span>
 
-				<span class="c1"># Create event doc</span>
-				<span class="n">event_doc</span> <span class="o">=</span> <span class="n">DBEventDoc</span><span class="p">(</span>
-					<span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">db</span><span class="p">,</span> <span class="n">tier</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">run_id</span><span class="o">=</span><span class="n">run_id</span><span class="p">,</span>
-					<span class="n">process_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">process_name</span><span class="p">,</span>
+				<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">include</span><span class="o">.</span><span class="n">docs</span><span class="p">:</span>
+					<span class="k">pass</span> <span class="c1"># later</span>
+
+				<span class="k">if</span> <span class="p">(</span><span class="n">x</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">include</span><span class="o">.</span><span class="n">session</span><span class="p">):</span>
+					<span class="n">sdict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+					<span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">UnitModel</span><span class="p">)</span> <span class="k">else</span> <span class="n">x</span><span class="p">:</span>
+						<span class="n">rd</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">new_context_unit</span><span class="p">(</span>
+							<span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="p">,</span>
+							<span class="n">context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">,</span>
+							<span class="n">sub_type</span> <span class="o">=</span> <span class="n">AbsT3Supplier</span><span class="p">,</span>
+							<span class="n">event_hdlr</span> <span class="o">=</span> <span class="n">event_hdlr</span><span class="p">,</span>
+							<span class="n">logger</span> <span class="o">=</span> <span class="n">logger</span>
+						<span class="p">)</span><span class="o">.</span><span class="n">supply</span><span class="p">(</span><span class="n">t3s</span><span class="p">)</span>
+						<span class="k">if</span> <span class="n">rd</span><span class="p">:</span>
+							<span class="n">sdict</span> <span class="o">|=</span> <span class="n">rd</span>
+					<span class="k">if</span> <span class="n">sdict</span><span class="p">:</span>
+						<span class="n">t3s</span><span class="o">.</span><span class="n">add_session_info</span><span class="p">(</span><span class="n">sdict</span><span class="p">)</span>
+
+			<span class="n">units</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s1">&#39;unit&#39;</span><span class="p">]</span>
+			<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">um</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">execute</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">execute</span><span class="p">,</span> <span class="n">UnitModel</span><span class="p">)</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute</span><span class="p">):</span>
+
+				<span class="k">if</span> <span class="n">um</span><span class="o">.</span><span class="n">unit</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">units</span><span class="p">:</span>
+					<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown unit: </span><span class="si">{</span><span class="n">um</span><span class="o">.</span><span class="n">unit</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+				<span class="k">if</span> <span class="s2">&quot;AbsT3ControlUnit&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">units</span><span class="p">[</span><span class="n">um</span><span class="o">.</span><span class="n">unit</span><span class="p">][</span><span class="s1">&#39;base&#39;</span><span class="p">]:</span>
+					<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;T3Processor executes only AbsT3ControlUnit units&quot;</span><span class="p">)</span>
+
+				<span class="n">t3_unit</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">new_context_unit</span><span class="p">(</span>
+					<span class="n">model</span> <span class="o">=</span> <span class="n">um</span><span class="p">,</span>
+					<span class="n">context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">,</span>
+					<span class="n">sub_type</span> <span class="o">=</span> <span class="n">AbsT3ControlUnit</span><span class="p">,</span>
+					<span class="n">logger</span> <span class="o">=</span> <span class="n">logger</span><span class="p">,</span>
+					<span class="n">event_hdlr</span> <span class="o">=</span> <span class="n">event_hdlr</span><span class="p">,</span>
+					<span class="n">channel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel</span>
 				<span class="p">)</span>
 
-			<span class="c1"># Feedback</span>
-			<span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">SHOUT</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Running </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">process_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+				<span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+					<span class="sa">f</span><span class="s2">&quot;Processing run block </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+					<span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;unit&#39;</span><span class="p">:</span> <span class="n">t3_unit</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">}</span>
+				<span class="p">)</span>
 
-			<span class="k">for</span> <span class="n">directive</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">directives</span><span class="p">:</span>
+				<span class="c1"># Potential T3Document to be included in the t3 collection</span>
+				<span class="k">if</span> <span class="p">(</span><span class="n">ret</span> <span class="o">:=</span> <span class="n">t3_unit</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">t3s</span><span class="p">)):</span>
+					<span class="k">for</span> <span class="n">t3d</span> <span class="ow">in</span> <span class="n">ret</span><span class="p">:</span>
+						<span class="n">t3s</span><span class="o">.</span><span class="n">add_view</span><span class="p">(</span><span class="n">T3DocView</span><span class="o">.</span><span class="n">of</span><span class="p">(</span><span class="n">t3d</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="p">))</span>
+						<span class="k">if</span> <span class="s1">&#39;meta&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">t3d</span><span class="p">:</span>
+							<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid T3Document&quot;</span><span class="p">)</span>
+						<span class="n">t3d</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">][</span><span class="s1">&#39;traceid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;t3processor&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trace_id</span><span class="p">}</span>
+						<span class="k">if</span> <span class="n">event_hdlr</span><span class="o">.</span><span class="n">job_sig</span><span class="p">:</span>
+							<span class="n">t3d</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">][</span><span class="s1">&#39;jobid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">event_hdlr</span><span class="o">.</span><span class="n">job_sig</span>
+						<span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_collection</span><span class="p">(</span><span class="s1">&#39;t3&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">insert_one</span><span class="p">(</span><span class="n">t3d</span><span class="p">)</span> <span class="c1"># type: ignore[arg-type]</span>
 
-				<span class="c1"># run context</span>
-				<span class="c1">#############</span>
-
-				<span class="n">run_context</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-
-				<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">admin_msg</span><span class="p">:</span>
-					<span class="n">run_context</span><span class="p">[</span><span class="s1">&#39;admin_msg&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">admin_msg</span>
-
-				<span class="k">if</span> <span class="n">directive</span><span class="o">.</span><span class="n">context</span><span class="p">:</span>
-
-					<span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">directive</span><span class="o">.</span><span class="n">context</span><span class="p">:</span>
-						<span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">loader</span> \
-							<span class="o">.</span><span class="n">new_admin_unit</span><span class="p">(</span>
-								<span class="n">unit_model</span> <span class="o">=</span> <span class="n">el</span><span class="p">,</span>
-								<span class="n">context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">,</span>
-								<span class="n">sub_type</span> <span class="o">=</span> <span class="n">AbsT3RunContextAppender</span><span class="p">,</span>
-								<span class="n">logger</span> <span class="o">=</span> <span class="n">logger</span><span class="p">,</span>
-								<span class="n">process_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">process_name</span>
-							<span class="p">)</span> \
-							<span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">run_context</span><span class="p">)</span>
-
-				<span class="c1"># Unit runner</span>
-				<span class="c1">#############</span>
-
-				<span class="c1"># The default runner provided by pyampel-core is T3UnitRunner</span>
-				<span class="n">runner</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">loader</span> \
-					<span class="o">.</span><span class="n">new_admin_unit</span><span class="p">(</span>
-						<span class="n">unit_model</span> <span class="o">=</span> <span class="n">directive</span><span class="o">.</span><span class="n">run</span><span class="p">,</span>
-						<span class="n">context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">,</span>
-						<span class="n">sub_type</span> <span class="o">=</span> <span class="n">AbsT3UnitRunner</span><span class="p">,</span>
-						<span class="n">logger</span> <span class="o">=</span> <span class="n">logger</span><span class="p">,</span>
-						<span class="n">run_id</span> <span class="o">=</span> <span class="n">run_id</span><span class="p">,</span>
-						<span class="n">process_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">process_name</span><span class="p">,</span>
-						<span class="n">channel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span>
-						<span class="n">update_journal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">update_journal</span><span class="p">,</span>
-						<span class="n">extra_journal_tag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extra_journal_tag</span><span class="p">,</span>
-						<span class="n">run_context</span> <span class="o">=</span> <span class="n">run_context</span>
-					<span class="p">)</span>
-
-				<span class="c1"># target selection</span>
-				<span class="c1">##################</span>
-
-				<span class="k">if</span> <span class="n">directive</span><span class="o">.</span><span class="n">select</span><span class="p">:</span>
-
-					<span class="c1"># Spawn and run a new selector instance</span>
-					<span class="c1"># stock_ids is an iterable (often a pymongo cursor)</span>
-					<span class="n">selector</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">new_admin_unit</span><span class="p">(</span>
-						<span class="n">unit_model</span> <span class="o">=</span> <span class="n">directive</span><span class="o">.</span><span class="n">select</span><span class="p">,</span>
-						<span class="n">context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">,</span>
-						<span class="n">sub_type</span> <span class="o">=</span> <span class="n">AbsT3Selector</span><span class="p">,</span>
-						<span class="n">logger</span> <span class="o">=</span> <span class="n">logger</span>
-					<span class="p">)</span>
-
-					<span class="c1"># Usually, id_key is &#39;_id&#39; but it can be &#39;stock&#39; if the</span>
-					<span class="c1"># selection is based on t2 documents for example</span>
-					<span class="n">id_key</span> <span class="o">=</span> <span class="n">selector</span><span class="o">.</span><span class="n">field_name</span>
-
-
-					<span class="c1"># Content loader</span>
-					<span class="c1">################</span>
-
-					<span class="k">if</span> <span class="n">directive</span><span class="o">.</span><span class="n">load</span><span class="p">:</span>
-						<span class="c1"># Spawn requested content loader</span>
-						<span class="n">content_loader</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">loader</span> \
-							<span class="o">.</span><span class="n">new_admin_unit</span><span class="p">(</span>
-								<span class="n">unit_model</span> <span class="o">=</span> <span class="n">directive</span><span class="o">.</span><span class="n">load</span><span class="p">,</span>
-								<span class="n">context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">,</span>
-								<span class="n">sub_type</span> <span class="o">=</span> <span class="n">AbsT3Loader</span><span class="p">,</span>
-								<span class="n">logger</span> <span class="o">=</span> <span class="n">logger</span>
-							<span class="p">)</span>
-
-
-					<span class="c1"># Content complementer</span>
-					<span class="c1">######################</span>
-
-					<span class="c1"># Spawn potentialy requested snapdata complementers</span>
-					<span class="k">if</span> <span class="n">directive</span><span class="o">.</span><span class="n">complement</span><span class="p">:</span>
-						<span class="n">comps</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">AbsT3DataAppender</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
-							<span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">loader</span> \
-								<span class="o">.</span><span class="n">new_admin_unit</span><span class="p">(</span>
-									<span class="n">unit_model</span> <span class="o">=</span> <span class="n">conf_el</span><span class="p">,</span>
-									<span class="n">context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">,</span>
-									<span class="n">sub_type</span> <span class="o">=</span> <span class="n">AbsT3DataAppender</span><span class="p">,</span>
-									<span class="n">logger</span> <span class="o">=</span> <span class="n">logger</span>
-								<span class="p">)</span>
-							<span class="k">for</span> <span class="n">conf_el</span> <span class="ow">in</span> <span class="n">directive</span><span class="o">.</span><span class="n">complement</span>
-						<span class="p">]</span>
-
-					<span class="c1"># get pymongo cursor</span>
-					<span class="k">if</span> <span class="n">stock_ids</span> <span class="o">:=</span> <span class="n">selector</span><span class="o">.</span><span class="n">fetch</span><span class="p">():</span>
-
-						<span class="c1"># Run start</span>
-						<span class="c1">###########</span>
-
-						<span class="c1"># Loop over chunks from the cursor/iterator</span>
-						<span class="c1"># NB: we consume the entire stock selection cursor at once using list()</span>
-						<span class="c1"># to be robust against cursor timeouts or server restarts during long-</span>
-						<span class="c1"># lived T3 processes</span>
-						<span class="k">for</span> <span class="n">chunk_ids</span> <span class="ow">in</span> <span class="n">chunks</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">stock_ids</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">chunk_size</span><span class="p">):</span>
-
-							<span class="c1"># try/catch here to allow some chunks to complete</span>
-							<span class="c1"># even if one raises an exception</span>
-							<span class="k">try</span><span class="p">:</span>
-								<span class="c1"># Load info from DB</span>
-								<span class="n">tran_data</span> <span class="o">=</span> <span class="n">content_loader</span><span class="o">.</span><span class="n">load</span><span class="p">([</span><span class="n">sid</span><span class="p">[</span><span class="n">id_key</span><span class="p">]</span> <span class="k">for</span> <span class="n">sid</span> <span class="ow">in</span> <span class="n">chunk_ids</span><span class="p">])</span>
-
-								<span class="c1"># Potentialy add complementary information (spectra, TNS names, ...)</span>
-								<span class="k">if</span> <span class="n">directive</span><span class="o">.</span><span class="n">complement</span><span class="p">:</span>
-									<span class="k">for</span> <span class="n">appender</span> <span class="ow">in</span> <span class="n">comps</span><span class="p">:</span>
-										<span class="n">appender</span><span class="o">.</span><span class="n">complement</span><span class="p">(</span><span class="n">tran_data</span><span class="p">)</span>
-
-								<span class="c1"># Run T3 units defined for this process</span>
-								<span class="n">runner</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">tran_data</span><span class="p">))</span>
-							<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-								<span class="n">exc</span> <span class="o">=</span> <span class="n">e</span>
-								<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">raise_exc</span><span class="p">:</span>
-									<span class="k">raise</span> <span class="n">e</span>
-
-								<span class="n">report_exception</span><span class="p">(</span>
-									<span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">db</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span> <span class="n">exc</span><span class="o">=</span><span class="n">e</span><span class="p">,</span>
-									<span class="n">info</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;process&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">process_name</span><span class="p">}</span>
-								<span class="p">)</span>
-
-				<span class="n">runner</span><span class="o">.</span><span class="n">done</span><span class="p">()</span>
 
 		<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+			<span class="n">event_hdlr</span><span class="o">.</span><span class="n">handle_error</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
 
-			<span class="n">exc</span> <span class="o">=</span> <span class="n">e</span>
-			<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">raise_exc</span><span class="p">:</span>
-				<span class="k">raise</span> <span class="n">e</span>
-
-			<span class="k">if</span> <span class="ow">not</span> <span class="n">logger</span><span class="p">:</span>
-				<span class="n">logger</span> <span class="o">=</span> <span class="n">AmpelLogger</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span>
-
-			<span class="n">report_exception</span><span class="p">(</span>
-				<span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">db</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span> <span class="n">exc</span><span class="o">=</span><span class="n">e</span><span class="p">,</span>
-				<span class="n">info</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;process&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">process_name</span><span class="p">}</span>
-			<span class="p">)</span>
-
-		<span class="k">finally</span><span class="p">:</span>
-
-			<span class="k">if</span> <span class="ow">not</span> <span class="n">logger</span><span class="p">:</span>
-				<span class="n">logger</span> <span class="o">=</span> <span class="n">AmpelLogger</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span>
-
-			<span class="c1"># Feedback</span>
-			<span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">SHOUT</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Done running </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">process_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-			<span class="n">logger</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
-
-			<span class="c1"># Register the execution of this event into the events col</span>
-			<span class="k">if</span> <span class="n">event_doc</span><span class="p">:</span>
-				<span class="n">event_doc</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">logger</span><span class="p">,</span> <span class="n">success</span><span class="o">=</span><span class="p">(</span><span class="n">exc</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">))</span></div></div>
+		<span class="c1"># Feedback</span>
+		<span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">SHOUT</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;Done running </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">process_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+		<span class="n">logger</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span></div>
 </pre></div>
 
             <div class="clearer"></div>
@@ -304,12 +191,12 @@
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../../../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -320,14 +207,14 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              >index</a></li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.7.6 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.8.3-beta.3 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">ampel.t3.T3Processor</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018-2021, Ampel Project.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.0.2.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.1.1.
     </div>
   </body>
 </html>
