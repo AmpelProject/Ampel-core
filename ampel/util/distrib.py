@@ -15,11 +15,13 @@ from pkg_resources import ( # type: ignore[attr-defined]
 )
 
 
-def get_dist_names(distrib_prefix: str = "ampel-") -> list[str]:
+def get_dist_names(distrib_prefixes: list[str] = ["ampel-", "pyampel-"]) -> list[str]:
 	""" Get all installed distributions whose names start with the provided prefix """
+	# ensure that at least interface and core are found
+	prefixes = {"ampel-interface", "ampel-core"}.union(distrib_prefixes)
 	ret = [
 		dist_name for dist_name in AvailableDistributions()
-		if distrib_prefix in dist_name
+		if any(prefix in dist_name for prefix in prefixes)
 	]
 
 	if ret:

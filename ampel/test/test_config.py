@@ -15,7 +15,20 @@ from ampel.test.test_JobCommand import run
 
 def test_build_config():
     tmp_file = os.path.join(tempfile.mkdtemp(), "ampel_conf.yml")
-    io.BytesIO(subprocess.check_output(["ampel", "config", "build", "-out", tmp_file]))
+    io.BytesIO(
+        subprocess.check_output(
+            [
+                "ampel",
+                "config",
+                "build",
+                "--distributions",
+                "ampel-interface",
+                "ampel-core",
+                "-out",
+                tmp_file,
+            ]
+        )
+    )
     with open(tmp_file, "r") as f:
         config = yaml.safe_load(f)
     assert ConfigValidator(config).validate() == config

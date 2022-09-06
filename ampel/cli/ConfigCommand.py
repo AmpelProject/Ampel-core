@@ -46,6 +46,7 @@ hlp = {
 		'- 2: stop on errors\n' +
 		'- 1: ignore errors in first_pass_config only (will stop on morphing/scoping/template errors)\n' +
 		'- 0: ignore all errors',
+	'distributions': 'Ampel packages to consider. If unspecified, gather all installed distributions',
 	'verbose': 'verbose',
 	'ext-resource': 'path to resource config file (yaml) to be integrated into the final ampel config',
 	'hide-module-not-found-errors': 'Hide corresponding exceptions stack',
@@ -106,6 +107,7 @@ class ConfigCommand(AbsCoreCommand):
 		)
 		builder.opt('pretty', 'show', action='store_true')
 		builder.opt('stop-on-errors', 'build', default=2, type=int)
+		builder.opt('distributions', 'build|install', nargs="+", default=["pyampel-", "ampel-"])
 		builder.opt('file', 'install', type=str)
 		builder.opt('build', 'install', action='store_true')
 
@@ -121,6 +123,7 @@ class ConfigCommand(AbsCoreCommand):
 		builder.example('build', '-install')
 		builder.example('build', '-out ampel_conf.yaml')
 		builder.example('build', '-out ampel_conf.yaml -sign -verbose')
+		builder.example('build', '-out ampel_core_conf.yaml -distributions ampel-interface ampel-core')
 		builder.example('show', '')
 		builder.example('show', '-path')
 		builder.example('show', '-json -pretty')
@@ -225,10 +228,10 @@ class ConfigCommand(AbsCoreCommand):
 					hide_stderr = args.get('hide_stderr', False),
 					hide_module_not_found_errors = args.get('hide_module_not_found_errors', False)
 				),
-				logger = logger
+				logger = logger,
 			)
 
-			cb.load_distributions()
+			cb.load_distributions(prefixes=args['distributions'])
 			cb.build_config(
 				stop_on_errors = args['stop_on_errors'],
 				skip_default_processes=True,

@@ -33,26 +33,24 @@ class DistConfigBuilder(ConfigBuilder):
 		:param conf_dirs: loads only conf files from these directories
 		:param exts: loads only conf files with these extensions
 		"""
-		for prefix in prefixes:
+		dist_names = get_dist_names(prefixes)
 
-			dist_names = get_dist_names(prefix)
+		if dist_names:
+			self.logger.log(SHOUT, f"Detected ampel components: '{dist_names}'")
 
-			if dist_names:
-				self.logger.log(SHOUT, f"Detected ampel components: '{dist_names}'")
+		for dist_name in dist_names:
 
-			for dist_name in dist_names:
+			self.logger.break_aggregation()
+			s = f"Checking distribution '{dist_name}'"
+			self.logger.log(VERBOSE, s)
+			self.logger.log(VERBOSE, "="*len(s))
 
-				self.logger.break_aggregation()
-				s = f"Checking distribution '{dist_name}'"
-				self.logger.log(VERBOSE, s)
-				self.logger.log(VERBOSE, "="*len(s))
+			for conf_dir in conf_dirs:
+				for ext in exts:
+					self.load_distrib(dist_name, conf_dir, ext)
 
-				for conf_dir in conf_dirs:
-					for ext in exts:
-						self.load_distrib(dist_name, conf_dir, ext)
-
-				if self.verbose:
-					self.logger.log(VERBOSE, f"Done checking distribution '{dist_name}'")
+			if self.verbose:
+				self.logger.log(VERBOSE, f"Done checking distribution '{dist_name}'")
 
 		if self.verbose:
 			self.logger.log(VERBOSE, "Done loading distributions")
