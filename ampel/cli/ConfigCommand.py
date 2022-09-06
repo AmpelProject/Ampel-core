@@ -105,7 +105,7 @@ class ConfigCommand(AbsCoreCommand):
 			]
 		)
 		builder.opt('pretty', 'show', action='store_true')
-		builder.opt('stop-on-errors', 'build', default=2)
+		builder.opt('stop-on-errors', 'build', default=2, type=int)
 		builder.opt('file', 'install', type=str)
 		builder.opt('build', 'install', action='store_true')
 
@@ -230,7 +230,7 @@ class ConfigCommand(AbsCoreCommand):
 
 			cb.load_distributions()
 			cb.build_config(
-				stop_on_errors = 0,
+				stop_on_errors = args['stop_on_errors'],
 				skip_default_processes=True,
 				config_validator = None,
 				save = args.get('out') or get_user_data_config_path(),
