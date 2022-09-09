@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  26.08.2022
+# Last Modified Date:  05.09.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import tarfile, tempfile, ujson, yaml, io, os, signal, sys, \
@@ -458,7 +458,7 @@ class JobCommand(AbsCoreCommand):
 		if args.get('show_plots') or args.get('show_plots_cmd'):
 
 			cmd = [
-				'ampel', 'plot', 'show', '-stack', '100',
+				'ampel', 'plot', 'show', '-stack', '300',
 				'-png', os.environ.get('AMPEL_PLOT_DPI', '150'),
 				'-t2', '-t3', '-base-path', 'body.plot', # to be improved later
 				'-db', job.mongo.prefix, '-run-id', *[str(el) for el in run_ids],
