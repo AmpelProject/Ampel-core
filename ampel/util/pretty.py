@@ -4,12 +4,15 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                Unspecified
-# Last Modified Date:  23.08.2022
+# Last Modified Date:  06.09.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import sys, re, html, math
 from math import isinf
+from time import time
+from datetime import timedelta
 from contextlib import contextmanager
+from ampel.protocol.LoggerProtocol import LoggerProtocol
 
 # copied from https://stackoverflow.com/a/56497521/104668
 def prettyjson(obj, indent=2, maxlinelength=80):
@@ -213,3 +216,44 @@ def human_format(num, precision=2, suffixes=['', 'K', 'M', 'G', 'T', 'P']):
 	"""
 	m = int(math.log10(num) // 3)
 	return f'{num/1000.0**m:.{precision}f}{suffixes[m]}'
+
+
+def get_time_delta(start: float, cut: None | int = -7) -> str:
+	return str(timedelta(seconds=time()-start))[:-7]
+
+
+class TimeFeedback:
+	"""
+	Usage:
+	with TimeFeedback("2d binning"):
+		do_it()
+	"""
+
+	def __init__(self,
+		feedback: str = "Time elapsed",
+		cut: None | int = -7,
+		logger: None | LoggerProtocol = None,
+		enter_feedback: bool = False
+	):
+		self.feedback = feedback
+		self.logger = logger
+		self.cut = cut
+		self.enter_feedback = enter_feedback
+
+	def __enter__(self):
+		self.start = time()
+		if self.enter_feedback:
+			self._print(
+				f"Measuring time for '{self.feedback}'"
+				if self.feedback != "Time elapsed"
+				else "Starting time measurement"
+			)
+		return self
+
+	def __exit__(self, *args):
+		self._print(self.feedback + ": " + get_time_delta(self.start, self.cut))
+
+	def _print(self, s: str) -> None:
+		if self.logger:
+			self.logger.info(s)
+		print(s)
