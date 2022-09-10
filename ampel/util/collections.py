@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                07.06.2018
-# Last Modified Date:  09.12.2021
+# Last Modified Date:  10.09.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from itertools import islice
@@ -23,10 +23,17 @@ def ampel_iter(arg: Any) -> Any:
 	return [arg] if isinstance(arg, (type(None), str, int, bytes, bytearray)) else arg
 
 
-def chunks(seq: Iterable[T], n: int) -> Generator[list[T], None, None]:
+def get_chunks(seq: Iterable[T], n: int) -> Generator[list[T], None, None]:
 	"""
 	Yield chunks of length `n` from `seq`
+
+	In []: get_chunks([i for i in range(10)], 2)
+	Out[]: <generator object get_chunks at 0x132a26a40>
+
+	In []: list(get_chunks([i for i in range(10)], 2))
+	Out[]: [[0, 1], [2, 3], [4, 5], [6, 7], [8, 9]]
 	"""
+
 	source = iter(seq)
 	while True:
 		if chunk := list(islice(source, n)):
@@ -35,6 +42,19 @@ def chunks(seq: Iterable[T], n: int) -> Generator[list[T], None, None]:
 				break
 		else:
 			break
+
+
+def get_chunk_sizes(total_size: int, interval_len: int) -> list[int]:
+	"""
+	In []: get_chunk_sizes(123, 10)
+	Out[]: [12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 3]
+	"""
+	if total_size < interval_len:
+		raise ValueError()
+	l = [(total_size // interval_len)] * interval_len
+	if (total_size % interval_len):
+		l.append(total_size % interval_len)
+	return l
 
 
 def try_reduce(arg: Any) -> Any:
