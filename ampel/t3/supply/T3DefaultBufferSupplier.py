@@ -12,7 +12,7 @@ from ampel.abstract.AbsT3Supplier import AbsT3Supplier
 from ampel.abstract.AbsT3Selector import AbsT3Selector
 from ampel.abstract.AbsT3Loader import AbsT3Loader
 from ampel.abstract.AbsBufferComplement import AbsBufferComplement
-from ampel.util.collections import chunks as chunks_func
+from ampel.util.collections import get_chunks as chunks_func
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.model.UnitModel import UnitModel
 from ampel.view.T3Store import T3Store
