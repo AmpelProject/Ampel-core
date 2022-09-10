@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  05.09.2022
+# Last Modified Date:  10.09.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import tarfile, tempfile, ujson, yaml, io, os, signal, sys, \
@@ -36,7 +36,7 @@ from ampel.model.job.JobModel import JobModel
 from ampel.model.job.InputArtifact import InputArtifact
 from ampel.model.job.TaskUnitModel import TaskUnitModel
 from ampel.model.job.TemplateUnitModel import TemplateUnitModel
-from ampel.util.pretty import out_stack
+from ampel.util.pretty import out_stack, get_time_delta
 
 
 class JobCommand(AbsCoreCommand):
@@ -444,7 +444,6 @@ class JobCommand(AbsCoreCommand):
 
 				logger.info(f'{task_dict["unit"]} return value: {x}')
 
-		dm = divmod(time() - start_time, 60)
 		if len(run_ids) == 1:
 			runstr = f" (run id: {run_ids[0]})"
 		elif len(run_ids) > 1:
@@ -452,8 +451,8 @@ class JobCommand(AbsCoreCommand):
 		else:
 			runstr = ""
 
-		logger.info(f'Job processed {runstr}')
-		logger.info(f'Time required: {round(dm[0])} minutes {round(dm[1])} seconds\n')
+		logger.info(f'Job processed{runstr}')
+		logger.info(f'Time required: {get_time_delta(start_time)}\n')
 
 		if args.get('show_plots') or args.get('show_plots_cmd'):
 
