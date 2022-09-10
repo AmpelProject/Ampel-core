@@ -8,8 +8,8 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import tarfile, tempfile, ujson, yaml, io, os, signal, sys, \
-	subprocess, platform, shutil, filecmp
-from time import time
+	subprocess, platform, shutil, filecmp, psutil
+from time import time, sleep
 from multiprocessing import Queue, Process
 from argparse import ArgumentParser
 from importlib import import_module
@@ -87,7 +87,8 @@ class JobCommand(AbsCoreCommand):
 			'task': 'only execute task(s) with provided index(es) [starting with 0].\n' +
 					'Value "last" is supported. Ignored if -interactive is used',
 			'show-plots': 'show plots created by job (requires ampel-plot-cli)',
-			'show-plots-cmd': 'show command required to show plots created by job (requires ampel-plot-cli)'
+			'show-plots-cmd': 'show command required to show plots created by job (requires ampel-plot-cli)',
+			'wait-pid': 'wait until PID completition before starting the current job'
 		})
 
 		parser.req('config', type=str)
@@ -104,6 +105,7 @@ class JobCommand(AbsCoreCommand):
 		parser.opt('show-plots', action='store_true')
 		parser.opt('show-plots-cmd', action='store_true')
 		parser.opt('secrets', type=str)
+		parser.opt('wait-pid', type=int, default=0)
 
 		# Example
 		parser.example('job job_file.yaml')
@@ -347,6 +349,12 @@ class JobCommand(AbsCoreCommand):
 				)
 			).json(exclude_unset=True)
 		)
+
+		if (wpid := args['wait_pid']) and psutil.pid_exists(wpid):
+			logger.info(f'Waiting until process with PID {wpid} completes')
+			while (psutil.pid_exists(wpid)):
+				sleep(5)
+			start_time = time()
 
 		logger.info('Saving job schema')
 		job_sig = build_unsafe_dict_id(job_dict, size=-64)
