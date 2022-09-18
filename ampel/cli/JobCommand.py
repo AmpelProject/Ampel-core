@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  10.09.2022
+# Last Modified Date:  18.09.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import tarfile, tempfile, ujson, yaml, io, os, signal, sys, \
@@ -563,10 +563,11 @@ class JobCommand(AbsCoreCommand):
 
 	@staticmethod
 	def _patch_config(config_dict: dict[str, Any], job: JobModel, logger: AmpelLogger):
+
 		# Add channel(s)
 		for chan in job.channel:
 			logger.info(f'Registering job channel "{chan.channel}"')
-			dict.__setitem__(config_dict['channel'], chan.channel, chan)
+			dict.__setitem__(config_dict['channel'], chan.channel, chan.dict())
 
 		# Add aliase(s)
 		for k, v in job.alias.items():
