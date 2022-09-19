@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  18.09.2022
+# Last Modified Date:  19.09.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import tarfile, tempfile, ujson, yaml, io, os, signal, sys, \
@@ -515,9 +515,9 @@ class JobCommand(AbsCoreCommand):
 		job = yaml.safe_load(lines)
 
 		for k in list(job.keys()):
-			# job keys starting with _ are used by own convention for yaml anchors
+			# job root keys starting with % are used by own convention for yaml anchors
 			# and thus need not be included in the loaded job structure
-			if k.startswith('_'):
+			if k.startswith('%'):
 				del job[k]
 
 		return JobModel(**job), build_unsafe_dict_id(job, size=-64) if compute_sig else 0
