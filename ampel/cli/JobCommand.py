@@ -37,6 +37,7 @@ from ampel.model.job.InputArtifact import InputArtifact
 from ampel.model.job.TaskUnitModel import TaskUnitModel
 from ampel.model.job.TemplateUnitModel import TemplateUnitModel
 from ampel.util.pretty import out_stack, get_time_delta
+from ampel.util.debug import MockPool
 
 
 class JobCommand(AbsCoreCommand):
@@ -80,6 +81,7 @@ class JobCommand(AbsCoreCommand):
 			'keep-db': 'do not reset databases even if so requested by job file',
 			'reset-db': 'reset databases even if not requested by job file',
 			'no-agg': 'enables display of matplotlib plots via plt.show() for debugging',
+			'no-mp': 'deactivates multiprocessing by monkey patching multiprocessing.Pool with ampel.util.debug.MockPool for debugging',
 			'interactive': 'you will be asked for each task whether it should be run or skipped\n' + \
 				'and - if applicable - if the db should be reset. Option -task will be ignored.',
 			'edit': 'edit schema file(s) before execution (originals are kept as is)',
@@ -102,6 +104,7 @@ class JobCommand(AbsCoreCommand):
 		parser.opt('reset-db', action='store_true')
 		parser.opt('max-parallel-tasks', type=int, default=os.cpu_count())
 		parser.opt('no-agg', action='store_true')
+		parser.opt('no-mp', action='store_true')
 		parser.opt('show-plots', action='store_true')
 		parser.opt('show-plots-cmd', action='store_true')
 		parser.opt('secrets', type=str)
@@ -122,6 +125,21 @@ class JobCommand(AbsCoreCommand):
 		start_time = time()
 		psys = platform.system().lower()
 		logger = AmpelLogger.get_logger(base_flag=LogFlag.MANUAL_RUN)
+
+		if args['no_mp']:
+			"""
+			# ThreadPool (dummy.Pool) is not enough in some circunstances
+			# as matplotlib has issues when run outside main thread
+			def Pool(**kwargs):
+				kwargs['processes'] = 1
+				return multiprocessing.dummy.Pool(**kwargs)
+			"""
+			import multiprocessing
+			multiprocessing.__dict__['Pool'] = MockPool
+			if not args['no_agg']:
+				from ampel.util.getch import yes_no
+				if yes_no('Set -no-agg option too (required for matplotlib interactions)'):
+					args['no_agg'] = True
 
 		if not args['no_agg']:
 			try:
