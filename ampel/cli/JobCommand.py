@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  19.09.2022
+# Last Modified Date:  26.09.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import tarfile, tempfile, ujson, yaml, io, os, signal, sys, \
@@ -84,7 +84,11 @@ class JobCommand(AbsCoreCommand):
 			'no-mp': 'deactivates multiprocessing by monkey patching multiprocessing.Pool with ampel.util.debug.MockPool for debugging',
 			'interactive': 'you will be asked for each task whether it should be run or skipped\n' + \
 				'and - if applicable - if the db should be reset. Option -task will be ignored.',
-			'edit': 'edit schema file(s) before execution (originals are kept as is)',
+			'edit': 'edit job schema(s) before execution. Customize env variable EDITOR if need be. Default: "raw":\n' +
+					'"raw": edit raw schema file(s) before parsing\n' +
+					'"parsed": edit (possibly aggregated) schema after parsing by the yaml interpreter\n' +
+					'"model": edit job model after templating (if applicable)',
+			'keep-edits': 'do not remove edited job schemas from temp dir',
 			'fzf': 'choose schema file using fzf (linux/max only, fzf command line utility must be installed)',
 			'task': 'only execute task(s) with provided index(es) [starting with 0].\n' +
 					'Value "last" is supported. Ignored if -interactive is used',
@@ -98,7 +102,8 @@ class JobCommand(AbsCoreCommand):
 		parser.opt('task', action=MaybeIntAction, nargs='+')
 		parser.opt('interactive', action='store_true')
 		parser.opt('debug', action='store_true')
-		parser.opt('edit', action='store_true')
+		parser.opt('edit', nargs='?', default=None, const='raw')
+		parser.opt('keep-edits', action='store_true')
 		parser.opt('fzf', action='store_true')
 		parser.opt('keep-db', action='store_true')
 		parser.opt('reset-db', action='store_true')
@@ -181,14 +186,17 @@ class JobCommand(AbsCoreCommand):
 				print("No schema selected")
 				return
 
-		tmp_files: list[str] = []
 		if args.get('edit'):
-	
+			tmp_files: list[str] = []
+
+		if args.get('edit') == 'raw':
+
 			if schema_files:
 				for sfile in list(schema_files):
-					fd, fname = tempfile.mkstemp(suffix='.yml')
+					_, fname = tempfile.mkstemp(suffix='.yml', text=True)
 					shutil.copyfile(sfile, fname)
 					edit_job(fname)
+					tmp_files.append(fname)
 
 					if filecmp.cmp(sfile, fname):
 						logger.info(f'Using original schema: {sfile}')
@@ -207,8 +215,16 @@ class JobCommand(AbsCoreCommand):
 			return
 
 		job, _ = self.get_job_schema(schema_files, logger, compute_sig=False)
-		for el in tmp_files:
-			os.unlink(el)
+
+		if args.get('edit') == 'parsed':
+			fd, fname = tempfile.mkstemp(suffix='.yml')
+			# Seems fd does not work with yaml.dump(), unsure why
+			with open(fname, 'wt') as f:
+				yaml.dump(ujson.loads(job.json(exclude_unset=True)), f, sort_keys=False)
+			edit_job(fname)
+			tmp_files.append(fname)
+			job, _ = self.get_job_schema([fname], logger, compute_sig=False)
+
 		schema_descr = '|'.join(
 			[os.path.basename(sf) for sf in schema_files]
 		).replace('.yaml', '').replace('.yml', '')
@@ -367,6 +383,20 @@ class JobCommand(AbsCoreCommand):
 				)
 			).json(exclude_unset=True)
 		)
+
+		if args.get('edit') == 'model':
+			fd, fname = tempfile.mkstemp(suffix='.yml')
+			# Seems fd does not work with yaml.dump(), unsure why
+			with open(fname, 'wt') as f:
+				yaml.dump(job_dict, f, sort_keys=False)
+			edit_job(fname)
+			tmp_files.append(fname)
+			with open(fname, 'rt') as f:
+				job_dict = yaml.safe_load(f)
+
+		if args.get('edit') and not args.get('keep_edits'):
+			for el in tmp_files:
+				os.unlink(el)
 
 		if (wpid := args['wait_pid']) and psutil.pid_exists(wpid):
 			logger.info(f'Waiting until process with PID {wpid} completes')
