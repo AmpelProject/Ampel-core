@@ -49,6 +49,7 @@ unit:
 - ampel.demo.DemoReviewT3Unit
 - ampel.demo.DemoPlainT3Unit
 - ampel.t3.unit.T3LogAggregatedStocks
+- ampel.t3.unit.T3PrintStore
 - ampel.dev.NoShaper
 
 # Aux units
