@@ -87,7 +87,7 @@ class JobCommand(AbsCoreCommand):
 			'edit': 'edit job schema(s) before execution. Customize env variable EDITOR if need be. Default: "raw":\n' +
 					'"raw": edit raw schema file(s) before parsing\n' +
 					'"parsed": edit (possibly aggregated) schema after parsing by the yaml interpreter\n' +
-					'"model": edit job model after templating (if applicable)',
+					'"model": edit job model after templating (if applicable). Only task-related changes will be taken into account',
 			'keep-edits': 'do not remove edited job schemas from temp dir',
 			'fzf': 'choose schema file using fzf (linux/max only, fzf command line utility must be installed)',
 			'task': 'only execute task(s) with provided index(es) [starting with 0].\n' +
@@ -233,7 +233,6 @@ class JobCommand(AbsCoreCommand):
 			logger.info(f'Running job using composed schema: {schema_descr}')
 
 		# Check or set env variable(s)
-
 		for psys in ('any', platform.system().lower()):
 			if psys in job.env:
 				for k, v in job.env[psys].check.items():
@@ -322,7 +321,7 @@ class JobCommand(AbsCoreCommand):
 			for idx in sorted(args['task'], reverse=True):
 				del job.task[idx]
 
-		tds: list[dict[str, Any]] = []
+		jtasks: list[dict[str, Any]] = []
 		for i, model in enumerate(job.task):
 
 			if isinstance(model, TemplateUnitModel):
@@ -350,10 +349,10 @@ class JobCommand(AbsCoreCommand):
 					for el in prettyjson(morphed_um, indent=4).split('\n'):
 						logger.info(el)
 
-				tds.append(morphed_um)
+				jtasks.append(morphed_um)
 
 			else:
-				tds.append(
+				jtasks.append(
 					model.dict(
 						exclude={'inputs', 'outputs', 'expand_with'},
 						exclude_unset=True
@@ -377,7 +376,7 @@ class JobCommand(AbsCoreCommand):
 								include={'inputs', 'outputs', 'expand_with', 'title'},
 								exclude_unset=True
 							)
-							for task, td in zip(job.task, tds)
+							for task, td in zip(job.task, jtasks)
 						]
 					}
 				)
@@ -393,6 +392,7 @@ class JobCommand(AbsCoreCommand):
 			tmp_files.append(fname)
 			with open(fname, 'rt') as f:
 				job_dict = yaml.safe_load(f)
+			jtasks = job_dict['task']
 
 		if args.get('edit') and not args.get('keep_edits'):
 			for el in tmp_files:
@@ -413,14 +413,14 @@ class JobCommand(AbsCoreCommand):
 		)
 
 		run_ids = []
-		for i, task_dict in enumerate(tds):
+		for i, taskd in enumerate(jtasks):
 
 			process_name = f'{job.name or schema_descr}#{i}'
 
-			if 'title' in task_dict:
-				self.print_chapter(task_dict['title'] if task_dict.get('title') else f'Task #{i}', logger)
-				#process_name += f' [{task_dict['title']}]'
-				del task_dict['title']
+			if 'title' in taskd:
+				self.print_chapter(taskd['title'] if taskd.get('title') else f'Task #{i}', logger)
+				#process_name += f' [{taskd['title']}]'
+				del taskd['title']
 			elif i != 0:
 				self.print_chapter(f'Task #{i}', logger)
 
@@ -428,11 +428,11 @@ class JobCommand(AbsCoreCommand):
 				logger.info(f'Skipping task #{i} as requested')
 				continue
 
-			task_dict['override'] = task_dict.pop('override', {}) | {'raise_exc': True}
+			taskd['override'] = taskd.pop('override', {}) | {'raise_exc': True}
 
 			# Beacons have no real use in jobs (unlike prod)
-			if task_dict['unit'] == 'T2Worker' and 'send_beacon' not in task_dict['config']:
-				task_dict['config']['send_beacon'] = False
+			if taskd['unit'] == 'T2Worker' and 'send_beacon' not in taskd['config']:
+				taskd['config']['send_beacon'] = False
 
 			if (expand_with := job.task[i].expand_with) is not None:
 
@@ -454,7 +454,7 @@ class JobCommand(AbsCoreCommand):
 								q,
 								config_dict,
 								job.resolve_expressions(
-									task_dict,
+									taskd,
 									job.task[i],
 									item
 								),
@@ -469,7 +469,7 @@ class JobCommand(AbsCoreCommand):
 					for i, (p, q) in enumerate(zip(ps, qs)):
 						p.join()
 						if (m := q.get()):
-							logger.info(f'{task_dict["unit"]}#{i} return value: {m}')
+							logger.info(f'{taskd["unit"]}#{i} return value: {m}')
 				except KeyboardInterrupt:
 					sys.exit(1)
 			
@@ -478,7 +478,7 @@ class JobCommand(AbsCoreCommand):
 				self._fetch_inputs(job, job.task[i], None, logger)
 
 				proc = ctx.loader.new_context_unit(
-					model = UnitModel(**job.resolve_expressions(task_dict, job.task[i])),
+					model = UnitModel(**job.resolve_expressions(taskd, job.task[i])),
 					context = ctx,
 					process_name = process_name,
 					job_sig = job_sig,
@@ -498,7 +498,7 @@ class JobCommand(AbsCoreCommand):
 				if event_hdlr.run_id:
 					run_ids.append(event_hdlr.run_id)
 
-				logger.info(f'{task_dict["unit"]} return value: {x}')
+				logger.info(f'{taskd["unit"]} return value: {x}')
 
 		if len(run_ids) == 1:
 			runstr = f" (run id: {run_ids[0]})"
