@@ -690,6 +690,6 @@ def edit_job(fname: str) -> str:
 		shell=True
 	):
 		with out_stack():
-			raise ValueError("Cancelation requested during schema edition")
+			raise ValueError("Cancellation requested during schema edition")
 
 	return fname
