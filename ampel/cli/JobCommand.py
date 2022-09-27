@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  26.09.2022
+# Last Modified Date:  27.09.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import tarfile, tempfile, ujson, yaml, io, os, signal, sys, \
@@ -81,6 +81,7 @@ class JobCommand(AbsCoreCommand):
 			'keep-db': 'do not reset databases even if so requested by job file',
 			'reset-db': 'reset databases even if not requested by job file',
 			'no-agg': 'enables display of matplotlib plots via plt.show() for debugging',
+			'no-breakpoint': 'ignore pdb breakpoints',
 			'no-mp': 'deactivates multiprocessing by monkey patching multiprocessing.Pool with ampel.util.debug.MockPool for debugging',
 			'interactive': 'you will be asked for each task whether it should be run or skipped\n' + \
 				'and - if applicable - if the db should be reset. Option -task will be ignored.',
@@ -109,6 +110,7 @@ class JobCommand(AbsCoreCommand):
 		parser.opt('reset-db', action='store_true')
 		parser.opt('max-parallel-tasks', type=int, default=os.cpu_count())
 		parser.opt('no-agg', action='store_true')
+		parser.opt('no-breakpoint', action='store_true')
 		parser.opt('no-mp', action='store_true')
 		parser.opt('show-plots', action='store_true')
 		parser.opt('show-plots-cmd', action='store_true')
@@ -152,6 +154,9 @@ class JobCommand(AbsCoreCommand):
 				mpl.use('Agg')
 			except Exception:
 				pass
+
+		if args['no_breakpoint']:
+			os.environ["PYTHONBREAKPOINT"] = "0"
 
 		if isinstance(args['task'], (int, str)):
 			args['task'] = [args['task']]
