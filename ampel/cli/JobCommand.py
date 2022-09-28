@@ -401,7 +401,10 @@ class JobCommand(AbsCoreCommand):
 
 		if args.get('edit') and not args.get('keep_edits'):
 			for el in tmp_files:
-				os.unlink(el)
+				try:
+					os.unlink(el)
+				except BaseException:
+					pass
 
 		if (wpid := args['wait_pid']) and psutil.pid_exists(wpid):
 			logger.info(f'Waiting until process with PID {wpid} completes')
