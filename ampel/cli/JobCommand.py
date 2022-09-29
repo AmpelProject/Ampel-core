@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  27.09.2022
+# Last Modified Date:  29.09.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import tarfile, tempfile, ujson, yaml, io, os, signal, sys, \
@@ -225,7 +225,10 @@ class JobCommand(AbsCoreCommand):
 			fd, fname = tempfile.mkstemp(suffix='.yml')
 			# Seems fd does not work with yaml.dump(), unsure why
 			with open(fname, 'wt') as f:
-				yaml.dump(ujson.loads(job.json(exclude_unset=True)), f, sort_keys=False)
+				yaml.dump(
+					ujson.loads(job.json(exclude_unset=True)), f,
+					sort_keys=False, default_flow_style=None
+				)
 			edit_job(fname)
 			tmp_files.append(fname)
 			job, _ = self.get_job_schema([fname], logger, compute_sig=False)
@@ -392,7 +395,7 @@ class JobCommand(AbsCoreCommand):
 			fd, fname = tempfile.mkstemp(suffix='.yml')
 			# Seems fd does not work with yaml.dump(), unsure why
 			with open(fname, 'wt') as f:
-				yaml.dump(job_dict, f, sort_keys=False)
+				yaml.dump(job_dict, f, sort_keys=False, default_flow_style=None)
 			edit_job(fname)
 			tmp_files.append(fname)
 			with open(fname, 'rt') as f:
