@@ -8,7 +8,7 @@ python-versions = "*"
 
 [[package]]
 name = "ampel-interface"
-version = "0.8.3b5"
+version = "0.8.3b6"
 description = "Base classes for the Ampel analysis platform"
 category = "main"
 optional = false
@@ -82,7 +82,7 @@ python-versions = ">=3.5"
 dev = ["cloudpickle", "coverage[toml] (>=5.0.2)", "furo", "hypothesis", "mypy (>=0.900,!=0.940)", "pre-commit", "pympler", "pytest (>=4.3.0)", "pytest-mypy-plugins", "sphinx", "sphinx-notfound-page", "zope.interface"]
 docs = ["furo", "sphinx", "sphinx-notfound-page", "zope.interface"]
 tests = ["cloudpickle", "coverage[toml] (>=5.0.2)", "hypothesis", "mypy (>=0.900,!=0.940)", "pympler", "pytest (>=4.3.0)", "pytest-mypy-plugins", "zope.interface"]
-tests_no_zope = ["cloudpickle", "coverage[toml] (>=5.0.2)", "hypothesis", "mypy (>=0.900,!=0.940)", "pympler", "pytest (>=4.3.0)", "pytest-mypy-plugins"]
+tests-no-zope = ["cloudpickle", "coverage[toml] (>=5.0.2)", "hypothesis", "mypy (>=0.900,!=0.940)", "pympler", "pytest (>=4.3.0)", "pytest-mypy-plugins"]
 
 [[package]]
 name = "Babel"
@@ -112,7 +112,7 @@ optional = true
 python-versions = ">=3.6.0"
 
 [package.extras]
-unicode_backport = ["unicodedata2"]
+unicode-backport = ["unicodedata2"]
 
 [[package]]
 name = "click"
@@ -535,7 +535,7 @@ urllib3 = ">=1.21.1,<1.27"
 
 [package.extras]
 socks = ["PySocks (>=1.5.6,!=1.5.7)"]
-use_chardet_on_py3 = ["chardet (>=3.0.2,<6)"]
+use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
 
 [[package]]
 name = "rfc3986"
@@ -650,7 +650,7 @@ Sphinx = ">=5.1.1"
 
 [package.extras]
 testing = ["covdefaults (>=2.2)", "coverage (>=6.4.2)", "diff-cover (>=6.5.1)", "nptyping (>=2.2)", "pytest (>=7.1.2)", "pytest-cov (>=3)", "sphobjinv (>=2.2.2)", "typing-extensions (>=4.3)"]
-type_comments = ["typed-ast (>=1.5.4)"]
+type-comments = ["typed-ast (>=1.5.4)"]
 
 [[package]]
 name = "sphinx-press-theme"
@@ -910,7 +910,7 @@ slack = ["slack-sdk"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.10,<3.11"
-content-hash = "77870db486bbdf5a9124b2923bdb67e399a7de408e15d9d41e3517393803e93e"
+content-hash = "3f8330a0148f835ebfe191cf94aadd9b0cd555f4077fa9bcc6d41e97d932492d"
 
 [metadata.files]
 alabaster = [
@@ -918,8 +918,8 @@ alabaster = [
     {file = "alabaster-0.7.12.tar.gz", hash = "sha256:a661d72d58e6ea8a57f7a86e37d86716863ee5e92788398526d58b26a4e4dc02"},
 ]
 ampel-interface = [
-    {file = "ampel-interface-0.8.3b5.tar.gz", hash = "sha256:6984bc0a5fe1281b829c0409e6f4ceca6cd6d5c2571b353db25084b0a343d8fa"},
-    {file = "ampel_interface-0.8.3b5-py3-none-any.whl", hash = "sha256:f4ae4940e47295b41f5e5484e4844d144dde9185105559605516b9cf77f70f9a"},
+    {file = "ampel_interface-0.8.3b6-py3-none-any.whl", hash = "sha256:f1482b0f14887b2e1424cd25cfc97c727b0e7d19130a9b154749a8983c69c5c1"},
+    {file = "ampel_interface-0.8.3b6.tar.gz", hash = "sha256:53977d9910cd57dad1f2abfa510e668407ad5b77306edb1a99da8d51e2e7884e"},
 ]
 anyio = [
     {file = "anyio-3.6.1-py3-none-any.whl", hash = "sha256:cb29b9c70620506a9a8f87a309591713446953302d7d995344d0d7c6c0c9a7be"},
