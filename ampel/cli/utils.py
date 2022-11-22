@@ -8,7 +8,8 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import os
-from typing import Any, Literal
+from enum import IntEnum
+from typing import Any, Literal, Type, overload
 from ampel.core.AmpelDB import AmpelDB
 from ampel.secret.AmpelVault import AmpelVault
 from ampel.config.AmpelConfig import AmpelConfig
@@ -84,3 +85,28 @@ def maybe_load_idmapper(args: dict[str, Any]) -> None:
 
 	elif check_seq_inner_type(args['stock'], str):
 		args['stock'] = args['id_mapper'].to_ampel_id(args['stock']) # type: ignore
+
+
+@overload
+def maybe_resolve_enum(value: int | str, enum: Type[IntEnum]) -> int:
+	...
+
+
+@overload
+def maybe_resolve_enum(value: list[int|str], enum: Type[IntEnum]) -> list[int]:
+	...
+
+
+def maybe_resolve_enum(value: int | str | list[int|str], enum: Type[IntEnum]) -> int | list[int]:
+	"""
+	Replace enum member names with their values
+	"""
+	if isinstance(value, str):
+		if value in enum.__members__:
+			return enum.__members__[value]
+		else:
+			raise ValueError(f"{value} is not a valid {enum.__name__}")
+	elif isinstance(value, list):
+		return [maybe_resolve_enum(v, enum) for v in value]
+	elif isinstance(value, int):
+		return value

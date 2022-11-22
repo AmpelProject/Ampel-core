@@ -15,13 +15,14 @@ from collections.abc import Sequence
 from ampel.core.EventHandler import EventHandler
 from ampel.core.AmpelContext import AmpelContext
 from ampel.abstract.AbsIdMapper import AbsIdMapper
+from ampel.enum.DocumentCode import DocumentCode
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogFlag import LogFlag
 from ampel.t2.T2Utils import T2Utils
 from ampel.util.pretty import prettyjson
 from ampel.util.serialize import walk_and_encode
 from ampel.content.T2Document import T2Document
-from ampel.cli.utils import maybe_load_idmapper
+from ampel.cli.utils import maybe_load_idmapper, maybe_resolve_enum
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.ArgParserBuilder import ArgParserBuilder
 from ampel.cli.MaybeIntAction import MaybeIntAction
@@ -154,6 +155,8 @@ class T2Command(AbsCoreCommand):
 		col = ctx.db.get_collection('t2', mode='r')
 
 		maybe_load_idmapper(args)
+		if args['code'] is not None:
+			args['code'] = maybe_resolve_enum(args['code'], DocumentCode)
 		self.convert_logical_args('tag', args)
 
 		# args['id_mapper'] is used for matching whereas id_mapper is potentially discarded for printing
