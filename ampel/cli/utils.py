@@ -70,7 +70,7 @@ def maybe_load_idmapper(args: dict[str, Any]) -> None:
 
 	args['id_mapper'] = AuxUnitRegister.get_aux_class(
 		args['id_mapper'], sub_type=AbsIdMapper
-	)() if args['id_mapper'] else None
+	)() if args.get('id_mapper') else None
 
 	if not args['id_mapper']:
 		return
