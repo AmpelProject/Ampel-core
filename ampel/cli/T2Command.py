@@ -88,7 +88,7 @@ class T2Command(AbsCoreCommand):
 		builder.opt('id-mapper', sub_ops='show|save')
 		builder.opt('dry-run', action='store_true')
 		builder.opt('debug', action='count', default=0, help='Debug')
-		builder.opt('limit', sub_ops='show|save', action='store_true')
+		builder.opt('limit', default=None, type=int, sub_ops='show|save')
 		builder.opt('pretty-json', sub_ops='show|save', action='store_true')
 
 		# Optional match criteria
@@ -163,7 +163,7 @@ class T2Command(AbsCoreCommand):
 		if sub_op == 'show':
 
 			m = t2_utils.match_t2s(**args)
-			limit = args.get('limit', False)
+			limit = args.get('limit', None)
 			if args.get('dry_run'):
 				count = col.count_documents(m)
 				if limit:
@@ -175,7 +175,7 @@ class T2Command(AbsCoreCommand):
 				)
 				return
 
-			c = col.find(m).limit(limit) if limit else col.find(m)
+			c = col.find(m).limit(limit) if limit is not None else col.find(m)
 
 			if args['resolve_config'] or args['human_times'] or id_mapper:
 				resolve_config = args['resolve_config']
