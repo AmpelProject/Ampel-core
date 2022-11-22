@@ -58,7 +58,10 @@ class T2Utils:
 		}
 
 		if not soft:
+			# remove body
 			update["$unset"] = {"body": 1}
+			# remove records of previous execution attempts
+			update["$pull"] = {"meta": {"tier": 2}}
 
 		return col \
 			.update_many(self.match_t2s(**kwargs), update) \
