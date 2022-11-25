@@ -34,6 +34,8 @@ hlp = {
 	'show': 'Show config / config path',
 	'install': 'Sets a specified ampel config as the default one in current system (conda envs supported).\n' +
 		' As a consequence, the option "-config" of other CLI operations becomes optional',
+	'transform': 'Transforms specified config file using jq parameters',
+	'validate': 'Validates all unit configurations defined a specified config file',
 	'file': 'Path to an ampel config file (yaml/json)',
 	# Optional
 	'secrets': 'Path to a YAML secrets store in sops format',
