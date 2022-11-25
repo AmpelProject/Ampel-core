@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  29.09.2022
+# Last Modified Date:  22.10.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import tarfile, tempfile, ujson, yaml, io, os, signal, sys, \
@@ -93,7 +93,7 @@ class JobCommand(AbsCoreCommand):
 			'fzf': 'choose schema file using fzf (linux/max only, fzf command line utility must be installed)',
 			'task': 'only execute task(s) with provided index(es) [starting with 0].\n' +
 					'Value "last" is supported. Ignored if -interactive is used',
-			'show-plots': 'show plots created by job (requires ampel-plot-cli)',
+			'show-plots': 'show plots created by job (requires ampel-plot-cli. Use "export AMPEL_PLOT_DPI=300" to increase png quality)',
 			'show-plots-cmd': 'show command required to show plots created by job (requires ampel-plot-cli)',
 			'wait-pid': 'wait until PID completition before starting the current job'
 		})
