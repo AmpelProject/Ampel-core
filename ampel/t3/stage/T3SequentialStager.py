@@ -4,8 +4,8 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                22.04.2021
-# Last Modified Date:  13.07.2022
-# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
+# Last Modified Date:  25.11.2022
+# Last Modified By:    simeon reusch <simeon.reusch@desy.de>
 
 from time import time
 from collections.abc import Generator, Iterable, Sequence
@@ -98,7 +98,7 @@ class T3SequentialStager(T3BaseStager):
 					for unit in self.units
 				}
 			else:
-				vs: list[SnapView] = [View.of(ab, conf) for ab in buffers]
+				vs: list[SnapView] = [View.of(ab, conf) for ab in gen]
 				return {unit: vs for unit in self.units}
 		else:
 
