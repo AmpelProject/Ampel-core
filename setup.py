@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                Unspecified
-# Last Modified Date:  26.08.2022
+# Last Modified Date:  25.11.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from setuptools import setup, find_namespace_packages
@@ -54,7 +54,7 @@ entry_points = {
 
 setup(
     name = 'ampel-core',
-    version = '0.8.3.beta-7',
+    version = '0.8.3.beta-8',
     description = 'Alice in Modular Provenance-Enabled Land',
     author = 'Valery Brinnel',
     maintainer = 'Jakob van Santen',
