@@ -127,6 +127,35 @@ def test_resolve_secret_from_config(
         )
 
 
+@pytest.mark.parametrize("config", [None, {"seekrit": {"label": "dict"}}])
+def test_use_secret_in_init(
+    secrets: DictSecretProvider,
+    dev_context: DevAmpelContext,
+    monkeypatch,
+    ampel_logger,
+    config,
+):
+    """Secrets are populated before being passed to init"""
+    monkeypatch.setattr(dev_context.loader, "vault", AmpelVault(providers=[secrets]))
+
+    class NeedsSecretInInit(LogicalUnit):
+        seekrit: NamedSecret[dict] = NamedSecret(label="dict")
+
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            assert (
+                self.seekrit.get() == secrets.store[self.seekrit.label]
+            ), "secret is populated"
+
+    dev_context.register_unit(NeedsSecretInInit)
+    # secret field is populated
+    dev_context.loader.new(
+        UnitModel(unit="NeedsSecretInInit", config=config),
+        logger=ampel_logger,
+        unit_type=NeedsSecretInInit,
+    )
+
+
 def test_unit_validation(dev_context: DevAmpelContext):
     class Dummy(LogicalUnit):
         param: int = 42
@@ -159,9 +188,9 @@ def test_unit_validation(dev_context: DevAmpelContext):
                         },
                         "stage": {
                             "unit": "T3SimpleStager",
-                            "config": {"execute": [{"unit": "DemoReviewT3Unit"}]}
-                        }
-                    }
+                            "config": {"execute": [{"unit": "DemoReviewT3Unit"}]},
+                        },
+                    },
                 }
             ],
         }

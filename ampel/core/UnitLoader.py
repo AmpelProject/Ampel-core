@@ -12,8 +12,9 @@ from importlib import import_module
 from pathlib import Path
 from hashlib import blake2b
 from contextlib import contextmanager
-from typing import Any, TypeVar, overload, get_args
-from collections.abc import Iterator
+from typing import Any, TypeVar, overload, get_args, get_origin
+from collections.abc import Iterator, Mapping
+from copy import deepcopy
 
 from ampel.types import ChannelId, check_class
 from ampel.util.collections import ampel_iter
@@ -180,17 +181,13 @@ class UnitLoader:
 			check_class(Klass, unit_type)
 
 		init_config = self.get_init_config(model.config, model.override)
-		unit = Klass(**(init_config | kwargs | (model.secrets or {})))
 
-		# Resolve secrets
-		for k, v in unit.__dict__.items():
-			if isinstance(v, Secret):
-				#ValueType = args[0] if (args := get_args(type(unit).__annotations__[k])) else object
-				ValueType = args[0] if (args := get_args(unit._annots[k])) else object
-				if not self.vault:
-					raise ValueError("No vault configured")
-				if not self.vault.resolve_secret(v, ValueType):
-					raise ValueError(f"Secret[{getattr(ValueType, '__name__', '<untyped>')}] {k} not found")
+		unit = Klass(
+			**self.resolve_secrets(
+				Klass,
+				init_config | kwargs | (model.secrets or {})
+			)
+		)
 				
 		if isinstance(unit, (LogicalUnit, ContextUnit)):
 
@@ -339,6 +336,36 @@ class UnitLoader:
 			return {k: self.resolve_aliases(v) for k, v in value.items()}
 		else:
 			return value
+
+
+	def resolve_secrets(self, unit_type: type[AmpelUnit], init_kwargs: dict[str, Any]) -> dict[str, Any]:
+		"""
+		Add a resolved Secret instance to init_kwargs for every Secret field of
+		unit_type.
+		"""
+		for k, annotation in unit_type._annots.items():
+			field_type = get_origin(annotation) or annotation
+			if issubclass(type(field_type), type) and issubclass(field_type, Secret):
+				default = False
+				if isinstance(kwargs := init_kwargs.get(k), Mapping):
+					v = field_type(**kwargs)
+				elif k in unit_type._defaults:
+					default = True
+					v = deepcopy(unit_type._defaults[k])
+				else:
+					# missing required field; will be caught in validation later
+					continue
+				ValueType = args[0] if (args := get_args(annotation)) else object
+				if not self.vault:
+					raise ValueError("No vault configured")
+				if not self.vault.resolve_secret(v, ValueType):
+					raise ValueError(
+						f"Could not resolve {unit_type.__name__}.{k} as {getattr(ValueType, '__name__', '<untyped>')}"
+						f" using {'default' if default else 'configured'} value {repr(v)}"
+					)
+				init_kwargs[k] = v
+
+		return init_kwargs
 
 
 	def get_resources(self, model: UnitModel) -> dict[str, Any]:
