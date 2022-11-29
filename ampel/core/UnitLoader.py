@@ -180,17 +180,22 @@ class UnitLoader:
 			check_class(Klass, unit_type)
 
 		init_config = self.get_init_config(model.config, model.override)
-		unit = Klass(**(init_config | kwargs | (model.secrets or {})))
 
-		# Resolve secrets
-		for k, v in unit.__dict__.items():
+		# Populate default fields from model
+		init_kwargs: dict[str, Any] = Klass.validate_all(
+			init_config | kwargs | (model.secrets or {})
+		)
+
+		# Resolve secrets (including defaults)
+		for k, v in init_kwargs.items():
 			if isinstance(v, Secret):
-				#ValueType = args[0] if (args := get_args(type(unit).__annotations__[k])) else object
-				ValueType = args[0] if (args := get_args(unit._annots[k])) else object
+				ValueType = args[0] if (args := get_args(Klass._annots[k])) else object
 				if not self.vault:
 					raise ValueError("No vault configured")
 				if not self.vault.resolve_secret(v, ValueType):
 					raise ValueError(f"Secret[{getattr(ValueType, '__name__', '<untyped>')}] {k} not found")
+
+		unit = Klass(**init_kwargs)
 				
 		if isinstance(unit, (LogicalUnit, ContextUnit)):
 
