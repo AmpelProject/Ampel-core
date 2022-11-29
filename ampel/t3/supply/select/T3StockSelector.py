@@ -9,12 +9,13 @@
 
 from pymongo.cursor import Cursor
 from typing import Literal, Any
-from ampel.types import ChannelId, Tag
+from ampel.types import ChannelId, Tag, Traceless
 from ampel.mongo.query.stock import build_stock_query
 from ampel.util.logicschema import to_logical_dict
 from ampel.log.utils import safe_query_dict
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
 from ampel.abstract.AbsT3Selector import AbsT3Selector
+from ampel.log.AmpelLogger import AmpelLogger
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.OneOf import OneOf
@@ -51,24 +52,21 @@ class T3StockSelector(AbsT3Selector):
 	#: Custom selection (ex: {'run': {'$gt': 10}})
 	custom: None | dict[str, Any] = None
 
+	logger: Traceless[AmpelLogger]
 
-	def __init__(self, logger: AmpelLogger, **kwargs):
+	@classmethod
+	def validate_all(cls, value: dict[str, Any]) -> dict[str, Any]:
+		
+		kwargs = dict(value)
+		if 'channel' in value:
+			kwargs['channel'] = to_logical_dict(value['channel'], 'channel')
 
-		if 'channel' in kwargs:
-			kwargs['channel'] = to_logical_dict(kwargs['channel'], 'channel')
-
-		if 'tag' in kwargs:
+		if 'tag' in value:
 			kwargs['tag'] = {
 				k: to_logical_dict(v, 'tag')
-				for k, v in kwargs['tag'].items()
+				for k, v in value['tag'].items()
 			}
-
-		if logger is None:
-			raise ValueError("Parameter logger cannot be None")
-
-		self.logger = logger
-		super().__init__(**kwargs)
-
+		return super().validate_all(kwargs)
 
 	# Override/Implement
 	def fetch(self) -> None | Cursor:
