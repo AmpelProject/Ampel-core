@@ -60,32 +60,38 @@ class ProcessMorpher:
 
 		if self.process['tier'] == 3:
 
-			directive = self.process['processor']['config']['supply']
-			if 'select' in directive:
-				select = directive['select']
-				if select['unit'] not in ('T3StockSelector', 'T3FilteringStockSelector'):
+			for block in self.process['processor']['config']['execute']:
+				if block["unit"] != "T3ReviewUnitExecutor":
 					raise ValueError(
 						f'Cannot enforce channel selection: '
-						f'unknown stock selection unit {select["unit"]}'
+						f'unknown executor {block["unit"]}'
 					)
-			else:
-				select = {'unit': 'T3StockSelector', 'config': {}}
-				directive['select'] = select
+				directive = block['config']['supply']
+				if 'select' in directive:
+					select = directive['select']
+					if select['unit'] not in ('T3StockSelector', 'T3FilteringStockSelector'):
+						raise ValueError(
+							f'Cannot enforce channel selection: '
+							f'unknown stock selection unit {select["unit"]}'
+						)
+				else:
+					select = {'unit': 'T3StockSelector', 'config': {}}
+					directive['select'] = select
 
-			if 'config' not in select:
-				select['config'] = {}
+				if 'config' not in select:
+					select['config'] = {}
 
-			if self.verbose:
-				action = 'Modifying' if 'channel' in select['config'] else 'Adding'
-				self.logger.log(VERBOSE,
-					f'{action} channel selection criteria ({chan_name}) '
-					f'for process {self.process["name"]}'
-				)
+				if self.verbose:
+					action = 'Modifying' if 'channel' in select['config'] else 'Adding'
+					self.logger.log(VERBOSE,
+						f'{action} channel selection criteria ({chan_name}) '
+						f'for process {self.process["name"]}'
+					)
 
-			# processes embedded in channel must feature a transient selection.
-			# An exception will be raised if someone embeds an admin t3 proc (without selection)
-			# within a channel (unsupported feature)
-			select['config']['channel'] = chan_name
+				# processes embedded in channel must feature a transient selection.
+				# An exception will be raised if someone embeds an admin t3 proc (without selection)
+				# within a channel (unsupported feature)
+				select['config']['channel'] = chan_name
 
 		return self
 
