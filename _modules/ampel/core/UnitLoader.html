@@ -216,17 +216,22 @@
 			<span class="n">check_class</span><span class="p">(</span><span class="n">Klass</span><span class="p">,</span> <span class="n">unit_type</span><span class="p">)</span>
 
 		<span class="n">init_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_init_config</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">override</span><span class="p">)</span>
-		<span class="n">unit</span> <span class="o">=</span> <span class="n">Klass</span><span class="p">(</span><span class="o">**</span><span class="p">(</span><span class="n">init_config</span> <span class="o">|</span> <span class="n">kwargs</span> <span class="o">|</span> <span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">secrets</span> <span class="ow">or</span> <span class="p">{})))</span>
 
-		<span class="c1"># Resolve secrets</span>
-		<span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">unit</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+		<span class="c1"># Populate default fields from model</span>
+		<span class="n">init_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">Klass</span><span class="o">.</span><span class="n">validate_all</span><span class="p">(</span>
+			<span class="n">init_config</span> <span class="o">|</span> <span class="n">kwargs</span> <span class="o">|</span> <span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">secrets</span> <span class="ow">or</span> <span class="p">{})</span>
+		<span class="p">)</span>
+
+		<span class="c1"># Resolve secrets (including defaults)</span>
+		<span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">init_kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
 			<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Secret</span><span class="p">):</span>
-				<span class="c1">#ValueType = args[0] if (args := get_args(type(unit).__annotations__[k])) else object</span>
-				<span class="n">ValueType</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="p">(</span><span class="n">args</span> <span class="o">:=</span> <span class="n">get_args</span><span class="p">(</span><span class="n">unit</span><span class="o">.</span><span class="n">_annots</span><span class="p">[</span><span class="n">k</span><span class="p">]))</span> <span class="k">else</span> <span class="nb">object</span>
+				<span class="n">ValueType</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="p">(</span><span class="n">args</span> <span class="o">:=</span> <span class="n">get_args</span><span class="p">(</span><span class="n">Klass</span><span class="o">.</span><span class="n">_annots</span><span class="p">[</span><span class="n">k</span><span class="p">]))</span> <span class="k">else</span> <span class="nb">object</span>
 				<span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">vault</span><span class="p">:</span>
 					<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No vault configured&quot;</span><span class="p">)</span>
 				<span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">vault</span><span class="o">.</span><span class="n">resolve_secret</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">ValueType</span><span class="p">):</span>
 					<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Secret[</span><span class="si">{</span><span class="nb">getattr</span><span class="p">(</span><span class="n">ValueType</span><span class="p">,</span> <span class="s1">&#39;__name__&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;untyped&gt;&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> not found&quot;</span><span class="p">)</span>
+
+		<span class="n">unit</span> <span class="o">=</span> <span class="n">Klass</span><span class="p">(</span><span class="o">**</span><span class="n">init_kwargs</span><span class="p">)</span>
 				
 		<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span> <span class="p">(</span><span class="n">LogicalUnit</span><span class="p">,</span> <span class="n">ContextUnit</span><span class="p">)):</span>
 
