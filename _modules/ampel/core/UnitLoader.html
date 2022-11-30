@@ -48,8 +48,9 @@
 <span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">from</span> <span class="nn">hashlib</span> <span class="kn">import</span> <span class="n">blake2b</span>
 <span class="kn">from</span> <span class="nn">contextlib</span> <span class="kn">import</span> <span class="n">contextmanager</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">TypeVar</span><span class="p">,</span> <span class="n">overload</span><span class="p">,</span> <span class="n">get_args</span>
-<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Iterator</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">TypeVar</span><span class="p">,</span> <span class="n">overload</span><span class="p">,</span> <span class="n">get_args</span><span class="p">,</span> <span class="n">get_origin</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Mapping</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
 
 <span class="kn">from</span> <span class="nn">ampel.types</span> <span class="kn">import</span> <span class="n">ChannelId</span><span class="p">,</span> <span class="n">check_class</span>
 <span class="kn">from</span> <span class="nn">ampel.util.collections</span> <span class="kn">import</span> <span class="n">ampel_iter</span>
@@ -216,17 +217,13 @@
 			<span class="n">check_class</span><span class="p">(</span><span class="n">Klass</span><span class="p">,</span> <span class="n">unit_type</span><span class="p">)</span>
 
 		<span class="n">init_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_init_config</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">override</span><span class="p">)</span>
-		<span class="n">unit</span> <span class="o">=</span> <span class="n">Klass</span><span class="p">(</span><span class="o">**</span><span class="p">(</span><span class="n">init_config</span> <span class="o">|</span> <span class="n">kwargs</span> <span class="o">|</span> <span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">secrets</span> <span class="ow">or</span> <span class="p">{})))</span>
 
-		<span class="c1"># Resolve secrets</span>
-		<span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">unit</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-			<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Secret</span><span class="p">):</span>
-				<span class="c1">#ValueType = args[0] if (args := get_args(type(unit).__annotations__[k])) else object</span>
-				<span class="n">ValueType</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="p">(</span><span class="n">args</span> <span class="o">:=</span> <span class="n">get_args</span><span class="p">(</span><span class="n">unit</span><span class="o">.</span><span class="n">_annots</span><span class="p">[</span><span class="n">k</span><span class="p">]))</span> <span class="k">else</span> <span class="nb">object</span>
-				<span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">vault</span><span class="p">:</span>
-					<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No vault configured&quot;</span><span class="p">)</span>
-				<span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">vault</span><span class="o">.</span><span class="n">resolve_secret</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">ValueType</span><span class="p">):</span>
-					<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Secret[</span><span class="si">{</span><span class="nb">getattr</span><span class="p">(</span><span class="n">ValueType</span><span class="p">,</span> <span class="s1">&#39;__name__&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;untyped&gt;&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> not found&quot;</span><span class="p">)</span>
+		<span class="n">unit</span> <span class="o">=</span> <span class="n">Klass</span><span class="p">(</span>
+			<span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">resolve_secrets</span><span class="p">(</span>
+				<span class="n">Klass</span><span class="p">,</span>
+				<span class="n">init_config</span> <span class="o">|</span> <span class="n">kwargs</span> <span class="o">|</span> <span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">secrets</span> <span class="ow">or</span> <span class="p">{})</span>
+			<span class="p">)</span>
+		<span class="p">)</span>
 				
 		<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span> <span class="p">(</span><span class="n">LogicalUnit</span><span class="p">,</span> <span class="n">ContextUnit</span><span class="p">)):</span>
 
@@ -375,6 +372,36 @@
 			<span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolve_aliases</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">value</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
 		<span class="k">else</span><span class="p">:</span>
 			<span class="k">return</span> <span class="n">value</span></div>
+
+
+<div class="viewcode-block" id="UnitLoader.resolve_secrets"><a class="viewcode-back" href="../../../api.html#ampel.core.UnitLoader.UnitLoader.resolve_secrets">[docs]</a>	<span class="k">def</span> <span class="nf">resolve_secrets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unit_type</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">AmpelUnit</span><span class="p">],</span> <span class="n">init_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Add a resolved Secret instance to init_kwargs for every Secret field of</span>
+<span class="sd">		unit_type.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">annotation</span> <span class="ow">in</span> <span class="n">unit_type</span><span class="o">.</span><span class="n">_annots</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+			<span class="n">field_type</span> <span class="o">=</span> <span class="n">get_origin</span><span class="p">(</span><span class="n">annotation</span><span class="p">)</span> <span class="ow">or</span> <span class="n">annotation</span>
+			<span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">field_type</span><span class="p">),</span> <span class="nb">type</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">field_type</span><span class="p">,</span> <span class="n">Secret</span><span class="p">):</span>
+				<span class="n">default</span> <span class="o">=</span> <span class="kc">False</span>
+				<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kwargs</span> <span class="o">:=</span> <span class="n">init_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">),</span> <span class="n">Mapping</span><span class="p">):</span>
+					<span class="n">v</span> <span class="o">=</span> <span class="n">field_type</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+				<span class="k">elif</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">unit_type</span><span class="o">.</span><span class="n">_defaults</span><span class="p">:</span>
+					<span class="n">default</span> <span class="o">=</span> <span class="kc">True</span>
+					<span class="n">v</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">unit_type</span><span class="o">.</span><span class="n">_defaults</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+				<span class="k">else</span><span class="p">:</span>
+					<span class="c1"># missing required field; will be caught in validation later</span>
+					<span class="k">continue</span>
+				<span class="n">ValueType</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="p">(</span><span class="n">args</span> <span class="o">:=</span> <span class="n">get_args</span><span class="p">(</span><span class="n">annotation</span><span class="p">))</span> <span class="k">else</span> <span class="nb">object</span>
+				<span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">vault</span><span class="p">:</span>
+					<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No vault configured&quot;</span><span class="p">)</span>
+				<span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">vault</span><span class="o">.</span><span class="n">resolve_secret</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">ValueType</span><span class="p">):</span>
+					<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+						<span class="sa">f</span><span class="s2">&quot;Could not resolve </span><span class="si">{</span><span class="n">unit_type</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> as </span><span class="si">{</span><span class="nb">getattr</span><span class="p">(</span><span class="n">ValueType</span><span class="p">,</span> <span class="s1">&#39;__name__&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;untyped&gt;&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+						<span class="sa">f</span><span class="s2">&quot; using </span><span class="si">{</span><span class="s1">&#39;default&#39;</span> <span class="k">if</span> <span class="n">default</span> <span class="k">else</span> <span class="s1">&#39;configured&#39;</span><span class="si">}</span><span class="s2"> value </span><span class="si">{</span><span class="nb">repr</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+					<span class="p">)</span>
+				<span class="n">init_kwargs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+
+		<span class="k">return</span> <span class="n">init_kwargs</span></div>
 
 
 <div class="viewcode-block" id="UnitLoader.get_resources"><a class="viewcode-back" href="../../../api.html#ampel.core.UnitLoader.UnitLoader.get_resources">[docs]</a>	<span class="k">def</span> <span class="nf">get_resources</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">UnitModel</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>

@@ -361,6 +361,18 @@ This allows to retrieve the corresponding fully qualified name of the class and 
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="ampel.core.UnitLoader.UnitLoader.resolve_secrets">
+<span class="sig-name descname"><span class="pre">resolve_secrets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">unit_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/core/UnitLoader.html#UnitLoader.resolve_secrets"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.UnitLoader.UnitLoader.resolve_secrets" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a resolved Secret instance to init_kwargs for every Secret field of
+unit_type.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.11)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="ampel.core.UnitLoader.UnitLoader.get_resources">
 <span class="sig-name descname"><span class="pre">get_resources</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/core/UnitLoader.html#UnitLoader.get_resources"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.UnitLoader.UnitLoader.get_resources" title="Permalink to this definition">¶</a></dt>
 <dd><p>Resources are defined using the static variable ‘require’ in ampel units
