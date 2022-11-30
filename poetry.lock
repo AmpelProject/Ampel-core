@@ -8,7 +8,7 @@ python-versions = "*"
 
 [[package]]
 name = "ampel-interface"
-version = "0.8.3b8"
+version = "0.8.3b9"
 description = "Base classes for the Ampel analysis platform"
 category = "main"
 optional = false
@@ -931,7 +931,7 @@ slack = ["slack-sdk"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.10,<3.11"
-content-hash = "911c6ee659c97430df002e963760aea764ccfb56cc250ea6e315a23b47e019a0"
+content-hash = "a9f500646c4e3b7b2bf8e373ca38c2078ca629722e64140d2a23d513b47574b9"
 
 [metadata.files]
 alabaster = [
@@ -939,8 +939,8 @@ alabaster = [
     {file = "alabaster-0.7.12.tar.gz", hash = "sha256:a661d72d58e6ea8a57f7a86e37d86716863ee5e92788398526d58b26a4e4dc02"},
 ]
 ampel-interface = [
-    {file = "ampel_interface-0.8.3b8-py3-none-any.whl", hash = "sha256:f7d9c2d42e98da4302bee52ea5c1403a37792e97a6f3eb272e2c2d7c76f90743"},
-    {file = "ampel_interface-0.8.3b8.tar.gz", hash = "sha256:929c8ea5136176e64954a7529ed5209e29a6993f1997d7eee7347055f56af0b5"},
+    {file = "ampel_interface-0.8.3b9-py3-none-any.whl", hash = "sha256:db6ef448b184c7da7ecd0c56903c7f24cab74fbafdade77102dd2825d4efe762"},
+    {file = "ampel_interface-0.8.3b9.tar.gz", hash = "sha256:0f7b2c8987385f1d2f3f369b26a25498249d8ab99b218aa21bc5ef8390175b29"},
 ]
 anyio = [
     {file = "anyio-3.6.2-py3-none-any.whl", hash = "sha256:fbbe32bd270d2a2ef3ed1c5d45041250284e31fc0a4df4a5a6071842051a51e3"},
