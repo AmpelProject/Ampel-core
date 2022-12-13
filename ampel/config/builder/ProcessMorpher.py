@@ -66,7 +66,7 @@ class ProcessMorpher:
 						f'Cannot enforce channel selection: '
 						f'unknown executor {block["unit"]}'
 					)
-				directive = block['config']['supply']
+				directive = block['config']['supply']['config']
 				if 'select' in directive:
 					select = directive['select']
 					if select['unit'] not in ('T3StockSelector', 'T3FilteringStockSelector'):
