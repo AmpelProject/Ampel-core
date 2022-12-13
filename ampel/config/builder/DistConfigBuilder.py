@@ -26,7 +26,8 @@ class DistConfigBuilder(ConfigBuilder):
 	def load_distributions(self,
 		prefixes: list[str] = ["pyampel-", "ampel-"],
 		conf_dirs: list[str] = ["conf"],
-		exts: list[str] = ["json", "yaml", "yml"]
+		exts: list[str] = ["json", "yaml", "yml"],
+		raise_exc: bool = True,
 	) -> None:
 		"""
 		:param prefixes: loads all known conf files from all distributions with name starting with prefixes
@@ -47,7 +48,7 @@ class DistConfigBuilder(ConfigBuilder):
 
 			for conf_dir in conf_dirs:
 				for ext in exts:
-					self.load_distrib(dist_name, conf_dir, ext)
+					self.load_distrib(dist_name, conf_dir, ext, raise_exc=raise_exc)
 
 			if self.verbose:
 				self.logger.log(VERBOSE, f"Done checking distribution '{dist_name}'")
@@ -56,7 +57,7 @@ class DistConfigBuilder(ConfigBuilder):
 			self.logger.log(VERBOSE, "Done loading distributions")
 
 
-	def load_distrib(self, dist_name: str, conf_dir: str = "conf", ext: str = "json") -> None:
+	def load_distrib(self, dist_name: str, conf_dir: str = "conf", ext: str = "json", raise_exc: bool = True) -> None:
 		"""
 		Loads all known conf files of the provided distribution (name)
 		"""
@@ -71,7 +72,7 @@ class DistConfigBuilder(ConfigBuilder):
 					self.logger.log(VERBOSE, el)
 
 			if ampel_conf := self.get_conf_file(all_conf_files, f"ampel.{ext}"):
-				self.load_conf_using_func(distrib, ampel_conf, self.load_ampel_conf) # type: ignore
+				self.load_conf_using_func(distrib, ampel_conf, self.load_ampel_conf, raise_exc=raise_exc) # type: ignore
 
 			# Channel, mongo (and template) can be defined by multiple files
 			# in a directory named after the corresponding config section name
@@ -106,6 +107,8 @@ class DistConfigBuilder(ConfigBuilder):
 				self.logger.info(f"Unprocessed conf files: {all_conf_files}")
 
 		except Exception as e:
+			if raise_exc:
+				raise
 			self.error = True
 			self.logger.error(
 				f"Error occured while loading configuration files from the distribution '{dist_name}'",
@@ -133,7 +136,8 @@ class DistConfigBuilder(ConfigBuilder):
 	def load_conf_using_func(self,
 		distrib: EggInfoDistribution | DistInfoDistribution,
 		file_rel_path: str,
-		func: Callable[[dict[str, Any], str, str, str], None]
+		func: Callable[[dict[str, Any], str, str, str], None],
+		raise_exc: bool = True,
 	) -> None:
 
 		try:
@@ -162,12 +166,16 @@ class DistConfigBuilder(ConfigBuilder):
 			)
 
 		except FileNotFoundError:
+			if raise_exc:
+				raise
 			self.error = True
 			self.logger.error(
 				f"File '{file_rel_path}' not found in distribution '{distrib.project_name}'"
 			)
 
 		except Exception as e:
+			if raise_exc:
+				raise
 			self.error = True
 			self.logger.error(
 				f"Error occured loading '{file_rel_path}' from distribution '{distrib.project_name}'",

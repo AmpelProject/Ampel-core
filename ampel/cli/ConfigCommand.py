@@ -233,7 +233,10 @@ class ConfigCommand(AbsCoreCommand):
 				logger = logger,
 			)
 
-			cb.load_distributions(prefixes=args['distributions'])
+			cb.load_distributions(
+				prefixes=args['distributions'],
+				raise_exc=args['stop_on_errors'] != 0,
+			)
 			cb.build_config(
 				stop_on_errors = args['stop_on_errors'],
 				skip_default_processes=True,
