@@ -369,8 +369,8 @@ class T2Worker(AbsWorker[T2Document]):
 
 							if logger.verbose > 1:
 								logger.debug(
-									f"link_override resulting matching criteria: {d['link']}",
-									extra={'unit': t2_doc['unit'], 'stock': t2_doc['stock']}
+									f"link_override result: {d['link']}",
+									extra={'recipient': t2_doc['unit'], 'stock': t2_doc['stock']}
 								)
 						else:
 							d['link'] = maybe_match_array(t1_dps_ids)
