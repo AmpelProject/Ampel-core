@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File:                Ampel-core/ampel/logging/LightLogRecord.py
+# File:                Ampel-core/ampel/log/LightLogRecord.py
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                22.04.2020
-# Last Modified Date:  22.04.2020
+# Last Modified Date:  15.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
@@ -28,6 +28,7 @@ class LightLogRecord:
 	channel: None | ChannelId | list[ChannelId]
 	stock: None | StockId
 	extra: None | dict[str, Any]
+	unit: None | str
 
 	def __init__(self,
 		name: int | str,
