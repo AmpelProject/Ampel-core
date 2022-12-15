@@ -394,6 +394,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 			# Create channel (buffering) logger
 			buf_hdlr = DefaultRecordBufferingHandler(level=logger.level)
+			buf_hdlr._unit = doc['unit']
 			buf_logger = AmpelLogger.get_logger(
 				name = k,
 				base_flag = (getattr(logger, 'base_flag', 0) & ~LogFlag.CORE) | LogFlag.UNIT,
