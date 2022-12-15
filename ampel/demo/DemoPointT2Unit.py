@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                25.03.2020
-# Last Modified Date:  11.09.2021
+# Last Modified Date:  15.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
@@ -18,6 +18,7 @@ from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 class DemoPointT2Unit(AbsPointT2Unit):
 
 	test_parameter: int = 1
+	chatty: bool = False
 
 	def process(self, datapoint: DataPoint) -> UBson | UnitResult:
 
@@ -26,6 +27,9 @@ class DemoPointT2Unit(AbsPointT2Unit):
 			"time": time(),
 			"test_parameter": self.test_parameter
 		}
+
+		if self.chatty:
+			self.logger.info(f"Parsing datapoint {datapoint['id']} (test_parameter={self.test_parameter})")
 
 		if randint(0, 1) > 0.5:
 			return ret
