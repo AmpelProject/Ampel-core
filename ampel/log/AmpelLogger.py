@@ -236,10 +236,12 @@ class AmpelLogger:
 
 		if extra:
 			extra = dict(extra)
-			if (stock := extra.pop("stock", None)) is not None:
+			if (stock := extra.pop("stock", None)):
 				record.stock = stock
-			if (channel := (extra.pop("channel", None) or self.channel)) is not None:
+			if (channel := (extra.pop("channel", None) or self.channel)):
 				record.channel = channel
+			if (unit := (extra.pop("unit", None))):
+				record.unit = unit
 			record.extra = extra
 
 		if exc_info:
