@@ -7,7 +7,6 @@
 # Last Modified Date:  09.05.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Union
 from logging import LogRecord, WARNING
 from ampel.log.LightLogRecord import LightLogRecord
 
