@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                28.05.2021
-# Last Modified Date:  04.08.2022
+# Last Modified Date:  15.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import gc, signal
@@ -204,7 +204,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 			if doc is None:
 				break
 			elif logger.verbose > 1:
-				logger.debug(f'T{self.tier} doc to process: {doc}')
+				logger.debug(f'T{self.tier} doc to process', extra={'doc': doc})
 
 			self.process_doc(doc, stock_updr, logger)
 
@@ -282,12 +282,13 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		"""
 
 		if logger.verbose:
-			logger.log(VERBOSE, f'Saving T{self.tier} unit result')
 			if logger.verbose > 1:
 				if body is None:
-					logger.log(DEBUG, "No body returned")
+					logger.log(DEBUG, "T2 unit returned no body")
 				else:
-					logger.log(DEBUG, None, extra={"body": body})
+					logger.log(DEBUG, f'Saving T{self.tier} unit result', extra={"body": body})
+			else:
+				logger.log(VERBOSE, f'Saving T{self.tier} unit result')
 
 		upd: JDict = {
 			'$set': {'code': code},
@@ -402,7 +403,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 			# Instantiate unit
 			unit_instance = self._loader.new_logical_unit(
-				model = UnitModel(unit = doc['unit'], config = doc['config']),
+				model = UnitModel(unit=doc['unit'], config=doc['config']),
 				logger = buf_logger
 			)
 
