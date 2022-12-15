@@ -299,6 +299,17 @@ async def reload_config() -> TaskDescriptionCollection:
     return await get_tasks()
 
 
+@app.get("/config/{rest_of_path:path}")
+async def get_config(rest_of_path: str):
+    key_path = [k for k in rest_of_path.split("/") if k]
+    try:
+        return context.config.get(key_path, raise_exc=True)
+    except ValueError:
+        raise HTTPException(
+            status_code=404, detail={"msg": "config key not found", "loc": key_path}
+        )
+
+
 # -------------------------------------
 # Metrics
 # -------------------------------------

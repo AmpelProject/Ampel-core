@@ -8,6 +8,8 @@
 # Last Modified By:    jvs
 
 import asyncio, pytest, yaml
+import json
+from ampel.core.AmpelContext import AmpelContext
 from datetime import datetime
 from io import StringIO
 from httpx import AsyncClient
@@ -39,6 +41,22 @@ async def test_client(dev_context, monkeypatch):
 async def test_metrics(test_client):
     response = await test_client.get("/metrics")
     assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_get_config(dev_context: AmpelContext, test_client: AsyncClient):
+    response = await test_client.get("/config/")
+    assert response.status_code == 200
+    assert response.json() == json.loads(json.dumps(dev_context.config.get()))
+
+    response = await test_client.get("/config/unit/DemoReviewT3Unit/")
+    assert response.status_code == 200
+    assert response.json() == json.loads(
+        json.dumps(dev_context.config.get(["unit", "DemoReviewT3Unit"]))
+    )
+
+    response = await test_client.get("/config/unit/DemoReviewT3Unit/0")
+    assert response.status_code == 404
 
 
 @pytest.fixture
