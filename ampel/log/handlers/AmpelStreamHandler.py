@@ -166,6 +166,9 @@ class AmpelStreamHandler:
 		if record.channel:
 			suffix.append(f'c={try_reduce(record.channel)}')
 
+		if getattr(record, 'unit', None):
+			suffix.append(f'u={record.unit}')
+
 		if suffix:
 			out += f' [{", ".join(suffix)}]'
 

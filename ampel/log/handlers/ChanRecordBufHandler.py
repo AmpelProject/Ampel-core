@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File:                Ampel-core/ampel/logging/handlers/ChanRecordBufHandler.py
+# File:                Ampel-core/ampel/log/handlers/ChanRecordBufHandler.py
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                01.05.2020
-# Last Modified Date:  05.05.2020
+# Last Modified Date:  15.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
@@ -26,11 +26,16 @@ class ChanRecordBufHandler(RecordBufferingHandler):
 	(that save the information into a binary formatted file for instance)
 	"""
 
-	__slots__ = '_channel', '_extra'
+	__slots__ = '_channel', '_unit', '_extra'
 
-	def __init__(self, level: int, channel: ChannelId, extra: None | dict[str, Any] = None) -> None:
+	def __init__(self,
+		level: int, channel: ChannelId,
+		extra: None | dict[str, Any] = None,
+		unit: None | str = None
+	) -> None:
 		super().__init__(level)
 		self._channel = channel
+		self._unit = unit
 		self._extra = extra
 
 
@@ -64,6 +69,9 @@ class ChanRecordBufHandler(RecordBufferingHandler):
 						rec.extra |= self._extra # type: ignore[union-attr]
 					else:
 						rec.extra = self._extra # type: ignore[union-attr]
+
+				if self._unit:
+					setattr(rec, 'unit', self._unit)
 
 				target.handle(rec) # type: ignore
 

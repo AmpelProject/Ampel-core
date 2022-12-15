@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File:                Ampel-core/ampel/logging/handlers/DefaultRecordBufferingHandler.py
+# File:                Ampel-core/ampel/log/handlers/DefaultRecordBufferingHandler.py
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                05.05.2020
-# Last Modified Date:  05.05.2020
+# Last Modified Date:  15.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
@@ -18,12 +18,13 @@ class DefaultRecordBufferingHandler(RecordBufferingHandler):
 	MemoryHandler-like class that can grown infinitely and features a convenience method called 'forward'
 	"""
 
-	__slots__ = '_extra',
+	__slots__ = '_extra', '_unit'
 
 
-	def __init__(self, level: int, extra: None | dict[str, Any] = None) -> None:
+	def __init__(self, level: int, extra: None | dict[str, Any] = None, unit: None | str = None) -> None:
 		super().__init__(level)
 		self._extra = extra or {}
+		self._unit = unit
 
 
 	def forward(self,
@@ -43,10 +44,10 @@ class DefaultRecordBufferingHandler(RecordBufferingHandler):
 				continue
 
 			if channel:
-				rec.channel = channel # type: ignore[union-attr]
+				setattr(rec, 'channel', channel)
 
 			if stock:
-				rec.stock = stock # type: ignore[union-attr]
+				setattr(rec, 'stock', stock)
 
 			if extra:
 				if hasattr(rec, 'extra') and rec.extra: # type: ignore[union-attr]
@@ -59,6 +60,9 @@ class DefaultRecordBufferingHandler(RecordBufferingHandler):
 					rec.extra |= self._extra # type: ignore[union-attr]
 				else:
 					rec.extra = self._extra # type: ignore[union-attr]
+
+			if self._unit:
+				setattr(rec, 'unit', self._unit)
 
 			target.handle(rec) # type: ignore
 
