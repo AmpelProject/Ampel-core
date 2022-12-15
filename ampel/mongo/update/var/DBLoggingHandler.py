@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                14.12.2017
-# Last Modified Date:  29.03.2021
+# Last Modified Date:  15.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import struct, socket
@@ -58,9 +58,10 @@ class DBLoggingHandler(AmpelUnit):
 	level: int
 	col_name: str = "log"
 	aggregate_interval: float = 1.
-	expand_extra: bool = True
+	expand_extra: bool = False # Whether extra keys should be moved as root LogDocument keys
 	flush_len: int = 1000
 	auto_flush: bool = False
+	log_provenance: bool = True
 
 
 	def __init__(self, ampel_db: 'AmpelDB', run_id: int, **kwargs) -> None:
@@ -143,10 +144,10 @@ class DBLoggingHandler(AmpelUnit):
 					ObjectId._inc = (ObjectId._inc + 1) % 0xFFFFFF # limit result to 32bits
 
 				if 'extra' in rd:
+					for k in ('_id', 'r', 'f'):
+						if k in rd['extra']:
+							del rd['extra'][k]
 					if self.expand_extra:
-						for k in ('_id', 'r', 'f'):
-							if k in rd['extra']:
-								del rd['extra'][k]
 						ldict = {
 							'_id': ObjectId(oid=oid),
 							'r': self.run_id,
@@ -173,9 +174,11 @@ class DBLoggingHandler(AmpelUnit):
 				if 'channel' in rd:
 					ldict['c'] = try_reduce(rd['channel'])
 
-				if record.levelno > self.warn_lvl:
-					ldict['file'] = record.filename
-					ldict['line'] = record.lineno
+				if record.filename and (record.levelno > self.warn_lvl or self.log_provenance):
+					ldict['p'] = [record.filename.replace('.py', ''), record.lineno]
+
+				if getattr(record, 'unit'):
+					ldict['u'] = record.unit # type: ignore[union-attr]
 
 				if record.msg:
 					ldict['m'] = record.msg
