@@ -13,7 +13,7 @@ from ampel.types import ChannelId
 from ampel.base.decorator import abstractmethod
 from ampel.mongo.view.AbsMongoView import AbsMongoView
 
-
+# mypy: disable-error-code = empty-body
 class AbsMongoFlatMultiView(AbsMongoView, abstract=True):
 	"""
 	Handles flat AND or OR connected type of channel-based views (any number of)

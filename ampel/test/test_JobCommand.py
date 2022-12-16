@@ -22,13 +22,13 @@ def argv_context(args: list[str]):
         sys.argv = argv
 
 
-def run(args: list[str]) -> Optional[int]:
+def run(args: list[str]) -> None | int | str:
     try:
         with argv_context(args):
             main()
         return None
-    except SystemExit as exit:
-        return exit.code
+    except SystemExit as se:
+        return se.code
 
 
 def dump(payload, tmpdir, name) -> Path:
@@ -89,8 +89,7 @@ def test_secrets(testing_config, vault: Path, schema: Path, mock_new_context_uni
                 "--schema",
                 str(schema),
             ]
-        )
-        == None
+        ) is None
     )
     assert mock_new_context_unit.call_count == 1
     loader_vault: Optional[AmpelVault] = mock_new_context_unit.call_args.kwargs[
@@ -123,8 +122,7 @@ def test_resources_from_env(
                 "--schema",
                 str(schema),
             ]
-        )
-        == None
+        ) is None
     )
     config: AmpelConfig = mock_new_context_unit.call_args.kwargs["context"].config
     assert config.get("resource.mongo") == "flerp"
@@ -189,8 +187,7 @@ def test_parameter_interpolation(
                 "--schema",
                 str(schema),
             ]
-        )
-        == None
+        ) is None
     )
 
 
@@ -235,8 +232,7 @@ def test_expand_with(
                 "--schema",
                 str(schema),
             ]
-        )
-        == None
+        ) is None
     )
 
 
@@ -302,8 +298,7 @@ def test_input_artifacts(
                 "--schema",
                 str(schema),
             ]
-        )
-        == None
+        ) is None
     )
 
 
@@ -369,8 +364,7 @@ def test_template_resolution(
                 "--schema",
                 str(schema),
             ]
-        )
-        == None
+        ) is None
     )
 
     update_one = mock_db().update_one

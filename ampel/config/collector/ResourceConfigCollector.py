@@ -8,13 +8,13 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
-from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
+from ampel.log.AmpelLogger import VERBOSE
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 
 
 class ResourceConfigCollector(AbsDictConfigCollector):
 
-	def __init__(self, **kwargs):
+	def __init__(self, **kwargs) -> None:
 
 		super().__init__(**kwargs)
 

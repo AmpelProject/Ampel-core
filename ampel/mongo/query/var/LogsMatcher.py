@@ -33,7 +33,7 @@ class LogsMatcher:
 		run: None | int | Sequence[int] = None,
 		custom: None | dict[str, Any] = None,
 		id_mapper: None | AbsIdMapper = None,
-		flag: int = None,
+		flag: None | int = None,
 		**kwargs # ignored, added for cli convenience
 	) -> "LogsMatcher":
 
@@ -69,9 +69,9 @@ class LogsMatcher:
 		return matcher
 
 
-	def __init__(self):
+	def __init__(self) -> None:
 		self.mcrit: dict[str, Any] = {}
-		self.id_mapper = None
+		self.id_mapper: None | AbsIdMapper = None
 
 
 	def get_match_criteria(self) -> dict[str, Any]:
@@ -122,7 +122,7 @@ class LogsMatcher:
 			)
 		):
 			self.mcrit['s'] = self.id_mapper.to_ampel_id(stock_id) \
-				if isinstance(stock_id, str) else {'$in': self.id_mapper.to_ampel_id(stock_id)}
+				if isinstance(stock_id, str) else {'$in': self.id_mapper.to_ampel_id(stock_id)} # type: ignore
 		else:
 			self.mcrit['s'] = stock_id if isinstance(stock_id, get_args(StockId)) else {'$in': stock_id}
 		return self

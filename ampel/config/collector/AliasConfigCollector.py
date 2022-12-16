@@ -18,7 +18,7 @@ class AliasConfigCollector(AbsDictConfigCollector):
 	at the (package) distribution level as well
 	"""
 
-	def __init__(self, **kwargs):
+	def __init__(self, **kwargs) -> None:
 		super().__init__(**kwargs)
 		self.global_alias: dict[str, Any] = {}
 

@@ -250,7 +250,7 @@ class T2Command(AbsCoreCommand):
 		if human_times:
 			for el in doc['meta']:
 				if 'ts' in el:
-					el['ts'] = datetime.utcfromtimestamp(el['ts']).isoformat() # type: ignore
+					el['ts'] = datetime.utcfromtimestamp(el['ts']).isoformat() # type: ignore[typeddict-item]
 
 		if id_mapper:
 			doc['stock'] = id_mapper.to_ext_id(doc['stock']) # type: ignore[arg-type]

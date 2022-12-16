@@ -1,7 +1,6 @@
 from contextlib import nullcontext
 import io, pytest, yaml, subprocess, tempfile, os
 from pathlib import Path
-from argparse import Namespace
 
 from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.base.BadConfig import BadConfig
@@ -50,9 +49,9 @@ def test_ConfigChecker(testing_config, monkeypatch):
 
     class SideEffectLadenProcessor(AbsEventUnit):
 
-        required: int
+        required: int # type: ignore[annotation-unchecked]
 
-        def __init__(self, **kwargs):
+        def __init__(self, **kwargs) -> None:
             super().__init__(**kwargs)
             raise SideEffect
 
@@ -110,8 +109,7 @@ def test_transform_config(doc, tmpdir):
                 "--filter",
                 ".",
             ]
-        )
-        == None
+        ) is None
     )
     transformed_doc = yaml.safe_load(outfile.open())
     assert transformed_doc == doc

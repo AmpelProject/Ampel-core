@@ -84,7 +84,7 @@ def report_exception(
 	logger: AmpelLogger,
 	exc: None | Exception = None,
 	process: None | str = None,
-	info: JDict = None
+	info: None | JDict = None
 ) -> None:
 	"""
 	:param tier: Ampel tier level (0, 1, 2, 3)

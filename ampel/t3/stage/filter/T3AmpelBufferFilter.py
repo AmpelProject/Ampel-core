@@ -17,7 +17,7 @@ from ampel.model.operator.OneOf import OneOf
 from ampel.struct.AmpelBuffer import AmpelBuffer, BufferKey
 from ampel.model.UnitModel import UnitModel
 from ampel.base.AmpelBaseModel import AmpelBaseModel
-from ampel.core.UnitLoader import UnitLoader
+from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.abstract.AbsT3Filter import AbsT3Filter
 from ampel.aux.filter.AbsLogicOperatorFilter import AbsLogicOperatorFilter
@@ -49,7 +49,7 @@ class T3AmpelBufferFilter(AbsT3Filter):
 	filters: Sequence[FilterModel] = []
 	channel: None | ChannelId | AllOf[ChannelId] | AnyOf[ChannelId] | OneOf[ChannelId] = None
 
-	def __init__(self, **kwargs):
+	def __init__(self, **kwargs) -> None:
 
 		# Kulanz
 		if 'filters' in kwargs and not isinstance(kwargs['filters'], collections.abc.Sequence):
@@ -63,7 +63,7 @@ class T3AmpelBufferFilter(AbsT3Filter):
 			self.filter_blocks.append(
 				FilterBlock(
 					data = f.data,
-					filter = UnitLoader.new_aux_unit(f.filter),
+					filter = AuxUnitRegister.new_unit(f.filter),
 					include = f.on_match == "include"
 				)
 			)

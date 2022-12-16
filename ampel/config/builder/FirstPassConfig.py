@@ -39,7 +39,7 @@ class FirstPassConfig(dict):
 		"resource": ResourceConfigCollector,
 	}
 
-	def __init__(self, options: DisplayOptions, logger: AmpelLogger = None) -> None:
+	def __init__(self, options: DisplayOptions, logger: None | AmpelLogger = None) -> None:
 
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
 

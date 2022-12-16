@@ -39,7 +39,7 @@ class ConfigBuilder:
 
 	_default_processes = ["DefaultT2Process", "DefaultPurge"]
 
-	def __init__(self, options: DisplayOptions, logger: AmpelLogger = None) -> None:
+	def __init__(self, options: DisplayOptions, logger: None | AmpelLogger = None) -> None:
 
 		self.logger = AmpelLogger.get_logger(
 			console={'level': DEBUG if options.verbose else ERROR}
