@@ -93,7 +93,7 @@ class MongoStockDeleter(AbsOpsUnit):
 
         def delete(k):
             result = self._collections[k].delete_many(doc_match, session=session)
-            self.logger.info(
+            self.logger.debug(
                 None,
                 extra={
                     "col": k,
@@ -111,7 +111,7 @@ class MongoStockDeleter(AbsOpsUnit):
         if self.dry_run:
             session.abort_transaction()
 
-        self.logger.info("Commit")
+        self.logger.debug("Commit")
 
         return deleted
 
@@ -129,14 +129,14 @@ class MongoStockDeleter(AbsOpsUnit):
                     .limit(1)
                 )
             except StopIteration:
-                return
+                return None
             now = datetime.fromtimestamp(latest_stock["ts"]["any"]["tied"])
             self.logger.info(f"Last stock inserted {now} ({now.timestamp():.0f})")
 
-        # TODO: specify conditions for stocks to keep (e.g. per channel), and then $not: $or them
+        # TODO: specify conditions for stocks to delete (e.g. per channel), and then $and them
         stock_match = self.delete.get_query(self.context.db, now)
 
-        if self.logger.verbose or True:
+        if self.logger.verbose:
             self.logger.info(
                 f"Purging {self._collections['stock'].count_documents(stock_match)} of {self._collections['stock'].estimated_document_count()} stocks",
                 extra=safe_query_dict(stock_match),
@@ -148,22 +148,20 @@ class MongoStockDeleter(AbsOpsUnit):
 
         with self._collections["stock"].database.client.start_session() as session:
             deleted_stocks = 0
-            for i, docs in enumerate(
-                get_chunks(
-                    self._collections["stock"]
-                    .with_options(
-                        read_concern=ReadConcern(level="local"),
-                        read_preference=ReadPreference.SECONDARY_PREFERRED,
-                    )
-                    .find(
-                        stock_match,
-                        {"stock": 1},
-                        session=session,
-                    ),
-                    self.chunk_size,
+            for docs in get_chunks(
+                self._collections["stock"]
+                .with_options(
+                    read_concern=ReadConcern(level="local"),
+                    read_preference=ReadPreference.SECONDARY_PREFERRED,
                 )
+                .find(
+                    stock_match,
+                    {"stock": 1},
+                    session=session,
+                ),
+                self.chunk_size,
             ):
-                self.logger.info(f"Purging chunk")
+                self.logger.debug(f"Purging chunk")
                 deleted_in_chunk = session.with_transaction(
                     partial(
                         self._purge_chunk, stock_ids=[doc["stock"] for doc in docs]
@@ -174,3 +172,5 @@ class MongoStockDeleter(AbsOpsUnit):
                     deleted[k] += v
                 deleted_stocks += len(docs)
                 self.logger.info(f"Purged {deleted_stocks} stocks", extra=deleted)
+
+        return None
