@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ampel.model.time.TimeLastRunModel &#8212; ampel-core 0.8.3b11 documentation</title>
+    <title>ampel.model.time.TimeLastRunModel &#8212; ampel-core 0.8.3b12 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/sphinxdoc.css" />
     <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
@@ -22,7 +22,7 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li class="nav-item nav-item-0"><a href="../../../../index.html">ampel-core 0.8.3b11 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">ampel-core 0.8.3b12 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../../index.html" accesskey="U">Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">ampel.model.time.TimeLastRunModel</a></li> 
       </ul>
@@ -59,22 +59,23 @@
 
 
 <div class="viewcode-block" id="TimeLastRunModel.get_timestamp"><a class="viewcode-back" href="../../../../api.html#ampel.model.time.TimeLastRunModel.TimeLastRunModel.get_timestamp">[docs]</a>	<span class="k">def</span> <span class="nf">get_timestamp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">float</span><span class="p">:</span>
-		<span class="k">if</span> <span class="n">ts</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_query_events_col</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;db&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="p">):</span>
+		<span class="n">now</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;now&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">datetime</span><span class="o">.</span><span class="n">today</span><span class="p">()</span>
+		<span class="k">if</span> <span class="n">ts</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_query_events_col</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;db&#39;</span><span class="p">],</span> <span class="n">now</span><span class="p">,</span> <span class="bp">self</span><span class="p">):</span>
 			<span class="k">return</span> <span class="n">ts</span>
 		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fallback</span><span class="p">:</span>
-			<span class="k">return</span> <span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">today</span><span class="p">()</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">fallback</span><span class="p">))</span><span class="o">.</span><span class="n">timestamp</span><span class="p">()</span>
+			<span class="k">return</span> <span class="p">(</span><span class="n">now</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">fallback</span><span class="p">))</span><span class="o">.</span><span class="n">timestamp</span><span class="p">()</span>
 		<span class="k">return</span> <span class="kc">None</span></div>
 
 
 	<span class="nd">@staticmethod</span>
-	<span class="k">def</span> <span class="nf">_query_events_col</span><span class="p">(</span><span class="n">ampel_db</span><span class="p">:</span> <span class="n">AmpelDB</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="s1">&#39;TimeLastRunModel&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">float</span><span class="p">:</span>
+	<span class="k">def</span> <span class="nf">_query_events_col</span><span class="p">(</span><span class="n">ampel_db</span><span class="p">:</span> <span class="n">AmpelDB</span><span class="p">,</span> <span class="n">now</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="s1">&#39;TimeLastRunModel&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">float</span><span class="p">:</span>
 
 		<span class="n">col</span> <span class="o">=</span> <span class="n">ampel_db</span><span class="o">.</span><span class="n">get_collection</span><span class="p">(</span><span class="s1">&#39;event&#39;</span><span class="p">)</span>
 
 		<span class="c1"># First query the last 10 days</span>
 		<span class="n">res</span> <span class="o">=</span> <span class="n">get_last_run</span><span class="p">(</span>
 			<span class="n">col</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">process_name</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">require_success</span><span class="p">,</span>
-			<span class="n">gte_time</span><span class="o">=</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">today</span><span class="p">()</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">10</span><span class="p">))</span><span class="o">.</span><span class="n">timestamp</span><span class="p">(),</span>
+			<span class="n">gte_time</span><span class="o">=</span><span class="p">(</span><span class="n">now</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">10</span><span class="p">))</span><span class="o">.</span><span class="n">timestamp</span><span class="p">(),</span>
 			<span class="n">timestamp</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 		<span class="p">)</span>
 
@@ -116,7 +117,7 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../../genindex.html" title="General Index"
              >index</a></li>
-        <li class="nav-item nav-item-0"><a href="../../../../index.html">ampel-core 0.8.3b11 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">ampel-core 0.8.3b12 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">ampel.model.time.TimeLastRunModel</a></li> 
       </ul>

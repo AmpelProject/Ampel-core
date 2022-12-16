@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ampel.model.time.TimeDeltaModel &#8212; ampel-core 0.8.3b11 documentation</title>
+    <title>ampel.model.time.TimeDeltaModel &#8212; ampel-core 0.8.3b12 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/sphinxdoc.css" />
     <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
@@ -22,7 +22,7 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li class="nav-item nav-item-0"><a href="../../../../index.html">ampel-core 0.8.3b11 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">ampel-core 0.8.3b12 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../../index.html" accesskey="U">Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">ampel.model.time.TimeDeltaModel</a></li> 
       </ul>
@@ -61,7 +61,7 @@
 
 <div class="viewcode-block" id="TimeDeltaModel.get_timestamp"><a class="viewcode-back" href="../../../../api.html#ampel.model.time.TimeDeltaModel.TimeDeltaModel.get_timestamp">[docs]</a>	<span class="k">def</span> <span class="nf">get_timestamp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 
-		<span class="n">dt</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">today</span><span class="p">()</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span>
+		<span class="n">dt</span> <span class="o">=</span> <span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;now&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">datetime</span><span class="o">.</span><span class="n">today</span><span class="p">())</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span>
 			<span class="n">days</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">days</span><span class="p">,</span> <span class="n">seconds</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">seconds</span><span class="p">,</span> <span class="n">microseconds</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">microseconds</span><span class="p">,</span>
 			<span class="n">milliseconds</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">milliseconds</span><span class="p">,</span> <span class="n">minutes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">minutes</span><span class="p">,</span>
 			<span class="n">hours</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hours</span><span class="p">,</span> <span class="n">weeks</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">weeks</span>
@@ -99,7 +99,7 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../../genindex.html" title="General Index"
              >index</a></li>
-        <li class="nav-item nav-item-0"><a href="../../../../index.html">ampel-core 0.8.3b11 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">ampel-core 0.8.3b12 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">ampel.model.time.TimeDeltaModel</a></li> 
       </ul>
