@@ -25,7 +25,7 @@ class TimeDeltaModel(AmpelBaseModel):
 
 	def get_timestamp(self, **kwargs) -> float:
 
-		dt = datetime.today() + timedelta(
+		dt = (kwargs.get('now') or datetime.today()) + timedelta(
 			days=self.days, seconds=self.seconds, microseconds=self.microseconds,
 			milliseconds=self.milliseconds, minutes=self.minutes,
 			hours=self.hours, weeks=self.weeks

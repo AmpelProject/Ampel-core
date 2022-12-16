@@ -64,6 +64,9 @@ unit:
 - ampel.mongo.update.MongoT2Ingester
 - ampel.mongo.update.MongoT3Ingester
 
+# Ops units
+- ampel.mongo.purge.MongoStockDeleter
+
 alias:
   t3:
     '%TRANSIENT':

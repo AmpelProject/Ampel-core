@@ -19,3 +19,8 @@ class MongoClientOptionsModel(AmpelBaseModel):
 
 	# https://github.com/mongodb/specifications/blob/master/source/server-selection/server-selection.rst#serverselectiontimeoutms
 	serverSelectionTimeoutMS: int = 30000 # default is 30,000 (milliseconds)
+
+	# Connect directly to target host, rather than the primary of its replica
+	# set. This is useful when connecting e.g. through an ssh tunnel to hosts
+	# that are not externally resolvable
+	directConnection: bool = False

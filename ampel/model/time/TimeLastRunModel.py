@@ -23,22 +23,23 @@ class TimeLastRunModel(AmpelBaseModel):
 
 
 	def get_timestamp(self, **kwargs) -> None | float:
-		if ts := self._query_events_col(kwargs['db'], self):
+		now = kwargs.get('now') or datetime.today()
+		if ts := self._query_events_col(kwargs['db'], now, self):
 			return ts
 		if self.fallback:
-			return (datetime.today() + timedelta(**self.fallback)).timestamp()
+			return (now + timedelta(**self.fallback)).timestamp()
 		return None
 
 
 	@staticmethod
-	def _query_events_col(ampel_db: AmpelDB, model: 'TimeLastRunModel') -> None | float:
+	def _query_events_col(ampel_db: AmpelDB, now: datetime, model: 'TimeLastRunModel') -> None | float:
 
 		col = ampel_db.get_collection('event')
 
 		# First query the last 10 days
 		res = get_last_run(
 			col, model.process_name, model.require_success,
-			gte_time=(datetime.today() - timedelta(days=10)).timestamp(),
+			gte_time=(now - timedelta(days=10)).timestamp(),
 			timestamp = True,
 		)
 
