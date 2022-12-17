@@ -22,10 +22,12 @@ class ThreadedViewGenerator(BaseViewGenerator[T]):
 	def __init__(self, unit_name: str, queue: "JoinableQueue[T]", stock_updr: MongoStockUpdater) -> None:
 		super().__init__(unit_name = unit_name, stock_updr = stock_updr)
 		self.queue: "JoinableQueue[T]" = queue
+		# ensure this generator's queue is consumed at most once 
+		self._it = iter(queue.get, None)
 
 
 	def __iter__(self) -> Generator[T, T3Send, None]:
-		for view in iter(self.queue.get, None):
+		for view in self._it:
 			self.stocks.append(view.id)
 			yield view
 			self.queue.task_done()

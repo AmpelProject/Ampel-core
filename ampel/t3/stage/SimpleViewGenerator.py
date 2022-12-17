@@ -26,10 +26,12 @@ class SimpleViewGenerator(BaseViewGenerator[T]):
 		super().__init__(unit_name = unit.__class__.__name__, stock_updr = stock_updr)
 		self.buffers = buffers
 		self.View = unit._View
+		# ensure this generator's queue is consumed at most once 
+		self._it = iter(self.buffers)
 
 	def __iter__(self) -> Generator[T, T3Send, None]:
 		View = self.View
 		l = self.stocks
-		for ab in self.buffers:
+		for ab in self._it:
 			l.append(ab['id'])
 			yield View.of(ab, freeze=True)
