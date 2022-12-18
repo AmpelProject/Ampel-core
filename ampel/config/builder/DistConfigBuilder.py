@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                09.10.2019
-# Last Modified Date:  14.08.2022
+# Last Modified Date:  18.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import json, yaml, pkg_resources, os, re
@@ -28,20 +28,31 @@ class DistConfigBuilder(ConfigBuilder):
 		conf_dirs: list[str] = ["conf"],
 		exts: list[str] = ["json", "yaml", "yml"],
 		raise_exc: bool = True,
+		exclude: None | list[str] = None
 	) -> None:
 		"""
 		:param prefixes: loads all known conf files from all distributions with name starting with prefixes
 		:param conf_dirs: loads only conf files from these directories
 		:param exts: loads only conf files with these extensions
+		:param exclude: exclude distribution by name
 		"""
 		dist_names = get_dist_names(prefixes)
 
 		if dist_names:
 			self.logger.log(SHOUT, f"Detected ampel components: '{dist_names}'")
 
+		if exclude:
+			for i in range(len(exclude)):
+				exclude[i] = exclude[i].lower()
+
 		for dist_name in dist_names:
 
 			self.logger.break_aggregation()
+
+			if exclude and dist_name.lower() in exclude:
+				self.logger.log(VERBOSE, "Excluding distribution '{dist_name}' as requested")
+				continue
+
 			s = f"Checking distribution '{dist_name}'"
 			self.logger.log(VERBOSE, s)
 			self.logger.log(VERBOSE, "="*len(s))
