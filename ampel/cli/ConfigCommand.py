@@ -29,14 +29,14 @@ from ampel.config.builder.DisplayOptions import DisplayOptions
 from ampel.util.pretty import out_stack, prettyjson
 
 hlp = {
-	'build': 'Generates a new ampel config based on information' +
+	'build': 'Generate a new ampel config based on information' +
 		'\n from the currently installed ampel repositories',
 	'show': 'Show config / config path',
-	'install': 'Sets a specified ampel config as the default one in current system (conda envs supported).\n' +
-		' As a consequence, the option "-config" of other CLI operations becomes optional',
-	'transform': 'Transforms specified config file using jq parameters',
-	'validate': 'Validates all unit configurations defined a specified config file',
-	'file': 'Path to an ampel config file (yaml/json)',
+	'install': 'Build and install new config as default config for current system ' +
+		'(conda envs supported).\n Option "-config" of other CLI operations becomes then optional',
+	'transform': 'Transform specified config file using jq parameters',
+	'validate': 'Validate all unit configurations defined a specified config file',
+	'file': 'Path to an ampel config file to be installed (generation step won\'t occur)',
 	# Optional
 	'secrets': 'Path to a YAML secrets store in sops format',
 	'json': 'Show JSON encoded config',
@@ -48,12 +48,12 @@ hlp = {
 		'- 2: stop on errors\n' +
 		'- 1: ignore errors in first_pass_config only (will stop on morphing/scoping/template errors)\n' +
 		'- 0: ignore all errors',
-	'distributions': 'Ampel packages to consider. If unspecified, gather all installed distributions',
+	'distributions': 'Ampel packages to consider. If unspecified, gather all installed ampel distributions',
 	'verbose': 'verbose',
 	'ext-resource': 'path to resource config file (yaml) to be integrated into the final ampel config',
-	'hide-module-not-found-errors': 'Hide corresponding exceptions stack',
+	'hide-module-not-found-errors': 'Hide ModuleNotFoundError exception stacks',
 	'hide-stderr': 'Hide stderr messages arising during imports (from healpix for ex.)',
-	'no-provenance': 'Do not retrieve and save unit module dependencies'
+	'no-provenance': 'Do not retrieve and save unit module dependency information\n(speeds up config building process at the detriment of traceability)'
 }
 
 
@@ -62,7 +62,7 @@ class ConfigCommand(AbsCoreCommand):
 
 	@staticmethod
 	def get_sub_ops() -> list[str]:
-		return ['build', 'show', 'install', 'transform', 'validate']
+		return ['install', 'build', 'show', 'transform', 'validate']
 
 
 	# Implement
@@ -80,6 +80,7 @@ class ConfigCommand(AbsCoreCommand):
 		builder = ArgParserBuilder('config')
 		ps = builder.add_parsers(sub_ops, hlp)
 		ps[sub_ops.index('show')].args_not_required = True
+		ps[sub_ops.index('install')].args_not_required = True
 
 		# Required args
 		builder.xargs(
@@ -93,14 +94,14 @@ class ConfigCommand(AbsCoreCommand):
 		)
 
 		# Optional args
-		builder.opt('secrets', 'build', default=None)
+		builder.opt('secrets', 'build|install', default=None)
 		builder.opt('verbose', 'build|show', action='store_true')
 
 		builder.opt('sign', 'build', type=int, default=0)
-		builder.opt('ext-resource', 'build')
-		builder.opt('hide-module-not-found-errors', 'build', action='store_true')
-		builder.opt('hide-stderr', 'build', action='store_true')
-		builder.opt('no-provenance', 'build', action='store_true')
+		builder.opt('ext-resource', 'build|install')
+		builder.opt('hide-module-not-found-errors', 'build|install', action='store_true')
+		builder.opt('hide-stderr', 'build|install', action='store_true')
+		builder.opt('no-provenance', 'build|install', action='store_true')
 		builder.xargs(
 			group='optional', sub_ops='show', xargs = [
 				dict(name='json', action='store_true'),
@@ -108,10 +109,10 @@ class ConfigCommand(AbsCoreCommand):
 			]
 		)
 		builder.opt('pretty', 'show', action='store_true')
-		builder.opt('stop-on-errors', 'build', default=2, type=int)
+		builder.opt('stop-on-errors', 'build|install', default=2, type=int)
 		builder.opt('distributions', 'build|install', nargs="+", default=["pyampel-", "ampel-"])
+		builder.opt('exclude-distributions', 'build|install', nargs="+", default=[])
 		builder.opt('file', 'install', type=str)
-		builder.opt('build', 'install', action='store_true')
 
 		builder.opt('file', 'validate', type=FileType('r'))
 		builder.opt('secrets', 'validate', type=FileType('r'))
@@ -129,8 +130,8 @@ class ConfigCommand(AbsCoreCommand):
 		builder.example('show', '')
 		builder.example('show', '-path')
 		builder.example('show', '-json -pretty')
-		builder.example('install', '-build')
-		builder.example('install', '-file ampel_conf.yml')
+		builder.example('install', '')
+		builder.example('install', '-stop-on-error 0 -hide-module-not-found-errors -exclude-distributions Ampel-HU-cosmo')
 
 		self.parsers.update(
 			builder.get()
@@ -236,6 +237,7 @@ class ConfigCommand(AbsCoreCommand):
 			cb.load_distributions(
 				prefixes=args['distributions'],
 				raise_exc=args['stop_on_errors'] != 0,
+				exclude=args['exclude_distributions']
 			)
 			cb.build_config(
 				stop_on_errors = args['stop_on_errors'],
@@ -263,14 +265,9 @@ class ConfigCommand(AbsCoreCommand):
 				logger.info(f'{args["file"]} successfully set as standard config ({std_conf})')
 				return
 
-			elif args['build']:
-				args['out'] = std_conf
-				self.run(args, unknown_args, sub_op = 'build')
-				logger.info(f'New config built and installed ({std_conf})')
-				return
-
-			else:
-				raise ValueError('Please provide either "file" or "build" argument')
+			args['out'] = std_conf
+			self.run(args, unknown_args, sub_op = 'build')
+			logger.info(f'New config built and installed ({std_conf})')
 
 		elif sub_op == 'show':
 
