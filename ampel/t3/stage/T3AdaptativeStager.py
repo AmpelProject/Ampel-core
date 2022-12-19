@@ -14,7 +14,7 @@ from multiprocessing.pool import ThreadPool, AsyncResult
 from collections.abc import Generator, Sequence
 
 from ampel.types import ChannelId
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 from ampel.view.SnapView import SnapView
 from ampel.model.UnitModel import UnitModel
 from ampel.content.T3Document import T3Document

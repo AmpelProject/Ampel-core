@@ -15,7 +15,7 @@ from ampel.abstract.AbsIdMapper import AbsIdMapper
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.struct.UnitResult import UnitResult
 from ampel.view.SnapView import SnapView
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 from ampel.cli.export import txt_export, bin_export, get_fd
 
 

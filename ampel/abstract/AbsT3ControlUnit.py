@@ -9,7 +9,7 @@
 
 from collections.abc import Generator
 from ampel.types import Traceless, OneOrMany, ChannelId
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
 from ampel.core.ContextUnit import ContextUnit

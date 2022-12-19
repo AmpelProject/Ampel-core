@@ -11,7 +11,7 @@ from time import time
 from collections.abc import Generator
 
 from ampel.types import ChannelId
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 from ampel.model.UnitModel import UnitModel
 from ampel.t3.T3DocBuilder import T3DocBuilder
 from ampel.content.T3Document import T3Document

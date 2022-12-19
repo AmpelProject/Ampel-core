@@ -13,7 +13,7 @@ from typing import BinaryIO, TextIO, Any
 from collections.abc import Generator
 
 from ampel.types import Traceless
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.abstract.AbsT3Stager import AbsT3Stager
 from ampel.abstract.AbsIdMapper import AbsIdMapper

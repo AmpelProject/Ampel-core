@@ -15,7 +15,7 @@ from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.abstract.AbsT3Supplier import AbsT3Supplier
 from ampel.abstract.AbsT3ControlUnit import AbsT3ControlUnit
 from ampel.abstract.AbsProcessorTemplate import AbsProcessorTemplate
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 from ampel.view.T3DocView import T3DocView
 from ampel.model.UnitModel import UnitModel
 from ampel.model.t3.T3IncludeDirective import T3IncludeDirective

@@ -29,7 +29,7 @@ from ampel.enum.DocumentCode import DocumentCode
 from ampel.enum.MetaActionCode import MetaActionCode
 from ampel.enum.JournalActionCode import JournalActionCode
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 from ampel.util.mappings import dictify
 from ampel.util.tag import merge_tags
 from ampel.util.hash import build_unsafe_dict_id

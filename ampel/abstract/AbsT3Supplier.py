@@ -9,7 +9,7 @@
 
 from typing import Generic
 from ampel.types import Traceless, T
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
 from ampel.log.AmpelLogger import AmpelLogger

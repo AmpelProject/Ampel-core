@@ -10,7 +10,7 @@
 from collections.abc import Generator
 
 from ampel.types import OneOrMany, Annotated
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 from ampel.model.UnitModel import UnitModel
 from ampel.content.T3Document import T3Document
 from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit

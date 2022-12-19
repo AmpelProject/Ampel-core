@@ -10,7 +10,7 @@
 from typing import Annotated
 from collections.abc import Generator
 from ampel.types import Traceless, ChannelId
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 from ampel.abstract.AbsT3ControlUnit import AbsT3ControlUnit
 from ampel.t3.T3DocBuilder import T3DocBuilder
 from ampel.content.T3Document import T3Document

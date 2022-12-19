@@ -19,7 +19,7 @@ from ampel.abstract.AbsBufferComplement import AbsBufferComplement
 from ampel.model.aux.FilterCriterion import FilterCriterion
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.FlatAnyOf import FlatAnyOf
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 
 
 class T3ExtJournalAppender(AbsBufferComplement):

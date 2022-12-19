@@ -9,7 +9,7 @@
 
 from time import time
 from collections.abc import Generator, Iterable, Sequence
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 from ampel.view.T3DocView import T3DocView
 from ampel.view.SnapView import SnapView
 from ampel.model.UnitModel import UnitModel

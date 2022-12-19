@@ -12,7 +12,7 @@ from itertools import cycle
 from collections.abc import Generator
 from multiprocessing.pool import ThreadPool
 
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 from ampel.model.UnitModel import UnitModel
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.content.T3Document import T3Document

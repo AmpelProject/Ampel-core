@@ -11,7 +11,7 @@ from typing import ClassVar
 from ampel.mongo.query.var.events import build_t0_stats_query
 from ampel.abstract.AbsT3Supplier import AbsT3Supplier
 from ampel.t3.include.session.T3SessionLastRunTime import T3SessionLastRunTime
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 
 
 class T3SessionAlertsNumber(AbsT3Supplier[dict]):

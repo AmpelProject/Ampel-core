@@ -9,7 +9,7 @@
 
 from collections.abc import Generator, Sequence
 from ampel.types import ChannelId
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.content.T3Document import T3Document
 from ampel.model.UnitModel import UnitModel

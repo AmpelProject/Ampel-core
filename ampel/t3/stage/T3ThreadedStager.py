@@ -15,7 +15,7 @@ from collections.abc import Generator, Iterable
 
 from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
 from ampel.view.SnapView import SnapView
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 from ampel.content.T3Document import T3Document
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.t3.stage.T3BaseStager import T3BaseStager

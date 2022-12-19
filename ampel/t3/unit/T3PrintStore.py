@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 from ampel.abstract.AbsT3PlainUnit import AbsT3PlainUnit
 
 

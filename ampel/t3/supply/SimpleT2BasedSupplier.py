@@ -12,7 +12,7 @@ from collections.abc import Generator
 from ampel.abstract.AbsT3Supplier import AbsT3Supplier
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.log.utils import safe_query_dict
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 
 
 class SimpleT2BasedSupplier(AbsT3Supplier):

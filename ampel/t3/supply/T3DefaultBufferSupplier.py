@@ -15,7 +15,7 @@ from ampel.abstract.AbsBufferComplement import AbsBufferComplement
 from ampel.util.collections import get_chunks as chunks_func
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.model.UnitModel import UnitModel
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 
 
 class T3DefaultBufferSupplier(AbsT3Supplier[Generator[AmpelBuffer, None, None]]):

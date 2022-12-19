@@ -11,7 +11,7 @@ from typing import ClassVar
 from datetime import datetime, timedelta
 from ampel.mongo.query.var.events import get_last_run
 from ampel.abstract.AbsT3Supplier import AbsT3Supplier
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 
 
 class T3SessionLastRunTime(AbsT3Supplier[dict]):

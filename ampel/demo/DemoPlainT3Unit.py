@@ -9,7 +9,7 @@
 
 from ampel.types import UBson
 from ampel.struct.UnitResult import UnitResult
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 from ampel.abstract.AbsT3PlainUnit import AbsT3PlainUnit
 
 

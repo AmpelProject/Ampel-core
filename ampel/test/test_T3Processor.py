@@ -13,7 +13,7 @@ from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.struct.StockAttributes import StockAttributes
 from ampel.enum.EventCode import EventCode
 from ampel.view.SnapView import SnapView
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 import pytest
 
 from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit, T3Send

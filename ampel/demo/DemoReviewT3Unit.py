@@ -13,7 +13,7 @@ from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.struct.UnitResult import UnitResult
 from ampel.view.SnapView import SnapView
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 
 
 class DemoReviewT3Unit(AbsT3ReviewUnit[SnapView]):

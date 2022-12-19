@@ -16,7 +16,7 @@ from multiprocessing.pool import ThreadPool
 from ampel.log import VERBOSE
 from ampel.types import StockId, UBson
 from ampel.t3.T3DocBuilder import AbsT3s
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 from ampel.view.SnapView import SnapView
 from ampel.struct.UnitResult import UnitResult
 from ampel.struct.AmpelBuffer import AmpelBuffer

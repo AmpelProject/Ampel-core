@@ -12,7 +12,7 @@ from typing import Annotated
 from collections.abc import Generator
 
 from ampel.types import ChannelId
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 from ampel.view.T3DocView import T3DocView
 from ampel.abstract.AbsT3ControlUnit import AbsT3ControlUnit
 from ampel.abstract.AbsT3PlainUnit import AbsT3PlainUnit

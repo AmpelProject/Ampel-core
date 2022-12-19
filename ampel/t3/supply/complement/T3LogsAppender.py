@@ -11,7 +11,7 @@ from datetime import datetime
 from bson.objectid import ObjectId
 from typing import Any
 from collections.abc import Iterable
-from ampel.view.T3Store import T3Store
+from ampel.struct.T3Store import T3Store
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.mongo.query.var.LogsLoader import LogsLoader
 from ampel.log.utils import safe_query_dict
