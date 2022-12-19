@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                17.07.2021
-# Last Modified Date:  20.08.2022
+# Last Modified Date:  19.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import os, subprocess, json, yaml, shutil
@@ -53,6 +53,8 @@ hlp = {
 	'ext-resource': 'path to resource config file (yaml) to be integrated into the final ampel config',
 	'hide-module-not-found-errors': 'Hide ModuleNotFoundError exception stacks',
 	'hide-stderr': 'Hide stderr messages arising during imports (from healpix for ex.)',
+	'ignore-channels': 'ignore channel definitions',
+	'ignore-processes': 'ignore process definitions',
 	'no-provenance': 'Do not retrieve and save unit module dependency information\n(speeds up config building process at the detriment of traceability)'
 }
 
@@ -101,6 +103,8 @@ class ConfigCommand(AbsCoreCommand):
 		builder.opt('ext-resource', 'build|install')
 		builder.opt('hide-module-not-found-errors', 'build|install', action='store_true')
 		builder.opt('hide-stderr', 'build|install', action='store_true')
+		builder.opt('ignore-channels', 'build|install', action='store_true')
+		builder.opt('ignore-processes', 'build|install', action='store_true')
 		builder.opt('no-provenance', 'build|install', action='store_true')
 		builder.xargs(
 			group='optional', sub_ops='show', xargs = [
@@ -132,6 +136,7 @@ class ConfigCommand(AbsCoreCommand):
 		builder.example('show', '-json -pretty')
 		builder.example('install', '')
 		builder.example('install', '-stop-on-error 0 -hide-module-not-found-errors -exclude-distributions Ampel-HU-cosmo')
+		builder.example('install', '-ignore-channels -ignore-processes -no-provenance')
 
 		self.parsers.update(
 			builder.get()
@@ -246,6 +251,8 @@ class ConfigCommand(AbsCoreCommand):
 				save = args.get('out') or get_user_data_config_path(),
 				ext_resource = args.get('ext_resource'),
 				sign = args.get('sign', 0),
+				ignore_channels = args.get('ignore_channels', False),
+				ignore_processes = args.get('ignore_processes', False),
 				get_unit_env = not args.get('no_provenance', False),
 			)
 
