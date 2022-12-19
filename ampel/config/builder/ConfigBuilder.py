@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                03.09.2019
-# Last Modified Date:  24.04.2022
+# Last Modified Date:  19.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import os, sys, re, json, yaml, datetime, getpass, importlib, subprocess
@@ -124,6 +124,8 @@ class ConfigBuilder:
 		pwds: None | Iterable[str] = None,
 		ext_resource: None | str = None,
 		get_unit_env: bool = True,
+		ignore_channels: bool = False,
+		ignore_processes: bool = False,
 		save: bool | str | None = None,
 		sign: int = 6,
 	) -> dict[str, Any]:
@@ -157,6 +159,9 @@ class ConfigBuilder:
 		Set skip_default_processes=True if your repositories define their own default T2/T3 processes.
 
 		:param sign: append truncated file signature (last n digits) to filename. Ex: ampel_conf_4a72fd.yaml
+
+		:param ignore_channels: ignore channel definitions (useful if only unit definitions are of interest)
+		:param ignore_processes: ignore process definitions (useful if only unit definitions are of interest)
 
 		:raises: ValueError if self.error is True - this behavior can be disabled using the parameter stop_on_errors
 		"""
@@ -202,142 +207,152 @@ class ConfigBuilder:
 		# and t2 init config will be added)
 		out['confid'] = T02ConfigCollector('confid', self.options, logger=self.logger)
 
-		# Add (possibly transformed) processes to output config
-		for tier in (0, 1, 2, 3, "ops"):
+		if not ignore_processes:
 
-			tier_name = tier if tier == "ops" else f"t{tier}"
+			# Add (possibly transformed) processes to output config
+			for tier in (0, 1, 2, 3, "ops"):
 
-			if self.verbose:
-				self.logger.log(VERBOSE, f'Checking standalone {tier_name} processes')
-
-			p_collector = ProcessConfigCollector(
-				'process', self.options, tier=tier, logger=self.logger # type: ignore[arg-type]
-			)
-
-			#out['process'][f't{tier}'] = {
-			#	k: self.first_pass_config[f't{tier}'][k]
-			#	for k in FirstPassConfig.tier_keys if k != 'process'
-			#}
-
-			# New empty process collector to gather morphed processes
-			out['process'][tier_name] = p_collector
-
-			# For each process collected before, apply transformations
-			# and add it to our (almost) final process collector.
-			# 'almost' because a gathering of T0 processes may occure later
-			for p in self.first_pass_config['process'][tier_name].values():
-
-				if skip_default_processes and p["name"] in self._default_processes:
-					self.logger.info(f'Skipping {tier_name} default processes: {p["name"]}')
-					continue
+				tier_name = tier if tier == "ops" else f"t{tier}"
 
 				if self.verbose:
-					self.logger.log(VERBOSE, f'Morphing standalone {tier_name} processes: {p["name"]}')
-					pass
+					self.logger.log(VERBOSE, f'Checking standalone {tier_name} processes')
 
-				try:
-					p_collector.add(
-						self.new_morpher(p) \
-							.scope_aliases(self.first_pass_config) \
-							.apply_template(self.first_pass_config) \
-							.hash_t2_config(out) \
-							.generate_version(self.first_pass_config) \
-							.get(),
-						p.get('distrib'),
-						p.get('version'),
-						p.get('source')
-					)
-				except Exception as e:
-					self.logger.error(f'Unable to morph process {p["name"]}', exc_info=e)
-					if stop_on_errors > 0:
-						raise e
+				p_collector = ProcessConfigCollector(
+					'process', self.options, tier=tier, logger=self.logger # type: ignore[arg-type]
+				)
 
-		# Setup empty channel collector
-		out['channel'] = ChannelConfigCollector('channel', self.options, logger=self.logger)
-		morph_errors = []
+				#out['process'][f't{tier}'] = {
+				#	k: self.first_pass_config[f't{tier}'][k]
+				#	for k in FirstPassConfig.tier_keys if k != 'process'
+				#}
 
-		# Add (possibly transformed) channels
-		for chan_name, chan_dict in self.first_pass_config['channel'].items():
+				# New empty process collector to gather morphed processes
+				out['process'][tier_name] = p_collector
 
-			if not chan_dict.get('active', False):
-				self.logger.info(f'Ignoring deactivated channel: {chan_name}')
-				continue
+				# For each process collected before, apply transformations
+				# and add it to our (almost) final process collector.
+				# 'almost' because a gathering of T0 processes may occure later
+				for p in self.first_pass_config['process'][tier_name].values():
 
-			tpl = None
-
-			# Template processing is required for this particular channel
-			try:
-				tpl = self._get_channel_tpl(chan_dict)
-			except Exception as ee:
-				log_exception(self.logger, msg=f'Unable to load template ({chan_name})', exc=ee)
-				if stop_on_errors > 0:
-					raise ee
-				continue
-
-			# Template processing is required for this particular channel
-			if tpl:
-
-				# Extract channel definition from template instance
-				try:
-					out['channel'].add(
-						(c := tpl.get_channel(self.logger)),
-						c.get('distrib'), c.get('version'), c.get('source')
-					)
-				except Exception as ee:
-					log_exception(self.logger, msg=f'Unable to get channel from template ({chan_name})', exc=ee)
-					if stop_on_errors > 0:
-						raise ee
-					continue
-
-				# Extract process definition from template instance
-				ps = []
-				try:
-					ps = tpl.get_processes(self.logger, self.first_pass_config)
-				except Exception as ee:
-					log_exception(self.logger, msg=f'Unable to get processes from template ({chan_name})', exc=ee)
-					if stop_on_errors > 0:
-						raise ee
-					continue
-
-				# Retrieve processes possibly embedded in channel def
-				for p in ps:
+					if skip_default_processes and p["name"] in self._default_processes:
+						self.logger.info(f'Skipping {tier_name} default processes: {p["name"]}')
+						continue
 
 					if self.verbose:
-						self.logger.log(VERBOSE,
-							f'Morphing channel embedded t{p["tier"]} process: {p["name"]}'
-						)
+						self.logger.log(VERBOSE, f'Morphing standalone {tier_name} processes: {p["name"]}')
+						pass
 
 					try:
-						# Add transformed process to final process collector
-						out['process'][f't{p["tier"]}'].add(
+						p_collector.add(
 							self.new_morpher(p) \
 								.scope_aliases(self.first_pass_config) \
 								.apply_template(self.first_pass_config) \
 								.hash_t2_config(out) \
-								.enforce_t3_channel_selection(chan_name) \
 								.generate_version(self.first_pass_config) \
 								.get(),
 							p.get('distrib'),
 							p.get('version'),
 							p.get('source')
 						)
+					except Exception as e:
+						self.logger.error(f'Unable to morph process {p["name"]}', exc_info=e)
+						if stop_on_errors > 0:
+							raise e
+
+		morph_errors = []
+		if not ignore_channels:
+
+			# Setup empty channel collector
+			out['channel'] = ChannelConfigCollector('channel', self.options, logger=self.logger)
+
+			# Add (possibly transformed) channels
+			for chan_name, chan_dict in self.first_pass_config['channel'].items():
+
+				if not chan_dict.get('active', False):
+					self.logger.info(f'Ignoring deactivated channel: {chan_name}')
+					continue
+
+				tpl = None
+
+				# Template processing is required for this particular channel
+				try:
+					tpl = self._get_channel_tpl(chan_dict)
+				except Exception as ee:
+					log_exception(self.logger, msg=f'Unable to load template ({chan_name})', exc=ee)
+					if stop_on_errors > 0:
+						raise ee
+					continue
+
+				# Template processing is required for this particular channel
+				if tpl:
+
+					# Extract channel definition from template instance
+					try:
+						out['channel'].add(
+							(c := tpl.get_channel(self.logger)),
+							c.get('distrib'), c.get('version'), c.get('source')
+						)
 					except Exception as ee:
-						morph_errors.append(p["name"])
 						log_exception(
 							self.logger, exc=ee,
-							msg=f'Unable to morph embedded process {p["name"]} (from {p["source"]})'
+							msg=f'Unable to get channel from template ({chan_name})'
 						)
 						if stop_on_errors > 0:
 							raise ee
+						continue
 
-			else:
+					# Extract process definition from template instance
+					ps = []
+					try:
+						ps = tpl.get_processes(self.logger, self.first_pass_config)
+					except Exception as ee:
+						log_exception(
+							self.logger, exc=ee,
+							msg=f'Unable to get processes from template ({chan_name})'
+						)
+						if stop_on_errors > 0:
+							raise ee
+						continue
 
-				# Raw/Simple/Standard channel definition
-				# (encouraged behavior actually)
-				out['channel'].add(
-					chan_dict, chan_dict.get('distrib'),
-					chan_dict.get('version'), chan_dict.get('source')
-				)
+					# Retrieve processes possibly embedded in channel def
+					for p in ps:
+
+						if self.verbose:
+							self.logger.log(VERBOSE,
+								f'Morphing channel embedded t{p["tier"]} process: {p["name"]}'
+							)
+
+						try:
+							# Add transformed process to final process collector
+							out['process'][f't{p["tier"]}'].add(
+								self.new_morpher(p) \
+									.scope_aliases(self.first_pass_config) \
+									.apply_template(self.first_pass_config) \
+									.hash_t2_config(out) \
+									.enforce_t3_channel_selection(chan_name) \
+									.generate_version(self.first_pass_config) \
+									.get(),
+								p.get('distrib'),
+								p.get('version'),
+								p.get('source')
+							)
+						except Exception as ee:
+							morph_errors.append(p["name"])
+							log_exception(
+								self.logger, exc=ee,
+								msg=f'Unable to morph embedded process {p["name"]} (from {p["source"]})'
+							)
+							if stop_on_errors > 0:
+								raise ee
+
+				else:
+
+					# Raw/Simple/Standard channel definition
+					# (encouraged behavior actually)
+					out['channel'].add(
+						chan_dict, chan_dict.get('distrib'),
+						chan_dict.get('version'), chan_dict.get('source')
+					)
 
 		if ext_resource:
 			with open(ext_resource, "r") as f:
