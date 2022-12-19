@@ -255,7 +255,7 @@ class ProcessMorpher:
 		conf_dicts: dict[str, dict[str, Any]] = {}
 
 		walk_and_process_dict(
-			arg = self.process,
+			arg = self.process["processor"]["config"]["directives"],
 			callback = self._gather_t2_config_callback,
 			match = ['point_t2', 'stock_t2', 'state_t2'],
 			conf_dicts = conf_dicts
