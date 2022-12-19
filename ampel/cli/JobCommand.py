@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  22.10.2022
+# Last Modified Date:  19.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import tarfile, tempfile, ujson, yaml, io, os, signal, sys, \
@@ -19,6 +19,7 @@ from urllib.request import urlretrieve
 from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.abstract.AbsProcessorTemplate import AbsProcessorTemplate
 from ampel.model.UnitModel import UnitModel
+from ampel.struct.Resource import Resource
 from ampel.core.EventHandler import EventHandler
 from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.log.AmpelLogger import AmpelLogger
@@ -424,6 +425,7 @@ class JobCommand(AbsCoreCommand):
 		)
 
 		run_ids = []
+		resources: dict[str, Resource] = {}
 		for i, taskd in enumerate(jtasks):
 
 			process_name = f'{job.name or schema_descr}#{i}'
@@ -502,12 +504,20 @@ class JobCommand(AbsCoreCommand):
 					ctx.get_database(),
 					raise_exc = proc.raise_exc,
 					job_sig = job_sig,
-					extra = {'task': i}
+					extra = {'task': i},
+					resources = resources
 				)
 
 				x = proc.run(event_hdlr)
 				if event_hdlr.run_id:
 					run_ids.append(event_hdlr.run_id)
+
+				if event_hdlr.resources:
+					for name, resource in event_hdlr.resources.items():
+						if name in resources:
+							# TODO: potentially add option to control ignore this
+							raise ValueError(f"Dynamic resource {k} already set")
+						resources[k] = resource
 
 				logger.info(f'{taskd["unit"]} return value: {x}')
 
