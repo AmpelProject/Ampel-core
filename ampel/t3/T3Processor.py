@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                26.02.2018
-# Last Modified Date:  25.07.2022
+# Last Modified Date:  19.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from importlib import import_module
@@ -24,7 +24,6 @@ from ampel.log import AmpelLogger, LogFlag, SHOUT
 
 
 class T3Processor(AbsEventUnit):
-	""" """
 
 	template: None | str = None
 	include: None | T3IncludeDirective
@@ -133,6 +132,9 @@ class T3Processor(AbsEventUnit):
 							t3d['meta']['jobid'] = event_hdlr.job_sig
 						self.context.db.get_collection('t3').insert_one(t3d) # type: ignore[arg-type]
 
+			if t3s.resources:
+				for v in t3s.resources.values():
+					event_hdlr.add_resource(v)
 
 		except Exception as e:
 			event_hdlr.handle_error(e, logger)
