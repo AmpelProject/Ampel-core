@@ -54,7 +54,7 @@ entry_points = {
 
 setup(
     name = 'ampel-core',
-    version = '0.8.3.beta-14',
+    version = '0.8.3.beta-17',
     description = 'Alice in Modular Provenance-Enabled Land',
     author = 'Valery Brinnel',
     maintainer = 'Jakob van Santen',
