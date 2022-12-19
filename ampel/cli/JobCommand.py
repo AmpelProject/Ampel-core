@@ -525,8 +525,9 @@ class JobCommand(AbsCoreCommand):
 
 				if event_hdlr.resources:
 					for name, resource in event_hdlr.resources.items():
-						if args['allow_resource_override']:
-							resources[name] = resource
+						if name in resources and not args['allow_resource_override']:
+							continue
+						resources[name] = resource
 
 				logger.info(f'{taskd["unit"]} return value: {x}')
 
