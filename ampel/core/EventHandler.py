@@ -4,13 +4,14 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                26.09.2018
-# Last Modified Date:  26.08.2022
+# Last Modified Date:  19.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
 from bson import ObjectId
 from typing import Any, Literal, TYPE_CHECKING
 from ampel.enum.EventCode import EventCode
+from ampel.struct.Resource import Resource
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.AmpelLoggingError import AmpelLoggingError
 from ampel.log.utils import report_exception
@@ -32,6 +33,7 @@ class EventHandler:
 		raise_exc = False,
 		dry_run: bool = False,
 		job_sig: None | int = None,
+		resources: None | dict[str, Resource] = None,
 		extra: None | dict[str, Any] = None
 	):
 		"""
@@ -47,6 +49,7 @@ class EventHandler:
 		self.code: None | EventCode = None
 		self.col = ampel_db.get_collection(col_name)
 		self.extra: dict[str, Any] = extra or {}
+		self.resources: dict[str, Resource] = resources or {}
 
 
 	def register(self,
@@ -97,6 +100,16 @@ class EventHandler:
 					logger.error(f"Cannot overwrite already existing event value for key {k}")
 				continue
 			self.extra[k] = v
+
+
+	def add_resource(self, resource: Resource, overwrite: bool = False) -> None:
+		""" save references to resources generated dynamically by t3 units """
+		if self.resources and not overwrite and resource.name in self.resources:
+			raise ValueError(
+				f"Resource name '{resource.name}' already defined"
+				f"(use overwrite=True to ignore)"
+			)
+		self.resources[resource.name] = resource
 
 
 	def set_tier(self, val: Literal[0, 1, 2, 3]) -> None:
