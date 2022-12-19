@@ -12,6 +12,7 @@ from pymongo.collection import Collection
 from datetime import datetime, timedelta
 from typing import Literal, Any, overload
 
+from ampel.enum.EventCode import EventCode
 
 def build_query(
 	tier: Literal[0, 1, 2, 3] = 0,
@@ -72,7 +73,7 @@ def get_last_run(
 
 	query = build_query(tier=3, process_name=process_name, gte_time=gte_time)
 	if require_success:
-		query['success'] = True
+		query['code'] = EventCode.OK
 	if ret := list(col.find(query).sort('_id', -1).limit(2)):
 		if require_success and ret:
 			return ret[0]['_id'].generation_time.timestamp() if timestamp else ret[0]['_id']
