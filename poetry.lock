@@ -14,14 +14,14 @@ files = [
 
 [[package]]
 name = "ampel-interface"
-version = "0.8.3b12"
+version = "0.8.3b13"
 description = "Base classes for the Ampel analysis platform"
 category = "main"
 optional = false
 python-versions = ">=3.10,<4.0"
 files = [
-    {file = "ampel_interface-0.8.3b12-py3-none-any.whl", hash = "sha256:2c9173c0d3cb8f62910f2640687704ec20cf622f479d95e2afb6c61976b26204"},
-    {file = "ampel_interface-0.8.3b12.tar.gz", hash = "sha256:d6ff35edad43efb04266b57d5a0619bee116d6c812eab138dbf2817ca2b6dda8"},
+    {file = "ampel_interface-0.8.3b13-py3-none-any.whl", hash = "sha256:cf11416d93f1c5fd7f78fc8c74b290cced015c16eb5a2ab0c58606fbddb1fad8"},
+    {file = "ampel_interface-0.8.3b13.tar.gz", hash = "sha256:ea837ae7a4fb8cf0fb20b7d6c0af2b4f64e51e0f3443e181b21cf678456debe3"},
 ]
 
 [package.dependencies]
@@ -1770,4 +1770,4 @@ slack = ["slack-sdk"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.11"
-content-hash = "e68f996f2b01caf1169e0ef269e3672b7d82a3590de0163d388df7e37b5149a8"
+content-hash = "1504cc454645039b9da29d90fc149ec7e4fe10f1e597984ec5154eb581512c47"
