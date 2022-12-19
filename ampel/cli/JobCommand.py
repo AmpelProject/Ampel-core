@@ -95,7 +95,7 @@ class JobCommand(AbsCoreCommand):
 			'task': 'only execute task(s) with provided index(es) [starting with 0].\n' +
 					'Value "last" is supported. Ignored if -interactive is used',
 			'show-plots': 'show plots created by job (requires ampel-plot-cli. Use "export AMPEL_PLOT_DPI=300" to increase png quality)',
-			'allow-resource-override': 'no longer raise error if t3 unit overwrite resource',
+			'allow-resource-override': 'allow t3 units to overwrite resources previously set by other t3 units',
 			'show-plots-cmd': 'show command required to show plots created by job (requires ampel-plot-cli)',
 			'wait-pid': 'wait until PID completition before starting the current job'
 		})
