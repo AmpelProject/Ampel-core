@@ -94,7 +94,7 @@ def get_handler(context: DevAmpelContext, directives) -> ChainedIngestionHandler
         tier=0,
         trace_id={},
         run_id=0,
-        compiler_opts=CompilerOptions(t0={"tag": ["TAGGERT"]}),
+        compiler_opts=CompilerOptions(t0_opts={"tag": ["TAGGERT"]}),
         updates_buffer=updates_buffer,
         directives=directives,
     )

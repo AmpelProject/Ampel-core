@@ -168,12 +168,12 @@ class ChainedIngestionHandler:
 		bopts: dict[str, Any] = {"origin": origin, "tier": tier, "run_id": run_id}
 
 		# Create compilers
-		self.t0_compiler = T0Compiler(**(compiler_opts.t0 | bopts))
-		self.t1_compiler = T1Compiler(**(compiler_opts.t1 | bopts))
-		self.stock_compiler = StockCompiler(**(compiler_opts.stock | bopts))
-		self.state_t2_compiler = T2Compiler(**(compiler_opts.state_t2 | bopts))
-		self.point_t2_compiler = T2Compiler(**(compiler_opts.point_t2 | bopts), col="t0")
-		self.stock_t2_compiler = T2Compiler(**(compiler_opts.stock_t2 | bopts), col='stock')
+		self.t0_compiler = T0Compiler(**(compiler_opts.t0_opts | bopts))
+		self.t1_compiler = T1Compiler(**(compiler_opts.t1_opts | bopts))
+		self.stock_compiler = StockCompiler(**(compiler_opts.stock_opts | bopts))
+		self.state_t2_compiler = T2Compiler(**(compiler_opts.state_t2_opts | bopts))
+		self.point_t2_compiler = T2Compiler(**(compiler_opts.point_t2_opts | bopts), col="t0")
+		self.stock_t2_compiler = T2Compiler(**(compiler_opts.stock_t2_opts | bopts), col='stock')
 
 		# Create ingesters
 		dbconf = self.context.config.get(f'{database}.ingest', dict, raise_exc=True)

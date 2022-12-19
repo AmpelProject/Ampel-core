@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                08.05.2021
-# Last Modified Date:  15.05.2021
+# Last Modified Date:  19.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
@@ -20,9 +20,9 @@ class CompilerOptions(AuxAliasableModel):
 	subclass for the stock compiler.
 	"""
 
-	t0: dict[str, Any] = empty
-	t1: dict[str, Any] = empty
-	state_t2: dict[str, Any] = empty
-	point_t2: dict[str, Any] = empty
-	stock_t2: dict[str, Any] = empty
-	stock: dict[str, Any] = empty
+	t0_opts: dict[str, Any] = empty
+	t1_opts: dict[str, Any] = empty
+	state_t2_opts: dict[str, Any] = empty
+	point_t2_opts: dict[str, Any] = empty
+	stock_t2_opts: dict[str, Any] = empty
+	stock_opts: dict[str, Any] = empty
