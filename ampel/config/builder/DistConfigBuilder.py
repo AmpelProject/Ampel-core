@@ -68,7 +68,12 @@ class DistConfigBuilder(ConfigBuilder):
 			self.logger.log(VERBOSE, "Done loading distributions")
 
 
-	def load_distrib(self, dist_name: str, conf_dir: str = "conf", ext: str = "json", raise_exc: bool = True) -> None:
+	def load_distrib(self,
+		dist_name: str,
+		conf_dir: str = "conf",
+		ext: str = "json",
+		raise_exc: bool = True
+	) -> None:
 		"""
 		Loads all known conf files of the provided distribution (name)
 		"""
@@ -83,7 +88,9 @@ class DistConfigBuilder(ConfigBuilder):
 					self.logger.log(VERBOSE, el)
 
 			if ampel_conf := self.get_conf_file(all_conf_files, f"ampel.{ext}"):
-				self.load_conf_using_func(distrib, ampel_conf, self.load_ampel_conf, raise_exc=raise_exc) # type: ignore
+				self.load_conf_using_func(
+					distrib, ampel_conf, self.load_ampel_conf, raise_exc=raise_exc
+				) # type: ignore
 
 			# Channel, mongo (and template) can be defined by multiple files
 			# in a directory named after the corresponding config section name
@@ -102,7 +109,9 @@ class DistConfigBuilder(ConfigBuilder):
 			# ("controller", "processor", "unit", "alias", "process")
 			for unit_type in ("alias", "process"):
 				if tier_conf_file := self.get_conf_file(all_conf_files, f"{unit_type}.{ext}"):
-					self.load_conf_using_func(distrib, tier_conf_file, partial(self.register_tier_conf, unit_type))
+					self.load_conf_using_func(
+						distrib, tier_conf_file, partial(self.register_tier_conf, unit_type)
+					)
 
 			# Try to load templates from folder template (defined by 'Ampel-ZTF' for ex.)
 			if template_conf_files := self.get_conf_files(all_conf_files, "/template/"):
