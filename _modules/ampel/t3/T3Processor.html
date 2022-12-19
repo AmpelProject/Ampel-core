@@ -40,7 +40,7 @@
 <span class="c1"># License:             BSD-3-Clause</span>
 <span class="c1"># Author:              valery brinnel &lt;firstname.lastname@gmail.com&gt;</span>
 <span class="c1"># Date:                26.02.2018</span>
-<span class="c1"># Last Modified Date:  25.07.2022</span>
+<span class="c1"># Last Modified Date:  19.12.2022</span>
 <span class="c1"># Last Modified By:    valery brinnel &lt;firstname.lastname@gmail.com&gt;</span>
 
 <span class="kn">from</span> <span class="nn">importlib</span> <span class="kn">import</span> <span class="n">import_module</span>
@@ -60,7 +60,6 @@
 
 
 <div class="viewcode-block" id="T3Processor"><a class="viewcode-back" href="../../../api.html#ampel.t3.T3Processor.T3Processor">[docs]</a><span class="k">class</span> <span class="nc">T3Processor</span><span class="p">(</span><span class="n">AbsEventUnit</span><span class="p">):</span>
-	<span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
 
 	<span class="n">template</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
 	<span class="n">include</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">T3IncludeDirective</span>
@@ -169,6 +168,9 @@
 							<span class="n">t3d</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">][</span><span class="s1">&#39;jobid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">event_hdlr</span><span class="o">.</span><span class="n">job_sig</span>
 						<span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_collection</span><span class="p">(</span><span class="s1">&#39;t3&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">insert_one</span><span class="p">(</span><span class="n">t3d</span><span class="p">)</span> <span class="c1"># type: ignore[arg-type]</span>
 
+			<span class="k">if</span> <span class="n">t3s</span><span class="o">.</span><span class="n">resources</span><span class="p">:</span>
+				<span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">t3s</span><span class="o">.</span><span class="n">resources</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+					<span class="n">event_hdlr</span><span class="o">.</span><span class="n">add_resource</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
 
 		<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
 			<span class="n">event_hdlr</span><span class="o">.</span><span class="n">handle_error</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
