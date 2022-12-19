@@ -95,6 +95,7 @@ class JobCommand(AbsCoreCommand):
 			'task': 'only execute task(s) with provided index(es) [starting with 0].\n' +
 					'Value "last" is supported. Ignored if -interactive is used',
 			'show-plots': 'show plots created by job (requires ampel-plot-cli. Use "export AMPEL_PLOT_DPI=300" to increase png quality)',
+			'allow-resource-override': 'no longer raise error if t3 unit overwrite resource',
 			'show-plots-cmd': 'show command required to show plots created by job (requires ampel-plot-cli)',
 			'wait-pid': 'wait until PID completition before starting the current job'
 		})
@@ -113,6 +114,7 @@ class JobCommand(AbsCoreCommand):
 		parser.opt('no-agg', action='store_true')
 		parser.opt('no-breakpoint', action='store_true')
 		parser.opt('no-mp', action='store_true')
+		parser.opt('allow-resource-override', action='store_true')
 		parser.opt('show-plots', action='store_true')
 		parser.opt('show-plots-cmd', action='store_true')
 		parser.opt('secrets', type=str)
@@ -449,8 +451,9 @@ class JobCommand(AbsCoreCommand):
 
 			if (expand_with := job.task[i].expand_with) is not None:
 
-				ps = []
-				qs = []
+				process_queues: list[Process] = []
+				result_queues: list[Any] = []
+				resource_queues: list[Queue[Resource]] = []
 
 				signal.signal(signal.SIGINT, signal_handler)
 				signal.signal(signal.SIGTERM, signal_handler)
@@ -460,11 +463,13 @@ class JobCommand(AbsCoreCommand):
 
 						self._fetch_inputs(job, job.task[i], item, logger)
 
-						q: Queue = Queue()
+						result_queue: Queue = Queue()
+						resource_queue: Queue[Resource] = Queue()
 						p = Process(
 							target = run_mp_process,
 							args = (
-								q,
+								result_queue,
+								resource_queue,
 								config_dict,
 								job.resolve_expressions(
 									taskd,
@@ -476,13 +481,19 @@ class JobCommand(AbsCoreCommand):
 							daemon = True,
 						)
 						p.start()
-						ps.append(p)
-						qs.append(q)
+						process_queues.append(p)
+						result_queues.append(result_queue)
+						resource_queues.append(resource_queue)
 					
-					for i, (p, q) in enumerate(zip(ps, qs)):
+					for i, (p, r1, r2) in enumerate(zip(process_queues, result_queues, resource_queues)):
 						p.join()
-						if (m := q.get()):
+						if (m := r1.get()):
 							logger.info(f'{taskd["unit"]}#{i} return value: {m}')
+						for r in iter(r2.get, None):
+							if r.name in resources and not args['allow_resource_override']:
+								continue
+							resources[k] = r
+
 				except KeyboardInterrupt:
 					sys.exit(1)
 			
@@ -514,10 +525,8 @@ class JobCommand(AbsCoreCommand):
 
 				if event_hdlr.resources:
 					for name, resource in event_hdlr.resources.items():
-						if name in resources:
-							# TODO: potentially add option to control ignore this
-							raise ValueError(f"Dynamic resource {k} already set")
-						resources[k] = resource
+						if args['allow_resource_override']:
+							resources[name] = resource
 
 				logger.info(f'{taskd["unit"]} return value: {x}')
 
@@ -549,9 +558,9 @@ class JobCommand(AbsCoreCommand):
 			)
 
 			if args.get('show_plots'):
-				r = subprocess.run(cmd, check=True, capture_output=True, text=True)
-				print(r.stdout)
-				print(r.stderr)
+				rr = subprocess.run(cmd, check=True, capture_output=True, text=True)
+				print(rr.stdout)
+				print(rr.stderr)
 
 
 	@staticmethod
@@ -650,7 +659,8 @@ class JobCommand(AbsCoreCommand):
 
 
 def run_mp_process(
-	queue: Queue,
+	result_queue: Queue,
+	resource_queue: Queue,
 	config: dict[str, Any],
 	tast_unit_model: dict[str, Any],
 	process_name: str,
@@ -673,22 +683,28 @@ def run_mp_process(
 			job_sig = job_sig
 		)
 
-		queue.put(
-			processor.run(
-				EventHandler(
-					processor.process_name,
-					context.get_database(),
-					raise_exc = processor.raise_exc,
-					job_sig = job_sig,
-					extra = {'task': task_nbr}
-				)
-			)
+		eh = EventHandler(
+			processor.process_name,
+			context.get_database(),
+			raise_exc = processor.raise_exc,
+			job_sig = job_sig,
+			extra = {'task': task_nbr}
 		)
+
+		result_queue.put(
+			processor.run(eh)
+		)
+
+		if eh.resources:
+			for v in eh.resources.values():
+				resource_queue.put(v)
+		else:
+			resource_queue.put(None)
 
 	except Exception as e:
 		import traceback
 		se = str(e)
-		queue.put(
+		result_queue.put(
 			'\n' + '#'*len(se) + '\n' + str(e) + '\n' + '#'*len(se) + '\n' +
 			''.join(traceback.format_exception(type(e), e, e.__traceback__))
 		)
