@@ -27,7 +27,7 @@ Content
 
 Docstring
 ---------
-- Classes and methods should feature docstrings,
+- Classes and methods should include docstrings,
   preferably using reST style:
 ```
 """
@@ -45,3 +45,9 @@ Naming convention
 - Methods: snake_case
 - Instance variables: snake_case
 - Dict keys: lowercase
+
+Commits
+-------
+
+- Commit often
+- Please write good commit messages (see _jvs_ commits for examples of high quality messages) 
