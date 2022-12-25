@@ -23,7 +23,7 @@ class DemoResourceT3Unit(AbsT3PlainUnit):
 		self.logger.info("post_init was called")
 
 	def process(self, t3s: T3Store) -> UBson | UnitResult:
-		self.logger.info("Running DemoResourceGeneratingT3Unit")
+		self.logger.info("Running DemoResourceT3Unit")
 		r = Resource(name='demoToken', value=randint(10000000000000, 90000000000000))
 		t3s.add_resource(r)
 		return UnitResult(body=r.dict()) if self.debug else None
