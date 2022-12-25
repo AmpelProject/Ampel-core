@@ -41,6 +41,7 @@ ampel = 'ampel.cli.main:main'
 #'start_Run_ampel_continuously._Processes_are_scheduled_according_to_config' = 'ampel.cli.StartCommand'
 't2_Match_and_either_reset_or_view_raw_t2_documents' = 'ampel.cli.T2Command'
 'buffer_Match_and_view_or_save_ampel_buffers' = 'ampel.cli.BufferCommand'
+'event_Show_events_information' = 'ampel.cli.EventCommand'
 
 [tool.poetry.dependencies]
 ampel-interface = {version = "^0.8.3-beta.13"}

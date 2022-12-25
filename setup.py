@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                Unspecified
-# Last Modified Date:  18.12.2022
+# Last Modified Date:  23.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from setuptools import setup, find_namespace_packages
@@ -49,6 +49,7 @@ entry_points = {
 		#'start Run ampel continuously. Processes are scheduled according to config = ampel.cli.StartCommand',
 		't2 Match and either reset or view raw t2 documents = ampel.cli.T2Command',
 		'buffer Match and view or save ampel buffers = ampel.cli.BufferCommand'
+		'event Show events information = ampel.cli.EventCommand'
 	]
 }
 
