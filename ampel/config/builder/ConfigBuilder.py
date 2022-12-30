@@ -4,10 +4,10 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                03.09.2019
-# Last Modified Date:  19.12.2022
+# Last Modified Date:  30.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import os, sys, re, json, yaml, datetime, getpass, importlib, subprocess
+import os, sys, re, json, yaml, datetime, getpass, importlib, subprocess, pkg_resources
 from multiprocessing import Pool
 from typing import Any
 from collections.abc import Iterable
@@ -169,8 +169,9 @@ class ConfigBuilder:
 		if self.first_pass_config.has_nested_error():
 			if stop_on_errors > 1:
 				raise ValueError(
-					'Error were reported in first pass config, you can use the option stop_on_errors = 1 (or 0)\n' +
-					'to bypass this exception and get the (possibly non-working) config nonetheless'
+					'Error were reported in first pass config, ' +
+					'you can use the option stop_on_errors = 1 or 0 (CLI: -stop-on-errors 1/0)\n' +
+					'to bypass this exception and get a (possibly non-working) config nonetheless'
 				)
 
 		if ext_resource and not os.path.exists(ext_resource):
@@ -218,7 +219,8 @@ class ConfigBuilder:
 					self.logger.log(VERBOSE, f'Checking standalone {tier_name} processes')
 
 				p_collector = ProcessConfigCollector(
-					'process', self.options, tier=tier, logger=self.logger # type: ignore[arg-type]
+					conf_section='process', options=self.options,
+					tier=tier, logger=self.logger
 				)
 
 				#out['process'][f't{tier}'] = {
@@ -263,7 +265,9 @@ class ConfigBuilder:
 		if not ignore_channels:
 
 			# Setup empty channel collector
-			out['channel'] = ChannelConfigCollector('channel', self.options, logger=self.logger)
+			out['channel'] = ChannelConfigCollector(
+				conf_section='channel', options=self.options, logger=self.logger
+			)
 
 			# Add (possibly transformed) channels
 			for chan_name, chan_dict in self.first_pass_config['channel'].items():
@@ -400,14 +404,42 @@ class ConfigBuilder:
 			for el in morph_errors:
 				self.logger.info(el) # type: ignore[arg-type]
 		
-		# Cast into plain old dicts
 		d = {
 			'build': {
 				'date': (now := datetime.datetime.now()).strftime("%d/%m/%Y"),
 				'time': now.strftime("%H:%M:%S"),
-				'by': getpass.getuser()
+				'by': getpass.getuser(),
+				'conda': os.environ.get('CONDA_DEFAULT_ENV') or False,
+				'stop_on_errors': stop_on_errors,
+				'config_validator': config_validator,
+				'skip_default_processes': skip_default_processes,
+				'json_serializable': json_serializable,
+				'pwds': pwds is not None,
+				'ext_resource': ext_resource is not None,
+				'get_unit_env': get_unit_env,
+				'ignore_channels': ignore_channels,
+				'ignore_processes': ignore_processes,
 			}
-		} | dictify(out)
+		}
+
+		for k in ('ampel-interface', 'ampel-core'):
+			d['build'][k] = pkg_resources.get_distribution(k).version
+
+		dists: set[tuple[str, str | float | int]] = set()
+		for k in ('unit', 'channel'):
+			dists.update(out[k]._dists)
+
+		for tier in ("t0", "t1", "t2", "t3", "ops"):
+			if tier in out['alias']:
+				dists.update(out['alias'][tier]._dists)
+			if tier in out['process']:
+				dists.update(out['process'][tier]._dists)
+
+		for el in dists:
+			if el[0] not in d['build']:
+				d['build'][el[0]] = el[1]
+
+		d |= dictify(out)
 
 		# Cosmetic: sort units first by category, then alphabetically
 		u = d['unit']
