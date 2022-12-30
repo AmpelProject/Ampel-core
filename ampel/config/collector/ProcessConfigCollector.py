@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                16.10.2019
-# Last Modified Date:  09.02.2020
+# Last Modified Date:  30.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
@@ -13,6 +13,10 @@ from ampel.log import VERBOSE
 
 
 class ProcessConfigCollector(AbsDictConfigCollector):
+
+	def __init__(self, **kwargs) -> None:
+		super().__init__(**kwargs)
+		self._dists: set[tuple[str, str | float | int]] = set()
 
 	def add(self,
 		arg: dict[str, Any],
@@ -52,4 +56,5 @@ class ProcessConfigCollector(AbsDictConfigCollector):
 				conf_key = proc_name, new_dist = dist_name, new_file = register_file
 			)
 
+		self._dists.add((dist_name, version))
 		self.__setitem__(proc_name, arg)

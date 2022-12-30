@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                16.10.2019
-# Last Modified Date:  25.02.2021
+# Last Modified Date:  30.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
@@ -21,6 +21,7 @@ class AliasConfigCollector(AbsDictConfigCollector):
 	def __init__(self, **kwargs) -> None:
 		super().__init__(**kwargs)
 		self.global_alias: dict[str, Any] = {}
+		self._dists: set[tuple[str, str | float | int]] = set()
 
 
 	def add(self,
@@ -80,6 +81,7 @@ class AliasConfigCollector(AbsDictConfigCollector):
 					)
 					continue
 
+				self._dists.add((dist_name, version))
 				self.__setitem__(key, v)
 
 			except Exception as e:

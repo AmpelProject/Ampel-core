@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                16.10.2019
-# Last Modified Date:  23.04.2022
+# Last Modified Date:  30.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import os, sys, re, importlib, traceback
@@ -32,6 +32,7 @@ class UnitConfigCollector(ConfigCollector):
 	def __init__(self, **kwargs) -> None:
 		super().__init__(**kwargs)
 		self.err_fqns: list[tuple[str, Exception]] = []
+		self._dists: set[tuple[str, str | float | int]] = set()
 
 
 	def add(self,
@@ -134,6 +135,7 @@ class UnitConfigCollector(ConfigCollector):
 						f'Adding {self.conf_section}: {class_name}'
 					)
 
+				self._dists.add((dist_name, version))
 				self.__setitem__(class_name, entry)
 
 			except Exception as e:
