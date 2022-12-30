@@ -11,6 +11,7 @@ import os, sys, re, importlib, traceback
 from typing import Any
 from os.path import sep
 from contextlib import contextmanager
+from xxhash import xxh64_intdigest
 
 from ampel.protocol.LoggingHandlerProtocol import AggregatingLoggingHandlerProtocol
 from ampel.log.handlers.AmpelStreamHandler import AmpelStreamHandler
@@ -73,15 +74,16 @@ class UnitConfigCollector(ConfigCollector):
 					# Standart unit definition (ex: ampel.t3.stage.T3AggregatingStager)
 					else:
 						class_name = self.get_class_name(el)
-						if not (mro := self.get_mro(el, class_name)):
+						if not (ret := self.get_mro(el, class_name)):
 							self.logger.break_aggregation()
 							continue
 						entry: dict[str, Any] = {
 							'fqn': el,
-							'base': mro,
+							'base': ret[1],
 							'distrib': dist_name,
 							'file': register_file,
-							'version': version
+							'version': version,
+							'xxh64': ret[0]
 						}
 
 				elif isinstance(el, dict):
@@ -163,7 +165,7 @@ class UnitConfigCollector(ConfigCollector):
 		return re.sub(r'.*\.', '', fqn) # noqa
 
 
-	def get_mro(self, module_fqn: str, class_name: str) -> None | list[str]:
+	def get_mro(self, module_fqn: str, class_name: str) -> None | tuple[int, list[str]]:
 		"""
 		:param module_fqn: fully qualified name of module
 		:param class_name: declared class name in the module specified by "module_fqn"
@@ -174,11 +176,12 @@ class UnitConfigCollector(ConfigCollector):
 		try:
 			# contextlib.redirect_stderr does not work with C-loaded backends (ex: annoying healpix warnings)
 			with stderr_redirected(self.options.hide_stderr):
-				UnitClass = getattr(
-					# import using fully qualified name
-					importlib.import_module(module_fqn),
-					class_name
-				)
+				# import using fully qualified name
+				m = importlib.import_module(module_fqn)
+				# note: can't be a built-in module for which __file__ does not exist
+				with open(m.__file__, "rb") as f: # type: ignore[arg-type]
+					digest = xxh64_intdigest(f.read())
+				UnitClass = getattr(m, class_name)
 		except Exception as e:
 
 			self.err_fqns.append((module_fqn, e))
@@ -196,7 +199,7 @@ class UnitConfigCollector(ConfigCollector):
 
 			return None
 
-		return [
+		return digest, [
 			el.__name__
 			for el in UnitClass.__mro__[:-1]
 			if 'ampel' in el.__module__
