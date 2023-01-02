@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Installing &#8212; ampel-core 0.8.3b18 documentation</title>
+    <title>Installing &#8212; ampel-core 0.8.3b19 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
@@ -27,7 +27,7 @@
         <li class="right" >
           <a href="testing.html" title="Running the automated tests"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.8.3b18 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.8.3b19 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Installing</a></li> 
       </ul>
     </div>  
@@ -114,7 +114,7 @@
 </pre></div>
 </div>
 <p>Then, run <code class="docutils literal notranslate"><span class="pre">poetry_dev</span></code> in <code class="docutils literal notranslate"><span class="pre">ampel-ztf</span></code>, which depends on the other four. This will look for any dependencies whose names match sibling directories (which we ensured by cloning each repository as the package name), and remove them from the requirements. This will cause <code class="docutils literal notranslate"><span class="pre">poetry</span></code> to uninstall any distributions from PyPI that might have already been installed. Then, it will re-add these as path dependencies, causing them to be installed in develop mode:</p>
-<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">cd</span> ampel-ztf<span class="p">;</span> poetry_dev path
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">cd</span><span class="w"> </span>ampel-ztf<span class="p">;</span><span class="w"> </span>poetry_dev<span class="w"> </span>path
 <span class="go">ampel-interface: Changing version requirement @0.7.1-alpha.7 to path requirement../ampel-interface</span>
 <span class="go">ampel-core: Changing version requirement @0.7.1-alpha.5 to path requirement../ampel-core</span>
 <span class="go">ampel-photometry: Changing version requirement ~0.7.1-alpha.0 to path requirement../ampel-photometry</span>
@@ -192,7 +192,7 @@
 <p>Ensure that you have <em>all</em> the Ampel core packages cloned in sibling directories before this step. If you were missing e.g. ampel-photometry, it would be installed from PyPI, which would also install its dependencies like ampel-core from PyPI.</p>
 </div>
 <p>Finally, install <code class="docutils literal notranslate"><span class="pre">ampel-ztf</span></code> itself in develop mode. Since all the dependencies were installed in the previous step, this does nothing but add the <code class="docutils literal notranslate"><span class="pre">.pth</span></code> file:</p>
-<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>poetry install
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>poetry<span class="w"> </span>install
 <span class="go">Installing dependencies from lock file</span>
 
 <span class="go">No dependencies to install or update</span>
@@ -278,7 +278,7 @@
         <li class="right" >
           <a href="testing.html" title="Running the automated tests"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.8.3b18 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.8.3b19 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Installing</a></li> 
       </ul>
     </div>

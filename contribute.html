@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Contribute &#8212; ampel-core 0.8.3b18 documentation</title>
+    <title>Contribute &#8212; ampel-core 0.8.3b19 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
@@ -31,7 +31,7 @@
         <li class="right" >
           <a href="legacy.html" title="Porting contrib projects from v0.6"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.8.3b18 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.8.3b19 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Contribute</a></li> 
       </ul>
     </div>  
@@ -84,24 +84,24 @@
 <span id="contribute-configuration-channels"></span><h3>Defining channels and registering units<a class="headerlink" href="#defining-channels-and-registering-units" title="Permalink to this heading">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">conf/ampel-contrib-PROJECTNAME</span></code> should contain at least a top-level configuration file named ampel.yaml, containining at least the definitions of your channels and any custom units
 you may have. For example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">channel</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="nt">EXAMPLE_CHANNEL</span><span class="p">:</span><span class="w"></span>
-<span class="w">    </span><span class="nt">channel</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">EXAMPLE_CHANNEL</span><span class="w"></span>
-<span class="w">    </span><span class="nt">contact</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ampel@desy.de</span><span class="w"></span>
-<span class="w">    </span><span class="nt">active</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w"></span>
-<span class="w">    </span><span class="nt">auto_complete</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">live</span><span class="w"></span>
-<span class="nt">unit</span><span class="p">:</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ampel.contrib.groupname.t0.DecentFilterCopy</span><span class="w"></span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">channel</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">EXAMPLE_CHANNEL</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">channel</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">EXAMPLE_CHANNEL</span>
+<span class="w">    </span><span class="nt">contact</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ampel@desy.de</span>
+<span class="w">    </span><span class="nt">active</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">auto_complete</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">live</span>
+<span class="nt">unit</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ampel.contrib.groupname.t0.DecentFilterCopy</span>
 </pre></div>
 </div>
 <p>The entries in <cite>unit</cite> are module names, i.e. <code class="code docutils literal notranslate"><span class="pre">ampel.contrib.groupname.t0.DecentFilterCopy</span></code> refers to the file <code class="docutils literal notranslate"><span class="pre">ampel/contrib/groupname/t0/DecentFilterCopy.py</span></code>. This file must contain one class, with the same name as the module. For example, when <code class="xref py py-class docutils literal notranslate"><span class="pre">AlertConsumer</span></code> requests instantiation of the unit named <code class="docutils literal notranslate"><span class="pre">DecentFilterCopy</span></code>, the entry above will cause Ampel to do the equivalent of <code class="code docutils literal notranslate"><span class="pre">from</span> <span class="pre">ampel.contrib.groupname.t0.DecentFilterCopy</span> <span class="pre">import</span> <span class="pre">DecentFilterCopy</span></code>.</p>
 <p>Dictionaries can be either embedded directly into the top-level configuration
 file, or in standalone files named after the key. For example, <cite>channel</cite> key
 in the example above can be replaced with a file conf/ampel-contrib-PROJECTNAME/channel/EXAMPLE_CHANNEL.yaml with the contents:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">channel</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">EXAMPLE_CHANNEL</span><span class="w"></span>
-<span class="nt">contact</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ampel@desy.de</span><span class="w"></span>
-<span class="nt">active</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w"></span>
-<span class="nt">auto_complete</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">live</span><span class="w"></span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">channel</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">EXAMPLE_CHANNEL</span>
+<span class="nt">contact</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ampel@desy.de</span>
+<span class="nt">active</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="nt">auto_complete</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">live</span>
 </pre></div>
 </div>
 <p>This can be useful for keeping large configurations neatly organized.</p>
@@ -169,29 +169,29 @@ that are not registered or can’t be imported, or if your unit configurations a
 </div>
 <p>the first one is an instance of <code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.base.LightCurve</span></code> holding the transient information and photometric history. The <code class="docutils literal notranslate"><span class="pre">run_config</span></code> argument is a dictionary containing all the necessary parameters the job needs to run. For example, a catalog-matching T2 module will make use of the <code class="docutils literal notranslate"><span class="pre">light_curve.get_pos</span></code> method to compute the position of the transient and then search around this location among a set of astronomical catalogs specified in the <code class="docutils literal notranslate"><span class="pre">run_config</span></code> dictionary.</p>
 <p>Once you have implemented your favourite T2, you need to register its arguments. As a given T2 module can serve many purposes depending on the parameters, i.e.: different templates in case of lightcurve fitting, different catalogs in case of coordinate matching, ecc., each of these must have be registered with its own name in the <cite>t2_run_configs.json</cite> file. The syntax for entries in this file is:</p>
-<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="nt">&quot;CATALOGMATCH_sdss_class&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="nt">&quot;t2Unit&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CATALOGMATCH&quot;</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="nt">&quot;runConfig&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sdss_class&quot;</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="nt">&quot;author&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ampel-info@desy.de&quot;</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">1.0</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="nt">&quot;lastChange&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;27.08.2018&quot;</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="nt">&quot;private&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="nt">&quot;parameters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="nt">&quot;catalogs&quot;</span><span class="p">:{</span><span class="w"></span>
-<span class="w">            </span><span class="nt">&quot;SDSS_spec&quot;</span><span class="p">:{</span><span class="w"></span>
-<span class="w">                </span><span class="nt">&quot;bla&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;bla&quot;</span><span class="p">,</span><span class="w"></span>
-<span class="w">                </span><span class="nt">&quot;bla&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;bla&quot;</span><span class="p">,</span><span class="w"></span>
-<span class="w">                </span><span class="nt">&quot;keys_to_append&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;z&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;bptclass&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;subclass&quot;</span><span class="p">]</span><span class="w"></span>
-<span class="w">            </span><span class="p">}</span><span class="w"></span>
-<span class="w">        </span><span class="p">}</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="nt">&quot;CATALOGMATCH_sdss_class&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;t2Unit&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CATALOGMATCH&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;runConfig&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sdss_class&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;author&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ampel-info@desy.de&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">1.0</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;lastChange&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;27.08.2018&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;private&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;parameters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;catalogs&quot;</span><span class="p">:{</span>
+<span class="w">            </span><span class="nt">&quot;SDSS_spec&quot;</span><span class="p">:{</span>
+<span class="w">                </span><span class="nt">&quot;bla&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;bla&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;bla&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;bla&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;keys_to_append&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;z&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;bptclass&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;subclass&quot;</span><span class="p">]</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
 </pre></div>
 </div>
 <p>In this example, we use a general purpose <code class="docutils literal notranslate"><span class="pre">CATALOGMATCH</span></code> T2 module to look for transient classification in the SDSS spectroscopic catalog and call this configuration <code class="docutils literal notranslate"><span class="pre">sdss_class</span></code>. This naming of the T2 configurations makes it possible to use the T2 module simply by adding the following <code class="docutils literal notranslate"><span class="pre">t2unit</span></code>:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">{</span><span class="w"></span>
-<span class="s">&quot;t2Unit&quot;</span><span class="nt"> </span><span class="p">:</span><span class="w"> </span><span class="s">&quot;CATALOGMATCH&quot;</span><span class="p p-Indicator">,</span><span class="w"></span>
-<span class="s">&quot;runConfig&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;sdss_class&quot;</span><span class="w"></span>
-<span class="p p-Indicator">}</span><span class="w"></span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">{</span>
+<span class="s">&quot;t2Unit&quot;</span><span class="nt"> </span><span class="p">:</span><span class="w"> </span><span class="s">&quot;CATALOGMATCH&quot;</span><span class="p p-Indicator">,</span>
+<span class="s">&quot;runConfig&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;sdss_class&quot;</span>
+<span class="p p-Indicator">}</span>
 </pre></div>
 </div>
 <p>to the <code class="docutils literal notranslate"><span class="pre">t2Compute</span></code> list of our channel configuration (the <code class="docutils literal notranslate"><span class="pre">channels.json</span></code> configuration file).</p>
@@ -324,7 +324,7 @@ add a source-&gt;t3Supervise to your channel config, e.g.:</p>
         <li class="right" >
           <a href="legacy.html" title="Porting contrib projects from v0.6"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.8.3b18 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.8.3b19 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Contribute</a></li> 
       </ul>
     </div>
