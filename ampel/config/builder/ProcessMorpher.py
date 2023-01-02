@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                16.10.2019
-# Last Modified Date:  16.11.2021
+# Last Modified Date:  02.01.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import json
@@ -13,9 +13,6 @@ from importlib import import_module
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
 from ampel.model.ProcessModel import ProcessModel
 from ampel.util.recursion import walk_and_process_dict
-from ampel.util.mappings import dictify
-from ampel.util.hash import build_unsafe_dict_id
-from ampel.base.LogicalUnit import LogicalUnit
 
 
 class ProcessMorpher:
@@ -37,23 +34,7 @@ class ProcessMorpher:
 
 	def get(self) -> dict[str, Any]:
 		""" :raises: Error if the morphed process does not comply with ProcessModel """
-		return ProcessModel(**self.process).dict()
-
-
-	def generate_version(self, first_pass_config: dict) -> 'ProcessMorpher':
-		"""
-		Generates a version identifier for the underyling process as required by ProcessModel
-
-		:param first_pass_config: required to get the version identifier of the ampel units used by this process
-		"""
-		
-		# TODO: implement
-		if not self.process.get("version"):
-			self.process['version'] = build_unsafe_dict_id(
-				dictify(self.process['processor'].get("config", {}))
-			)
-
-		return self
+		return ProcessModel(**(self.process | {'version': 0})).dict()
 
 
 	def enforce_t3_channel_selection(self, chan_name: str) -> 'ProcessMorpher':
@@ -104,9 +85,8 @@ class ProcessMorpher:
 
 			if self.verbose:
 				self.logger.log(VERBOSE,
-					f'Applying template {self.process["template"]} '
+					f'Applying {self.process["template"]} template '
 					f'to process {self.process["name"]} '
-					f'from distribution {self.process["distrib"]}'
 				)
 
 			self.process = self.templates[
@@ -116,31 +96,24 @@ class ProcessMorpher:
 		return self
 
 
-	def scope_aliases(self, first_pass_config: dict) -> 'ProcessMorpher':
+	def scope_aliases(self, first_pass_config: dict, dist_name: str) -> 'ProcessMorpher':
 		""" Note: should be called before hash_t2_config """
 
-		if self.process.get('distrib'):
+		if self.verbose:
+			self.logger.debug("Scoping aliases")
 
+		recurse = False
+
+		while walk_and_process_dict(
+			arg = self.process,
+			callback = self._scope_alias_callback,
+			match = ['config'],
+			first_pass_config = first_pass_config,
+			dist_name = dist_name
+		):
 			if self.verbose:
-				self.logger.debug("Scoping aliases")
-
-			recurse = False
-
-			while walk_and_process_dict(
-				arg = self.process,
-				callback = self._scope_alias_callback,
-				match = ['config'],
-				first_pass_config = first_pass_config
-			):
-				if self.verbose:
-					self.logger.debug("Alias(es) scoped %s" % ("again" if recurse else ""))
-				recurse = True
-		else:
-
-			self.logger.error(
-				f'Cannot scope aliases for process {self.process["name"]}'
-				f' as it is missing a distribution name'
-			)
+				self.logger.debug("Alias(es) scoped %s" % ("again" if recurse else ""))
+			recurse = True
 
 		return self
 
@@ -165,7 +138,7 @@ class ProcessMorpher:
 			if "/" in v:
 				return False
 
-			scoped_alias = f'{self.process["distrib"]}/{v}'
+			scoped_alias = f'{kwargs["dist_name"]}/{v}'
 
 			if not any([
 				scoped_alias in kwargs['first_pass_config']['alias'][f't{tier}']
