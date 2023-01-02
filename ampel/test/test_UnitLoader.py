@@ -11,7 +11,6 @@ from ampel.secret.AmpelVault import AmpelVault
 from ampel.model.UnitModel import UnitModel
 from ampel.abstract.AbsOpsUnit import AbsOpsUnit
 from ampel.core.ContextUnit import ContextUnit
-from ampel.abstract.AbsEventUnit import AbsEventUnit
 
 
 @pytest.fixture

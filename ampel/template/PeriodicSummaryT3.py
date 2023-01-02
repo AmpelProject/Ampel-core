@@ -7,7 +7,7 @@
 # Last Modified Date: 14.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Any, Literal, Union
+from typing import Any, Literal
 from collections.abc import Sequence
 
 from ampel.types import OneOrMany, ChannelId, Tag
