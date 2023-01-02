@@ -116,12 +116,8 @@ class ConfigCommand(AbsCoreCommand):
 		builder.opt('stop-on-errors', 'build|install', default=2, type=int)
 		builder.opt('distributions', 'build|install', nargs="+", default=["pyampel-", "ampel-"])
 		builder.opt('exclude-distributions', 'build|install', nargs="+", default=[])
-		builder.opt('file', 'install', type=str)
-
-		builder.opt('file', 'validate', type=FileType('r'))
+		builder.opt('file', 'install|validate|transform', type=FileType('r'))
 		builder.opt('secrets', 'validate', type=FileType('r'))
-
-		builder.opt('file', 'transform', type=FileType('r'))
 		builder.opt('out', 'transform', type=FileType('w'))
 		builder.opt('filter', 'transform')
 		builder.opt('validate', 'transform', action='store_true')
