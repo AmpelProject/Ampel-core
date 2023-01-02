@@ -169,9 +169,12 @@ class ConfigBuilder:
 		if self.first_pass_config.has_nested_error():
 			if stop_on_errors > 1:
 				raise ValueError(
-					'Error were reported in first pass config, ' +
-					'you can use the option stop_on_errors = 1 or 0 (CLI: -stop-on-errors 1/0)\n' +
-					'to bypass this exception and get a (possibly non-working) config nonetheless'
+					'\n-------------------------------------------------------------------------\n' +
+					'Error were reported while gathering configurations (first pass config),\n' +
+					'Option stop_on_errors = 1 (or 0) can be used to bypass this warning and\n' +
+					'thereby force the assembly of a possibly non-working config.\n' +
+					'CLI: ampel config install -stop-on-errors 1 (or 0)\n' +
+					'-------------------------------------------------------------------------\n'
 				)
 
 		if ext_resource and not os.path.exists(ext_resource):
@@ -206,7 +209,9 @@ class ConfigBuilder:
 
 		# Add t2 init config collector (in which both hashed values of t2 run configs
 		# and t2 init config will be added)
-		out['confid'] = T02ConfigCollector('confid', self.options, logger=self.logger)
+		out['confid'] = T02ConfigCollector(
+			conf_section='confid', options=self.options, logger=self.logger
+		)
 
 		if not ignore_processes:
 
@@ -223,18 +228,14 @@ class ConfigBuilder:
 					tier=tier, logger=self.logger
 				)
 
-				#out['process'][f't{tier}'] = {
-				#	k: self.first_pass_config[f't{tier}'][k]
-				#	for k in FirstPassConfig.tier_keys if k != 'process'
-				#}
-
 				# New empty process collector to gather morphed processes
 				out['process'][tier_name] = p_collector
 
 				# For each process collected before, apply transformations
-				# and add it to our (almost) final process collector.
-				# 'almost' because a gathering of T0 processes may occure later
-				for p in self.first_pass_config['process'][tier_name].values():
+				# and add result to (almost) final process collector.
+				# 'almost' because a gather of T0 processes may occur later
+				fp_procs_collector = self.first_pass_config['process'][tier_name]
+				for p in fp_procs_collector.values():
 
 					if skip_default_processes and p["name"] in self._default_processes:
 						self.logger.info(f'Skipping {tier_name} default processes: {p["name"]}')
@@ -244,17 +245,15 @@ class ConfigBuilder:
 						self.logger.log(VERBOSE, f'Morphing standalone {tier_name} processes: {p["name"]}')
 						pass
 
+					dist_name = fp_procs_collector._origin[p["name"]][0]
 					try:
 						p_collector.add(
 							self.new_morpher(p) \
-								.scope_aliases(self.first_pass_config) \
+								.scope_aliases(self.first_pass_config, dist_name) \
 								.apply_template(self.first_pass_config) \
 								.hash_t2_config(out) \
-								.generate_version(self.first_pass_config) \
 								.get(),
-							p.get('distrib'),
-							p.get('version'),
-							p.get('source')
+							*fp_procs_collector._origin[p["name"]]
 						)
 					except Exception as e:
 						self.logger.error(f'Unable to morph process {p["name"]}', exc_info=e)
@@ -270,7 +269,8 @@ class ConfigBuilder:
 			)
 
 			# Add (possibly transformed) channels
-			for chan_name, chan_dict in self.first_pass_config['channel'].items():
+			fp_chan_collector = self.first_pass_config['channel']
+			for chan_name, chan_dict in fp_chan_collector.items():
 
 				if not chan_dict.get('active', False):
 					self.logger.info(f'Ignoring deactivated channel: {chan_name}')
@@ -293,8 +293,8 @@ class ConfigBuilder:
 					# Extract channel definition from template instance
 					try:
 						out['channel'].add(
-							(c := tpl.get_channel(self.logger)),
-							c.get('distrib'), c.get('version'), c.get('source')
+							tpl.get_channel(self.logger),
+							*fp_chan_collector._origin[chan_name]
 						)
 					except Exception as ee:
 						log_exception(
@@ -328,17 +328,15 @@ class ConfigBuilder:
 
 						try:
 							# Add transformed process to final process collector
+							dist_name = fp_chan_collector._origin[chan_name][0]
 							out['process'][f't{p["tier"]}'].add(
 								self.new_morpher(p) \
-									.scope_aliases(self.first_pass_config) \
+									.scope_aliases(self.first_pass_config, dist_name) \
 									.apply_template(self.first_pass_config) \
 									.hash_t2_config(out) \
 									.enforce_t3_channel_selection(chan_name) \
-									.generate_version(self.first_pass_config) \
 									.get(),
-								p.get('distrib'),
-								p.get('version'),
-								p.get('source')
+								*fp_chan_collector._origin[chan_name]
 							)
 						except Exception as ee:
 							morph_errors.append(p["name"])
@@ -427,13 +425,21 @@ class ConfigBuilder:
 
 		dists: set[tuple[str, str | float | int]] = set()
 		for k in ('unit', 'channel'):
-			dists.update(out[k]._dists)
+			for kk, v in out[k]._origin.items():
+				dists.add((v[0], v[1]))
+				out[k][kk]['distrib'] = v[0]
+				out[k][kk]['version'] = v[1]
+				out[k][kk]['source'] = v[2]
 
 		for tier in ("t0", "t1", "t2", "t3", "ops"):
-			if tier in out['alias']:
-				dists.update(out['alias'][tier]._dists)
-			if tier in out['process']:
-				dists.update(out['process'][tier]._dists)
+			for k in ('alias', 'process'):
+				if tier in out[k]:
+					for kk, v in out[k][tier]._origin.items():
+						dists.add((v[0], v[1]))
+						if k != 'alias':
+							out[k][tier][kk]['distrib'] = v[0]
+							out[k][tier][kk]['version'] = v[1]
+							out[k][tier][kk]['source'] = v[2]
 
 		for el in dists:
 			if el[0] not in d['build']:
