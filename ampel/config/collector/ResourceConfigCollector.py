@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                16.10.2019
-# Last Modified Date:  22.04.2020
+# Last Modified Date:  02.01.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
@@ -13,15 +13,6 @@ from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 
 
 class ResourceConfigCollector(AbsDictConfigCollector):
-
-	def __init__(self, **kwargs) -> None:
-
-		super().__init__(**kwargs)
-
-		# Used to temporarily save distribution/source conf information of aliases
-		# (usefuly in case of conflicts)
-		self.tmp_resource: dict[str, Any] = {}
-
 
 	def add(self,
 		arg: dict[str, Any],
@@ -57,23 +48,16 @@ class ResourceConfigCollector(AbsDictConfigCollector):
 					else:
 						scope = ""
 
-				self.tmp_resource[key] = register_file, dist_name
-
 				if self.verbose:
 					self.logger.log(VERBOSE,
 						f"Adding {scope} resource '{k}' " +
 						f"from file {register_file}" if register_file else ""
 					)
 
-				if self.get(key):
-					self.duplicated_entry(
-						conf_key = key,
-						section_detail = f"{scope} resource",
-						new_file = register_file,
-						new_dist = dist_name,
-						prev_file = self.tmp_resource.get(key, "unknown")[0],
-						prev_dist = self.tmp_resource.get(key, "unknown")[1]
-					)
+				if self.check_duplicates(
+					key, dist_name, version, register_file,
+					section_detail = f"{scope} resource"
+				):
 					continue
 
 				self.__setitem__(key, v)

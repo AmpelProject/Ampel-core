@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                16.10.2019
-# Last Modified Date:  30.12.2022
+# Last Modified Date:  02.01.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import os, sys, re, importlib, traceback
@@ -18,7 +18,7 @@ from ampel.log.handlers.AmpelStreamHandler import AmpelStreamHandler
 from ampel.util.collections import ampel_iter
 from ampel.util.distrib import get_files
 from ampel.base.AmpelBaseModel import AmpelBaseModel
-from ampel.config.collector.ConfigCollector import ConfigCollector
+from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 from ampel.log import VERBOSE
 
 
@@ -27,16 +27,15 @@ class RemoteUnitDefinition(AmpelBaseModel):
 	base: list[str]
 
 
-class UnitConfigCollector(ConfigCollector):
+class UnitConfigCollector(AbsDictConfigCollector):
 
 
 	def __init__(self, **kwargs) -> None:
 		super().__init__(**kwargs)
 		self.err_fqns: list[tuple[str, Exception]] = []
-		self._dists: set[tuple[str, str | float | int]] = set()
 
 
-	def add(self,
+	def add(self, # type: ignore[override]
 		arg: list[dict[str, str] | str],
 		dist_name: str,
 		version: str | float | int,
@@ -80,9 +79,6 @@ class UnitConfigCollector(ConfigCollector):
 						entry: dict[str, Any] = {
 							'fqn': el,
 							'base': ret[1],
-							'distrib': dist_name,
-							'file': register_file,
-							'version': version,
 							'xxh64': ret[0]
 						}
 
@@ -97,12 +93,7 @@ class UnitConfigCollector(ConfigCollector):
 						continue
 
 					class_name = d.class_name
-					entry = {
-						'base': d.base,
-						'distrib': dist_name,
-						'file': register_file,
-						'version': version
-					}
+					entry = {'base': d.base}
 
 				else:
 					self.error(
@@ -111,14 +102,7 @@ class UnitConfigCollector(ConfigCollector):
 					)
 					continue
 
-				if self.get(class_name):
-					self.duplicated_entry(
-						conf_key = class_name,
-						section_detail = f'{self.tier} {self.conf_section}',
-						new_file = register_file,
-						new_dist = dist_name,
-						prev_file = self.get(class_name).get('conf', 'unknown') # type: ignore
-					)
+				if self.check_duplicates(class_name, dist_name, version, register_file):
 					continue
 
 				if "AmpelUnit" not in entry['base'] and "AmpelBaseModel" not in entry['base']:
@@ -137,7 +121,6 @@ class UnitConfigCollector(ConfigCollector):
 						f'Adding {self.conf_section}: {class_name}'
 					)
 
-				self._dists.add((dist_name, version))
 				self.__setitem__(class_name, entry)
 
 			except Exception as e:

@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                16.10.2019
-# Last Modified Date:  30.12.2022
+# Last Modified Date:  02.01.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
@@ -21,7 +21,6 @@ class AliasConfigCollector(AbsDictConfigCollector):
 	def __init__(self, **kwargs) -> None:
 		super().__init__(**kwargs)
 		self.global_alias: dict[str, Any] = {}
-		self._dists: set[tuple[str, str | float | int]] = set()
 
 
 	def add(self,
@@ -59,29 +58,20 @@ class AliasConfigCollector(AbsDictConfigCollector):
 					self.global_alias[key] = dist_name
 				else:
 					# Distribution scoped alias
-					if dist_name:
-						key = f"{dist_name}/{k}"
-						scope = "scoped"
-					else:
-						scope = ""
+					key = f"{dist_name}/{k}"
+					scope = "scoped"
 
 				if self.verbose:
 					self.logger.log(VERBOSE,
 						f"Adding {scope} {self.tier} alias: {key}"
 					)
 
-				if self.get(key):
-					self.duplicated_entry(
-						conf_key = key,
-						section_detail = f"{self.tier} {scope} alias",
-						new_file = register_file,
-						new_dist = dist_name,
-						prev_file = self.get(key).get("conf", "unknown"), # type: ignore
-						prev_dist = dist_name if "/" in key else self.global_alias.get(key, "unknown")
-					)
+				if self.check_duplicates(
+					key, dist_name, version, register_file,
+					section_detail = f"{self.tier} {scope} alias"
+				):
 					continue
 
-				self._dists.add((dist_name, version))
 				self.__setitem__(key, v)
 
 			except Exception as e:

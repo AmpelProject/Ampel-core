@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                16.10.2019
-# Last Modified Date:  30.12.2022
+# Last Modified Date:  02.01.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
@@ -13,10 +13,6 @@ from ampel.log import VERBOSE
 
 
 class ProcessConfigCollector(AbsDictConfigCollector):
-
-	def __init__(self, **kwargs) -> None:
-		super().__init__(**kwargs)
-		self._dists: set[tuple[str, str | float | int]] = set()
 
 	def add(self,
 		arg: dict[str, Any],
@@ -28,7 +24,9 @@ class ProcessConfigCollector(AbsDictConfigCollector):
 		# Doing basic validation here already
 		for k in ("name", "schedule"):
 			if k not in arg:
-				return self.missing_key(what="Process", key=k, dist_name=dist_name, register_file=register_file)
+				return self.missing_key(
+					what="Process", key=k, dist_name=dist_name, register_file=register_file
+				)
 
 		proc_name = arg["name"]
 
@@ -38,23 +36,15 @@ class ProcessConfigCollector(AbsDictConfigCollector):
 			else:
 				arg['tier'] = None
 
-		if dist_name:
-			arg['distrib'] = dist_name
-
-		if register_file:
-			arg['source'] = register_file
-
 		if self.verbose:
-			self.logger.log(VERBOSE,
-				f"Adding {self.tier} process: '{proc_name}'" +
-				f" from file '{register_file}'" if register_file else ""
+			self.logger.log(
+				VERBOSE, f"Adding {self.tier} process: '{proc_name}' from {register_file}"
 			)
 
-		if self.get(proc_name):
-			return self.duplicated_entry(
-				section_detail = f"{arg['tier']}.process",
-				conf_key = proc_name, new_dist = dist_name, new_file = register_file
-			)
+		if self.check_duplicates(
+			proc_name, dist_name, version, register_file,
+			section_detail = f"{arg['tier']}.process"
+		):
+			return
 
-		self._dists.add((dist_name, version))
 		self.__setitem__(proc_name, arg)

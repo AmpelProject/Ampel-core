@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                16.10.2019
-# Last Modified Date:  30.12.2022
+# Last Modified Date:  02.01.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
@@ -14,12 +14,6 @@ from ampel.log import VERBOSE
 
 
 class ChannelConfigCollector(AbsDictConfigCollector):
-
-
-	def __init__(self, **kwargs) -> None:
-		super().__init__(**kwargs)
-		self._dists: set[tuple[str, str | float | int]] = set()
-
 
 	def add(self,
 		chan_dict: dict[str, Any],
@@ -42,24 +36,8 @@ class ChannelConfigCollector(AbsDictConfigCollector):
 			if self.verbose:
 				self.logger.log(VERBOSE, f'Adding channel: {chan_name}')
 
-			if 'distrib' not in chan_dict:
-				chan_dict['distrib'] = dist_name
-
-			if 'source' not in chan_dict:
-				chan_dict['source'] = register_file
-
-			if 'version' not in chan_dict:
-				chan_dict['version'] = version
-
-			# Check duplicated channel names
-			if self.get(chan_name):
-				self.duplicated_entry(
-					conf_key = chan_name,
-					new_file = chan_dict['source'],
-					new_dist = chan_dict['distrib'],
-					prev_file = self.get(chan_name).get('conf', 'unknown'), # type: ignore
-					prev_dist = self.get(chan_name).get('distrib', 'unknown') # type: ignore
-				)
+			# Check duplicated channel names between distribs
+			if self.check_duplicates(chan_name, dist_name, version, register_file):
 				return
 
 			if not ('NO_HASH' in chan_dict.get('policy', []) or isinstance(chan_name, int)):
@@ -72,7 +50,6 @@ class ChannelConfigCollector(AbsDictConfigCollector):
 							f'Channel name 2: {chan_dict["channel"]}. Hash value: {chan_dict.get("hash")}'
 						)
 
-			self._dists.add((dist_name, version))
 			self.__setitem__(chan_name, chan_dict)
 
 		except Exception as e:
