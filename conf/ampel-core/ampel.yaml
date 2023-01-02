@@ -48,6 +48,7 @@ unit:
 - ampel.demo.DemoFirstPointT2Unit
 - ampel.demo.DemoReviewT3Unit
 - ampel.demo.DemoPlainT3Unit
+- ampel.demo.DemoResourceT3Unit
 - ampel.t3.unit.T3LogAggregatedStocks
 - ampel.t3.unit.T3PrintStore
 - ampel.dev.NoShaper
