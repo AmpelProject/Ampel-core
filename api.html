@@ -10,10 +10,8 @@
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Porting contrib projects from v0.6" href="legacy.html" />
@@ -752,6 +750,8 @@ If name is None, unique (int) name will be generated
 <dt class="sig sig-object py" id="ampel.core.AmpelRegister.AmpelRegister">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.core.AmpelRegister.</span></span><span class="sig-name descname"><span class="pre">AmpelRegister</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">autoload</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/core/AmpelRegister.html#AmpelRegister"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.AmpelRegister.AmpelRegister" title="Permalink to this definition">¶</a></dt>
 <dd><p># noqa: E101</p>
+<section id="general-notes">
+<h3>General notes:<a class="headerlink" href="#general-notes" title="Permalink to this heading">¶</a></h3>
 <p>An ampel register file is made of three parts: signature, header and content</p>
 <p>1) The file signature is encoded in the first 11 bytes.
 The signature contains the header’s length and size (3 bytes each)</p>
@@ -762,6 +762,9 @@ The size of the header is customizable during file creation.</p>
 which stores information in binary format. Compression can be turned off if so whished.
 (The size of a register containing 10 millions alert ids [8 bytes] and filter
 return code [1 byte] can be reduced from ~90MB to ~50MB using gzip with default settings).</p>
+</section>
+<section id="properties">
+<h3>Properties:<a class="headerlink" href="#properties" title="Permalink to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>Registers can be re-opened and appended</p></li>
 <li><p>Header content can be accessed or updated independently of the register’s content.</p></li>
@@ -774,16 +777,26 @@ Once the limit is reached, the full register is renamed and a new one is created
 </ul>
 <p>Note: the module ampel.util.register contains tools to manually change ampel registers, such as:
 <cite>get_header_content</cite>, <cite>open_file_and_write_header</cite> and <cite>rescale_header</cite></p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>path_base</strong> – the base folder path where to create/read register files.</p></li>
-<li><p><strong>path_extra</strong> – an optional additional folder path (or paths) to be appended to <cite>path_base</cite>.</p></li>
-<li><p><strong>full_path</strong> – when provided, all path building options will be ignored and a new
-file handle will be opened using the provided full_path</p></li>
-<li><p><strong>file_handle</strong> – if you provide a file handle to a register file (parameter file handle),
-it will be used and all path options will be ignored.</p></li>
-<li><p><strong>file_cap</strong> – <p>registers can be capped, typically based on a maximum number of blocks.
+</section>
+<section id="target-file">
+<h3>Target file:<a class="headerlink" href="#target-file" title="Permalink to this heading">¶</a></h3>
+<dl class="field-list">
+<dt class="field-odd">param path_base<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the base folder path where to create/read register files.</p>
+</dd>
+<dt class="field-even">param path_extra<span class="colon">:</span></dt>
+<dd class="field-even"><p>an optional additional folder path (or paths) to be appended to <cite>path_base</cite>.</p>
+</dd>
+<dt class="field-odd">param full_path<span class="colon">:</span></dt>
+<dd class="field-odd"><p>when provided, all path building options will be ignored and a new
+file handle will be opened using the provided full_path</p>
+</dd>
+<dt class="field-even">param file_handle<span class="colon">:</span></dt>
+<dd class="field-even"><p>if you provide a file handle to a register file (parameter file handle),
+it will be used and all path options will be ignored.</p>
+</dd>
+<dt class="field-odd">param file_cap<span class="colon">:</span></dt>
+<dd class="field-odd"><p>registers can be capped, typically based on a maximum number of blocks.
 When access to a full register is requested, the original file is renamed and a new register is created.
 During files renames, an index is appended (suffix) to the original file name.
 The current (newest) register file always comes without index suffix.
@@ -797,21 +810,21 @@ This index is saved into the current register header.</p>
 </div>
 <p>Note1: file renames occur during the opening procedure of registers, no check is performed during the filling of registers
 once a register is opened. A register can thus grow beyond the defined limit as long as a process keeps it open.</p>
-</p></li>
-</ul>
 </dd>
 </dl>
+</section>
+<section id="header">
+<h3>Header:<a class="headerlink" href="#header" title="Permalink to this heading">¶</a></h3>
 <p>Limitations:</p>
 <ul class="simple">
 <li><p>The maximum space reservable for the header is 2**24 bytes, i.e ~16MB.</p></li>
 <li><p>integers cannot exceed 2**63 bits. Should you need to save bigger numbers,
 please use the methods bindata_to_int, int_to_bindata from module ampel.util.bson</p></li>
 </ul>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>new_header_size</strong> – <p>either None, or an integer or a string (please read the note above).</p>
-<ul>
+<dl class="field-list">
+<dt class="field-odd">param new_header_size<span class="colon">:</span></dt>
+<dd class="field-odd"><p>either None, or an integer or a string (please read the note above).</p>
+<ul class="simple">
 <li><p>None or 0: the header block size will equal the header encoded length. Choose this option if
 the header is not meant to be updated later. Otherwise, updates will only be possible if the header size
 does not grow (note that there is a margin allowed since header exceeding the limit are automatically
@@ -824,19 +837,24 @@ the specified header margin will be added. For example, ‘+1024’ means that 1
 allocated additionally to the initial header lengths for future updates. If the initial header length
 is 100 bytes, then a header block of 1124 bytes will be created.</p></li>
 </ul>
-</p></li>
-<li><p><strong>header_extra</strong> – any extra to be included in the header under the key ‘extra’ (must be bson encodable)</p></li>
-<li><p><strong>header_extra_base</strong> – any extra to be included in the header at root depth (must be bson encodable)</p></li>
-<li><p><strong>header_update_anyway</strong> – if no update to the register is made, the default setting is that the
+</dd>
+<dt class="field-even">param header_extra<span class="colon">:</span></dt>
+<dd class="field-even"><p>any extra to be included in the header under the key ‘extra’ (must be bson encodable)</p>
+</dd>
+<dt class="field-odd">param header_extra_base<span class="colon">:</span></dt>
+<dd class="field-odd"><p>any extra to be included in the header at root depth (must be bson encodable)</p>
+</dd>
+<dt class="field-even">param header_update_anyway<span class="colon">:</span></dt>
+<dd class="field-even"><p>if no update to the register is made, the default setting is that the
 header is not updated. This settings forces header updates. For example, you might want
-to save all run ids into the header whether or not they changed the content of the register.</p></li>
-<li><p><strong>header_log_accesses</strong> – <p>if True, timestamps will be recorded each time the register is opened/closed
+to save all run ids into the header whether or not they changed the content of the register.</p>
+</dd>
+<dt class="field-odd">param header_log_accesses<span class="colon">:</span></dt>
+<dd class="field-odd"><p>if True, timestamps will be recorded each time the register is opened/closed
 along with the amount of new blocks appended to the register.</p>
 <p>Note 1: parameter <cite>new_header_size</cite> must be set when using this value.
 Note 2: see docstring of paramter <cite>header_update_anyway</cite> that affects the behavior of this parameter.</p>
 <p>In the following example, <cite>header_log_accesses</cite> is responsible for creating/updating the key ‘updated’:</p>
-</p></li>
-</ul>
 </dd>
 </dl>
 <dl>
@@ -854,8 +872,11 @@ Note 2: see docstring of paramter <cite>header_update_anyway</cite> that affects
 </dl>
 </dd>
 </dl>
+</section>
+<section id="errors">
+<h3>Errors:<a class="headerlink" href="#errors" title="Permalink to this heading">¶</a></h3>
 <dl class="field-list simple">
-<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dt class="field-odd">raises<span class="colon">:</span></dt>
 <dd class="field-odd"><p>ValueError, FileNotFoundError</p>
 </dd>
 </dl>
@@ -1012,6 +1033,7 @@ Ex: BaseAlertRegister adds the current run id</p>
 <p>(aimed for admins working with command line)</p>
 </dd></dl>
 
+</section>
 </dd></dl>
 
 </section>
@@ -1069,7 +1091,7 @@ Ex: BaseAlertRegister adds the current run id</p>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018-2021, Ampel Project.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.1.1.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 6.0.0.
     </div>
   </body>
 </html>
