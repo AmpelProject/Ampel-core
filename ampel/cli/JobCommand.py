@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import tarfile, tempfile, ujson, yaml, io, os, signal, sys, \
-	subprocess, platform, shutil, filecmp, psutil
+	subprocess, platform, shutil, filecmp, psutil, pkg_resources
 from time import time, sleep
 from multiprocessing import Queue, Process
 from argparse import ArgumentParser
@@ -39,6 +39,7 @@ from ampel.model.job.TaskUnitModel import TaskUnitModel
 from ampel.model.job.TemplateUnitModel import TemplateUnitModel
 from ampel.util.pretty import out_stack, get_time_delta
 from ampel.util.debug import MockPool
+from ampel.util.getch import yes_no
 
 
 class JobCommand(AbsCoreCommand):
@@ -81,6 +82,7 @@ class JobCommand(AbsCoreCommand):
 			'secrets': 'path to a YAML secrets store in sops format',
 			'keep-db': 'do not reset databases even if so requested by job file',
 			'reset-db': 'reset databases even if not requested by job file',
+			'no-conf-check': 'do not check for central config changes',
 			'no-agg': 'enables display of matplotlib plots via plt.show() for debugging',
 			'no-breakpoint': 'ignore pdb breakpoints',
 			'no-mp': 'deactivates multiprocessing by monkey patching multiprocessing.Pool with ampel.util.debug.MockPool for debugging',
@@ -97,7 +99,7 @@ class JobCommand(AbsCoreCommand):
 			'show-plots': 'show plots created by job (requires ampel-plot-cli. Use "export AMPEL_PLOT_DPI=300" to increase png quality)',
 			'allow-resource-override': 'allow t3 units to overwrite resources previously set by other t3 units',
 			'show-plots-cmd': 'show command required to show plots created by job (requires ampel-plot-cli)',
-			'wait-pid': 'wait until PID completition before starting the current job'
+			'wait-pid': 'wait until process with PID completes before processing current job'
 		})
 
 		parser.req('config', type=str)
@@ -111,6 +113,7 @@ class JobCommand(AbsCoreCommand):
 		parser.opt('keep-db', action='store_true')
 		parser.opt('reset-db', action='store_true')
 		parser.opt('max-parallel-tasks', type=int, default=os.cpu_count())
+		parser.opt('no-conf-check', action='store_true')
 		parser.opt('no-agg', action='store_true')
 		parser.opt('no-breakpoint', action='store_true')
 		parser.opt('no-mp', action='store_true')
@@ -147,7 +150,6 @@ class JobCommand(AbsCoreCommand):
 			import multiprocessing
 			multiprocessing.__dict__['Pool'] = MockPool
 			if not args['no_agg']:
-				from ampel.util.getch import yes_no
 				if yes_no('Set -no-agg option too (required for matplotlib interactions)'):
 					args['no_agg'] = True
 
@@ -268,8 +270,6 @@ class JobCommand(AbsCoreCommand):
 
 		if args['interactive']:
 
-			from ampel.util.getch import yes_no
-
 			try:
 				if purge_db:
 					purge_db = yes_no('Delete existing databases')
@@ -301,11 +301,11 @@ class JobCommand(AbsCoreCommand):
 				return # raise ValueError ?
 
 		if not args['config'] and not os.path.exists(get_user_data_config_path()):
-			from ampel.util.getch import yes_no
 			if yes_no('Config seems to be missing, build and install'):
 				from ampel.cli.ConfigCommand import ConfigCommand
 				cc = ConfigCommand()
-				cc.run({'install': True}, unknown_args=[], sub_op = 'build')
+				a, ua = cc.get_parser('install').parse_known_args()
+				cc.run(vars(a), ua, sub_op = 'install')
 
 		s = f'Running job {job.name or schema_descr}'
 		logger.info(s)
@@ -324,6 +324,38 @@ class JobCommand(AbsCoreCommand):
 		)
 
 		config_dict = ctx.config._config
+
+		# Check for outdated config
+		if 'build' in config_dict:
+			for k in config_dict['build']:
+				if 'ampel-' in k:
+					config_v = config_dict['build'][k]
+					current_v = pkg_resources.get_distribution(k).version
+					if (
+						config_v != current_v and
+						yes_no(
+							f'\nVersion of {k} has changed since config was last built '
+							f'(config: {config_v}, current: {current_v}), '
+							f'rebuild and install new config'
+						)
+					):
+							from ampel.cli.ConfigCommand import ConfigCommand
+							cc = ConfigCommand()
+							a, ua = cc.get_parser('install').parse_known_args()
+							cc.run(vars(a), ua, sub_op = 'install')
+
+							# Reload config
+							ctx = self.get_context(
+								args, unknown_args, logger,
+								freeze_config = False,
+								ContextClass = DevAmpelContext,
+								purge_db = purge_db,
+								db_prefix = job.mongo.prefix,
+								require_existing_db = False,
+								one_db = True
+							)
+							break
+
 		self._patch_config(config_dict, job, logger)
 		ctx.config._config = recursive_freeze(config_dict)
 
