@@ -51,12 +51,12 @@ class ConfigCollector(dict):
 		)
 
 
-	def duplicated_entry(self,
+	def report_duplicated_entry(self,
 		conf_key: str,
-		prev_file: None | str = None,
-		prev_dist: None | str = None,
-		new_file: None | str = None,
-		new_dist: None | str = None,
+		prev_file: str,
+		prev_dist: str,
+		new_file: str,
+		new_dist: str,
 		section_detail: None | str = None
 	) -> None:
 
@@ -66,12 +66,6 @@ class ConfigCollector(dict):
 			'Previously set by $prev\n' +
 			'Redefined by $new'
 		)
-
-		if prev_file is None:
-			prev_file = self.get(conf_key, {}).get('source', 'unknown')
-
-		if prev_dist is None:
-			prev_dist = self.get(conf_key, {}).get('distrib', 'unknown')
 
 		prev = self.distrib_hint(prev_dist, prev_file, False)
 		new = self.distrib_hint(new_dist, new_file, False)
