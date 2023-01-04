@@ -94,6 +94,15 @@ class T2Worker(AbsWorker[T2Document]):
 	#: failures. Different backoff strategies may be specified for different codes
 	backoff_on_retry: None | list[BackoffConfig] = [BackoffConfig()]
 
+	#: dependency codes to consider transient
+	pending_codes: list[int] = [
+		DocumentCode.T2_PENDING_DEPENDENCY, # input t2 doc has not yet resolved
+		DocumentCode.T2_MISSING_DEPENDENCY, # input t2 docs not found
+		DocumentCode.T2_UNKNOWN_LINK, # input t1 doc not found
+		DocumentCode.T2_MISSING_INFO, # t0 docs not found
+		DocumentCode.RUNNING, # input t2 doc handled in another process
+		DocumentCode.TOO_MANY_TRIALS,
+	]
 
 	def __init__(self, **kwargs):
 		super().__init__(**kwargs)
@@ -102,6 +111,7 @@ class T2Worker(AbsWorker[T2Document]):
 			for backoff in (self.backoff_on_retry or [])
 			for code in backoff.code_match
 		}
+		self._pending_codes = set(self.pending_codes)
 
 
 	def process_doc(self,
@@ -508,7 +518,7 @@ class T2Worker(AbsWorker[T2Document]):
 				t2_views.append(T2DocView.of(dep_t2_doc, self.context.config))
 
 			for view in t2_views:
-				if view.get_payload() is None:
+				if view.code in self._pending_codes:
 					if logger.verbose > 1:
 						logger.debug(
 							'Dependent T2 unit not run yet',
@@ -520,6 +530,18 @@ class T2Worker(AbsWorker[T2Document]):
 							}
 						)
 					return UnitResult(code=DocumentCode.T2_PENDING_DEPENDENCY)
+				elif view.get_payload() is None:
+					logger.error(
+						'Dependent T2 unit failed',
+						extra={
+							'unit': view.unit,
+							'stock': view.stock,
+							'link': view.link,
+							't2_type': view.t2_type,
+							'code': view.code,
+						}
+					)
+					return UnitResult(code=DocumentCode.T2_FAILED_DEPENDENCY)
 
 		if not t2_views:
 			return UnitResult(code=DocumentCode.T2_MISSING_DEPENDENCY)

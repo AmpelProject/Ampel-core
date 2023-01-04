@@ -14,14 +14,14 @@ files = [
 
 [[package]]
 name = "ampel-interface"
-version = "0.8.3b13"
+version = "0.8.3b14"
 description = "Base classes for the Ampel analysis platform"
 category = "main"
 optional = false
 python-versions = ">=3.10,<4.0"
 files = [
-    {file = "ampel_interface-0.8.3b13-py3-none-any.whl", hash = "sha256:cf11416d93f1c5fd7f78fc8c74b290cced015c16eb5a2ab0c58606fbddb1fad8"},
-    {file = "ampel_interface-0.8.3b13.tar.gz", hash = "sha256:ea837ae7a4fb8cf0fb20b7d6c0af2b4f64e51e0f3443e181b21cf678456debe3"},
+    {file = "ampel_interface-0.8.3b14-py3-none-any.whl", hash = "sha256:d99ee831c87f07e27b1b6b366e05b466974f071c70c4a28d767f3c11c1fb576a"},
+    {file = "ampel_interface-0.8.3b14.tar.gz", hash = "sha256:20dcfccb1a6367bbc23cb6498923fa9cf577fd6cffa3d07e51478bba37d30de0"},
 ]
 
 [package.dependencies]
@@ -31,7 +31,7 @@ ujson = ">=5.1.0,<6.0.0"
 xxhash = ">=3.0.0,<4.0.0"
 
 [package.extras]
-docs = ["Sphinx (>=5.0.0,<6.0.0)", "sphinx-autodoc-typehints (>=1.11.1,<2.0.0)", "tomlkit (>=0.11.0,<0.12.0)"]
+docs = ["Sphinx (>=6.0.0,<7.0.0)", "sphinx-autodoc-typehints (>=1.11.1,<2.0.0)", "tomlkit (>=0.11.0,<0.12.0)"]
 
 [[package]]
 name = "anyio"
@@ -1790,4 +1790,4 @@ slack = ["slack-sdk"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.11"
-content-hash = "cc444b79a673b61ac86436e4986ff931ac52ecac2dab162641feee83afa98d69"
+content-hash = "49bc2450d2585a1af4c1db7a2f861fe29bd634743e6c82b30c4b0fff23e84e8f"
