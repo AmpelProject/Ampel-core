@@ -124,7 +124,7 @@ class T2Utils:
 			match.update(custom)
 
 		if code is not None:
-			match['code'] = code if isinstance(code, int) else maybe_match_array(code)
+			match['code'] = code if isinstance(code, int) else maybe_match_array(list(code))
 
 		if kwargs.get('debug'):
 			self.logger.debug("Using following matching criteria: %s" % match)
