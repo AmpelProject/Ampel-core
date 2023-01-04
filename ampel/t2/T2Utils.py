@@ -22,6 +22,7 @@ from ampel.content.T2Document import T2Document
 from ampel.content.JournalRecord import JournalRecord
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.mongo.query.general import build_general_query
+from ampel.mongo.utils import maybe_match_array
 from ampel.util.collections import check_seq_inner_type
 
 
@@ -123,7 +124,7 @@ class T2Utils:
 			match.update(custom)
 
 		if code is not None:
-			match['code'] = code
+			match['code'] = code if isinstance(code, int) else maybe_match_array(code)
 
 		if kwargs.get('debug'):
 			self.logger.debug("Using following matching criteria: %s" % match)
