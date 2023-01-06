@@ -13,8 +13,9 @@ from multiprocessing.pool import ThreadPool
 from pymongo.errors import BulkWriteError
 from pymongo.collection import Collection
 from pymongo import UpdateOne, InsertOne, UpdateMany
-from typing import Any, Literal, Union, Mapping
+from typing import Any, Generator, Literal, Union, Mapping
 from collections.abc import Callable, Iterable
+from contextlib import contextmanager
 
 from ampel.core.Schedulable import Schedulable
 from ampel.log.utils import report_exception, report_error, convert_dollars
@@ -205,6 +206,19 @@ class DBUpdatesBuffer(Schedulable):
 
 	def add_stock_update(self, update: DBOp) -> None:
 		self.db_ops['stock'].append(update)
+
+
+	@contextmanager
+	def group_updates(self) -> Generator:
+		"""
+		Ensure that updates issued in this context are grouped together
+		"""
+		block_autopush = self._block_autopush
+		self._block_autopush = True
+		try:
+			yield
+		finally:
+			self._block_autopush = block_autopush
 
 
 	def request_autopush(self) -> None:
