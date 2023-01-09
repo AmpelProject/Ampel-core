@@ -14,6 +14,7 @@ from datetime import datetime
 from io import StringIO
 from httpx import AsyncClient
 from prometheus_client.parser import text_fd_to_metric_families
+import pytest_asyncio
 
 from ampel.metrics.AmpelDBCollector import AmpelDBCollector
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
@@ -23,7 +24,7 @@ from ampel.util.freeze import recursive_unfreeze
 from ampel.util.mappings import set_by_path
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def test_client(dev_context, monkeypatch):
     monkeypatch.setattr("ampel.run.server.context", dev_context)
     for attr in (
