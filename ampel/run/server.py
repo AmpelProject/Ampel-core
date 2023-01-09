@@ -314,11 +314,12 @@ async def get_config(rest_of_path: str):
 # Metrics
 # -------------------------------------
 
+_metrics_registry = AmpelMetricsRegistry()
 
 @app.get("/metrics")
-async def get_metrics(accept: None | str = Header(None)):
+async def get_metrics(accept: str = Header("text/plain")):
     encoder, content_type = choose_encoder(accept)
-    return Response(content=encoder(AmpelMetricsRegistry), media_type=content_type)
+    return Response(content=encoder(_metrics_registry), media_type=content_type)
 
 
 # -------------------------------------

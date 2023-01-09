@@ -5,7 +5,7 @@ from prometheus_client import CollectorRegistry, Counter, Gauge, Histogram
 from prometheus_client.multiprocess import MultiProcessCollector
 
 
-class AmpelMetricsRegistry:
+class AmpelMetricsRegistry(CollectorRegistry):
 
     _registry: ClassVar[None | CollectorRegistry] = None
     _standalone_collectors: ClassVar[list[Any]] = []

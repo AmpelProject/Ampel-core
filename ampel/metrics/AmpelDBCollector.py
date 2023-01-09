@@ -9,7 +9,7 @@
 
 
 from dataclasses import dataclass
-from typing import List
+from typing import Sequence
 
 from prometheus_client.metrics_core import GaugeMetricFamily, Metric # type: ignore
 
@@ -26,7 +26,7 @@ class AmpelDBCollector:
 
     db: AmpelDB
 
-    def collect(self) -> list[Metric]:
+    def collect(self) -> Sequence[Metric]:
 
         metrics = []
         try:
