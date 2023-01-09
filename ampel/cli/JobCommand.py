@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  19.12.2022
+# Last Modified Date:  09.01.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import tarfile, tempfile, ujson, yaml, io, os, signal, sys, \
@@ -226,6 +226,9 @@ class JobCommand(AbsCoreCommand):
 
 		job, _ = self.get_job_schema(schema_files, logger, compute_sig=False)
 
+		if job is None:
+			return
+
 		if args.get('edit') == 'parsed':
 			fd, fname = tempfile.mkstemp(suffix='.yml')
 			# Seems fd does not work with yaml.dump(), unsure why
@@ -237,6 +240,9 @@ class JobCommand(AbsCoreCommand):
 			edit_job(fname)
 			tmp_files.append(fname)
 			job, _ = self.get_job_schema([fname], logger, compute_sig=False)
+
+		if job is None:
+			return
 
 		schema_descr = '|'.join(
 			[os.path.basename(sf) for sf in schema_files]
@@ -339,22 +345,22 @@ class JobCommand(AbsCoreCommand):
 							f'rebuild and install new config'
 						)
 					):
-							from ampel.cli.ConfigCommand import ConfigCommand
-							cc = ConfigCommand()
-							a, ua = cc.get_parser('install').parse_known_args()
-							cc.run(vars(a), ua, sub_op = 'install')
+						from ampel.cli.ConfigCommand import ConfigCommand
+						cc = ConfigCommand()
+						a, ua = cc.get_parser('install').parse_known_args()
+						cc.run(vars(a), ua, sub_op = 'install')
 
-							# Reload config
-							ctx = self.get_context(
-								args, unknown_args, logger,
-								freeze_config = False,
-								ContextClass = DevAmpelContext,
-								purge_db = purge_db,
-								db_prefix = job.mongo.prefix,
-								require_existing_db = False,
-								one_db = True
-							)
-							break
+						# Reload config
+						ctx = self.get_context(
+							args, unknown_args, logger,
+							freeze_config = False,
+							ContextClass = DevAmpelContext,
+							purge_db = purge_db,
+							db_prefix = job.mongo.prefix,
+							require_existing_db = False,
+							one_db = True
+						)
+						break
 
 		self._patch_config(config_dict, job, logger)
 		ctx.config._config = recursive_freeze(config_dict)
@@ -610,7 +616,7 @@ class JobCommand(AbsCoreCommand):
 		schema_files: Sequence[str],
 		logger: AmpelLogger,
 		compute_sig: bool = True
-	) -> tuple[JobModel, int]:
+	) -> tuple[None, None] | tuple[JobModel, int]:
 
 		lines = io.StringIO()
 		for i, job_fname in enumerate(schema_files):
@@ -624,6 +630,9 @@ class JobCommand(AbsCoreCommand):
 
 		lines.seek(0)
 		job = yaml.safe_load(lines)
+
+		if not job:
+			return None, None
 
 		for k in list(job.keys()):
 			# job root keys starting with % are used by own convention for yaml anchors
