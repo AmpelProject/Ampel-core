@@ -12,7 +12,7 @@ The framework requires analysis and reaction logic to be broken down in adequate
 AMPEL is general enough to be applicable in various fields,
 it was originaly developped to solve challenges in the context of experimental astrophysics.
 
-AMPEL is written in Python 3.10 and its codebase is fully typed.
+AMPEL requires Python 3.10+ and its codebase is fully typed.
  
 
 # Architecture
