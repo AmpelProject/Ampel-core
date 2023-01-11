@@ -269,7 +269,7 @@ class ConfigBuilder:
 			)
 
 			# Add (possibly transformed) channels
-			fp_chan_collector = self.first_pass_config['channel']
+			fp_chan_collector: ChannelConfigCollector = self.first_pass_config['channel']
 			for chan_name, chan_dict in fp_chan_collector.items():
 
 				if not chan_dict.get('active', False):
@@ -280,7 +280,10 @@ class ConfigBuilder:
 
 				# Template processing is required for this particular channel
 				try:
-					tpl = self._get_channel_tpl(chan_dict)
+					tpl = self._get_channel_tpl(
+						chan_dict,
+						*fp_chan_collector._origin[chan_name]
+					)
 				except Exception as ee:
 					log_exception(self.logger, msg=f'Unable to load template ({chan_name})', exc=ee)
 					if stop_on_errors > 0:
@@ -503,7 +506,12 @@ class ConfigBuilder:
 		)
 
 
-	def _get_channel_tpl(self, chan_dict: dict[str, Any]) -> None | AbsChannelTemplate:
+	def _get_channel_tpl(self,
+		chan_dict: dict[str, Any],
+		dist_name: str,
+		version: str | float | int,
+		register_file: str
+	) -> None | AbsChannelTemplate:
 		"""
 		Internal method used to check if a template (and which one)
 		should be applied to a given channel dict.
@@ -513,7 +521,7 @@ class ConfigBuilder:
 
 			if self.verbose:
 				self.logger.log(VERBOSE,
-					f'Channel {chan_dict["channel"]} ({chan_dict["source"]}) '
+					f'Channel {chan_dict["channel"]} ({register_file}) '
 					f'declares template: {chan_dict["template"]}'
 				)
 
