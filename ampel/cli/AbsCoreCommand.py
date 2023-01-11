@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                18.03.2021
-# Last Modified Date:  27.08.2022
+# Last Modified Date:  11.01.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import re, os
@@ -29,6 +29,12 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 
 	def __init__(self):
 		self.parsers = {}
+		try:
+			import sys, IPython
+			sys.breakpointhook = IPython.embed
+		except Exception:
+			pass
+
 
 	def load_config(self,
 		config_path: None | str,
