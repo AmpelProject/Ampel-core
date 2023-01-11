@@ -260,7 +260,7 @@ class ConfigBuilder:
 						if stop_on_errors > 0:
 							raise e
 
-		morph_errors = []
+		morph_errors: list[str] = []
 		if not ignore_channels:
 
 			# Setup empty channel collector
@@ -282,7 +282,7 @@ class ConfigBuilder:
 				try:
 					tpl = self._get_channel_tpl(
 						chan_dict,
-						*fp_chan_collector._origin[chan_name]
+						fp_chan_collector._origin[chan_name][-1],
 					)
 				except Exception as ee:
 					log_exception(self.logger, msg=f'Unable to load template ({chan_name})', exc=ee)
@@ -508,8 +508,6 @@ class ConfigBuilder:
 
 	def _get_channel_tpl(self,
 		chan_dict: dict[str, Any],
-		dist_name: str,
-		version: str | float | int,
 		register_file: str
 	) -> None | AbsChannelTemplate:
 		"""
