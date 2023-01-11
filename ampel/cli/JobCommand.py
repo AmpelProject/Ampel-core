@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  09.01.2023
+# Last Modified Date:  11.01.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import tarfile, tempfile, ujson, yaml, io, os, signal, sys, \
@@ -56,11 +56,7 @@ class JobCommand(AbsCoreCommand):
 
 	def __init__(self):
 		self.parser = None
-		try:
-			import sys, IPython
-			sys.breakpointhook = IPython.embed
-		except Exception:
-			pass
+		super().__init__()
 
 	@staticmethod
 	def get_sub_ops() -> None | list[str]:
