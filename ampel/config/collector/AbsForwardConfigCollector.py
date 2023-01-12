@@ -37,7 +37,7 @@ class AbsForwardConfigCollector(dict, AmpelABC, abstract=True):
 
 		if self.verbose:
 			self.logger.log(VERBOSE,
-				f'Creating {self.__class__.__name__} collector '
+				f'Creating {self.__class__.__name__} '
 				f'for config section "{conf_section}"'
 			)
 

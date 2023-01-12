@@ -32,8 +32,8 @@ class ConfigCollector(dict):
 
 		if options.debug:
 			self.logger.info(
-				f'Creating {self.__class__.__name__} collector '
-				f'for T{self.tier} config section {conf_section}'
+				f'Creating {self.__class__.__name__} '
+				f'for {self.tier} config section "{conf_section}"'
 			)
 
 
