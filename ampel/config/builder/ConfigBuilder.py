@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                03.09.2019
-# Last Modified Date:  30.12.2022
+# Last Modified Date:  12.01.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import os, sys, re, json, yaml, datetime, getpass, importlib, subprocess, pkg_resources
@@ -281,8 +281,7 @@ class ConfigBuilder:
 				# Template processing is required for this particular channel
 				try:
 					tpl = self._get_channel_tpl(
-						chan_dict,
-						fp_chan_collector._origin[chan_name][-1],
+						chan_dict, fp_chan_collector._origin[chan_name][-1]
 					)
 				except Exception as ee:
 					log_exception(self.logger, msg=f'Unable to load template ({chan_name})', exc=ee)
@@ -355,8 +354,7 @@ class ConfigBuilder:
 					# Raw/Simple/Standard channel definition
 					# (encouraged behavior actually)
 					out['channel'].add(
-						chan_dict, chan_dict.get('distrib'),
-						chan_dict.get('version'), chan_dict.get('source')
+						chan_dict, *fp_chan_collector._origin[chan_name]
 					)
 
 		if ext_resource:
