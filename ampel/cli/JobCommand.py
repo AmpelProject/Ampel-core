@@ -310,7 +310,7 @@ class JobCommand(AbsCoreCommand):
 				cc.run(vars(a), ua, sub_op = 'install')
 
 		s = f'Running job {job.name or schema_descr}'
-		logger.info(s)
+		logger.info(s, extra={'pid': os.getpid()})
 
 		print(' ' + '-'*len(s))
 
