@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                10.06.2020
-# Last Modified Date:  09.01.2022
+# Last Modified Date:  16.01.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
@@ -102,12 +102,12 @@ class DevAmpelContext(AmpelContext):
 		if self.loader._dyn_register and unit in self.loader._dyn_register:
 			Unit = self.loader._dyn_register[unit]
 			arg = Unit(**arg, logger=logger)._get_trace_content()
-		elif fqn := self.config._config['unit'][unit].get('fqn'):
+		elif fqn := self.config._config['unit'].get(unit, {}).get('fqn'):
 			Unit = getattr(import_module(fqn), fqn.split('.')[-1])
 			arg = Unit(**arg, logger=logger)._get_trace_content()
 		else:
 			logger.warn(
-				f"Unit {unit} not installed locally. Building *unsafe* conf dict hash: "
+				f"Unit {unit} not available locally. Building *unsafe* conf dict hash: "
 				f"changes in unit defaults between releases will go undetected"
 			)
 
