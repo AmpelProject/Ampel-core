@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  11.01.2023
+# Last Modified Date:  16.01.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import tarfile, tempfile, ujson, yaml, io, os, signal, sys, \
@@ -95,7 +95,8 @@ class JobCommand(AbsCoreCommand):
 			'show-plots': 'show plots created by job (requires ampel-plot-cli. Use "export AMPEL_PLOT_DPI=300" to increase png quality)',
 			'allow-resource-override': 'allow t3 units to overwrite resources previously set by other t3 units',
 			'show-plots-cmd': 'show command required to show plots created by job (requires ampel-plot-cli)',
-			'wait-pid': 'wait until process with PID completes before processing current job'
+			'wait-pid': 'wait until process with PID completes before processing current job',
+			'print-schema': 'print (potentially edited) schema before execution'
 		})
 
 		parser.req('config', type=str)
@@ -118,6 +119,7 @@ class JobCommand(AbsCoreCommand):
 		parser.opt('show-plots-cmd', action='store_true')
 		parser.opt('secrets', type=str)
 		parser.opt('wait-pid', type=int, default=0)
+		parser.opt('print-schema', action='store_true')
 
 		# Example
 		parser.example('job job_file.yaml')
@@ -313,6 +315,17 @@ class JobCommand(AbsCoreCommand):
 		logger.info(s, extra={'pid': os.getpid()})
 
 		print(' ' + '-'*len(s))
+
+		if args['print_schema']:
+			print('\nJob schema:\n')
+			print('#'*50)
+			print(
+				'\n' + yaml.dump(
+					job.dict(exclude_unset=True),
+					sort_keys=False, default_flow_style=None
+				)
+			)
+			print('#'*50)
 
 		# DevAmpelContext hashes automatically confid from potential IngestDirectives
 		ctx = self.get_context(
