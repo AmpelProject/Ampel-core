@@ -96,7 +96,8 @@ class JobCommand(AbsCoreCommand):
 			'allow-resource-override': 'allow t3 units to overwrite resources previously set by other t3 units',
 			'show-plots-cmd': 'show command required to show plots created by job (requires ampel-plot-cli)',
 			'wait-pid': 'wait until process with PID completes before processing current job',
-			'print-schema': 'print (potentially edited) schema before execution'
+			'print-schema': 'print (potentially edited) schema before execution',
+			'no-config-check': 'do now check for outdated config'
 		})
 
 		parser.req('config', type=str)
@@ -120,6 +121,7 @@ class JobCommand(AbsCoreCommand):
 		parser.opt('secrets', type=str)
 		parser.opt('wait-pid', type=int, default=0)
 		parser.opt('print-schema', action='store_true')
+		parser.opt('no-config-check', action='store_true')
 
 		# Example
 		parser.example('job job_file.yaml')
@@ -341,7 +343,7 @@ class JobCommand(AbsCoreCommand):
 		config_dict = ctx.config._config
 
 		# Check for outdated config
-		if 'build' in config_dict:
+		if 'build' in config_dict and not args['no_config_check']:
 			for k in config_dict['build']:
 				if 'ampel-' in k:
 					config_v = config_dict['build'][k]
