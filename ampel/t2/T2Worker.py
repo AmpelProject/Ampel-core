@@ -101,6 +101,8 @@ class T2Worker(AbsWorker[T2Document]):
 		DocumentCode.T2_UNKNOWN_LINK, # input t1 doc not found
 		DocumentCode.T2_MISSING_INFO, # t0 docs not found
 		DocumentCode.RUNNING, # input t2 doc handled in another process
+		DocumentCode.NEW, # input t2 doc not yet handled
+		DocumentCode.T2_NEW_PRIO,
 		DocumentCode.TOO_MANY_TRIALS,
 	]
 
