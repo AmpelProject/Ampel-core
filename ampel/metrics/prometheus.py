@@ -32,8 +32,10 @@
 import glob
 import os
 import tempfile
+from typing import Collection
 
 from prometheus_client import (
+    Metric,
     CollectorRegistry,
     core,
     generate_latest,
@@ -55,20 +57,21 @@ def collect_metrics():
     return generate_latest(registry)
 
 
-def prometheus_setup_worker(labels=None):
+def prometheus_setup_worker(labels: None | dict[str,str] = None) -> None:
     """
     Monkey-patch mmap_key and ValueClass to add implicit labels. This must be
     done before any metrics are instantiated.
     """
-    if labels:
+    if labels is not None:
         from prometheus_client import values
 
-        def mmap_key(metric_name, name, labelnames, labelvalues):
+        def mmap_key(metric_name: str, name: str, labelnames: list[str], labelvalues: list[str], help_text: str) -> str:
             return mmap_dict.mmap_key(
                 metric_name,
                 name,
-                tuple(labels.keys()) + labelnames,
-                tuple(labels.values()) + labelvalues,
+                list(labels.keys()) + list(labelnames) if labels else labelnames,
+                list(labels.values()) + list(labelvalues) if labels else labelvalues,
+                help_text,
             )
 
         values.mmap_key = mmap_key
@@ -76,7 +79,7 @@ def prometheus_setup_worker(labels=None):
         values.ValueClass = values.get_value_class()
 
 
-def prometheus_cleanup_worker(pid):
+def prometheus_cleanup_worker(pid: int) -> None:
     """
     Aggregate dead worker's metrics into a single archive file, preventing
     collection time from growing without bound as pointed out in
@@ -109,7 +112,7 @@ def prometheus_cleanup_worker(pid):
     collect_paths = paths + archive_paths
     collector = multiprocess.MultiProcessCollector(None)
 
-    metrics = collector.merge(collect_paths, accumulate=False)
+    metrics: Collection[Metric] = collector.merge(collect_paths, accumulate=False)
 
     tmp_histogram = tempfile.NamedTemporaryFile(delete=False)
     tmp_counter = tempfile.NamedTemporaryFile(delete=False)
@@ -124,7 +127,7 @@ def prometheus_cleanup_worker(pid):
         os.unlink(path)
 
 
-def write_metrics(metrics, histogram_file, counter_file):
+def write_metrics(metrics: Collection[Metric], histogram_file: str, counter_file: str) -> None:
 
     histograms = mmap_dict.MmapedDict(histogram_file)
     counters = mmap_dict.MmapedDict(counter_file)
@@ -142,7 +145,7 @@ def write_metrics(metrics, histogram_file, counter_file):
                 # prometheus_client 0.4+ adds extra fields
                 name, labels, value = sample[:3]
                 key = mmap_dict.mmap_key(
-                    metric.name, name, tuple(labels), tuple(labels.values()),
+                    metric.name, name, list(labels.keys()), list(labels.values()), metric.documentation,
                 )
                 sink.write_value(key, value)
     finally:
