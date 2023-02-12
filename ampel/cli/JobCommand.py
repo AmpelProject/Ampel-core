@@ -98,6 +98,7 @@ class JobCommand(AbsCoreCommand):
 			'wait-pid': 'wait until process with PID completes before processing current job',
 			'print-schema': 'print (potentially edited) schema before execution',
 			'print-schema-after': 'print (potentially edited) schema after execution',
+			'stdin': 'read job schema from stdin',
 		})
 
 		parser.req('config', type=str)
@@ -122,13 +123,15 @@ class JobCommand(AbsCoreCommand):
 		parser.opt('wait-pid', type=int, default=0)
 		parser.opt('print-schema', action='store_true')
 		parser.opt('print-schema-after', action='store_true')
+		parser.opt('stdin', action='store_true')
 
 		# Example
 		parser.example('job job_file.yaml')
 		parser.example('job job_part1.yaml job_part2.yaml')
 		parser.example('job -keep-db -task last job_file.yaml')
 		parser.example('job -show-plots job.yaml')
-		parser.example('job -fzf -edit')
+		parser.example('job -fzf  [requires fzf command line utility]')
+		parser.example('pbpaste | ampel job -stdin -no-conf-check -show-plots', prepend="")
 		return parser
 
 
@@ -166,14 +169,14 @@ class JobCommand(AbsCoreCommand):
 		if isinstance(args['task'], (int, str)):
 			args['task'] = [args['task']]
 
-		schema_files = args['schema'] or [
+		schema_paths = args['schema'] or [
 			unknown_args.pop(unknown_args.index(el)) # type: ignore[attr-defined]
 			for el in list(unknown_args)
 			# This might conflict with very special - yet never used - config overrides
 			if el.endswith('yml') or el.endswith('yaml')
 		]
 
-		if args.get('fzf') and not schema_files and psys.lower() != "windows":
+		if args.get('fzf') and not schema_paths and psys.lower() != "windows":
 
 			if shutil.which('fzf') is None:
 				with out_stack():
@@ -191,7 +194,7 @@ class JobCommand(AbsCoreCommand):
 					raise ValueError("Error occured during fzf execution")
 
 			if (selection := out.decode('utf8').strip()):
-				schema_files = [selection]
+				schema_paths = [selection]
 			else:
 				print("No schema selected")
 				return
@@ -201,8 +204,8 @@ class JobCommand(AbsCoreCommand):
 
 		if args.get('edit') == 'raw':
 
-			if schema_files:
-				for sfile in list(schema_files):
+			if schema_paths:
+				for sfile in list(schema_paths):
 					_, fname = tempfile.mkstemp(suffix='.yml', text=True)
 					shutil.copyfile(sfile, fname)
 					edit_job(fname)
@@ -213,18 +216,21 @@ class JobCommand(AbsCoreCommand):
 						os.unlink(fname)
 						continue
 
-					schema_files[schema_files.index(sfile)] = fname
+					schema_paths[schema_paths.index(sfile)] = fname
 					logger.info(f'Using modified schema: {fname}')
 			else:
-				schema_files = [
+				schema_paths = [
 					edit_job(tempfile.mkstemp(suffix='.yml')[1])
 				]
 
-		if not schema_files:
+		if not schema_paths and not args.get('stdin'):
 			self.get_parser().print_help()
 			return
 
-		job, _ = self.get_job_schema(schema_files, logger, compute_sig=False)
+		if args.get('stdin'):
+			job, _ = self.get_job_schema(schema_content=sys.stdin.read(), compute_sig=False)
+		else:
+			job, _ = self.get_job_schema(schema_paths, compute_sig=False)
 
 		if job is None:
 			return
@@ -239,16 +245,16 @@ class JobCommand(AbsCoreCommand):
 				)
 			edit_job(fname)
 			tmp_files.append(fname)
-			job, _ = self.get_job_schema([fname], logger, compute_sig=False)
+			job, _ = self.get_job_schema(schema_paths=[fname], compute_sig=False)
 
 		if job is None:
 			return
 
 		schema_descr = '|'.join(
-			[os.path.basename(sf) for sf in schema_files]
+			[os.path.basename(sf) for sf in schema_paths]
 		).replace('.yaml', '').replace('.yml', '')
 
-		if len(schema_files) > 1:
+		if len(schema_paths) > 1:
 			logger.info(f'Running job using composed schema: {schema_descr}')
 
 		# Check or set env variable(s)
@@ -635,23 +641,28 @@ class JobCommand(AbsCoreCommand):
 
 	@classmethod
 	def get_job_schema(cls,
-		schema_files: Sequence[str],
-		logger: AmpelLogger,
+		schema_paths: None | Sequence[str] = None,
+		schema_content: None | str = None,
 		compute_sig: bool = True
 	) -> tuple[None, None] | tuple[JobModel, int]:
 
-		lines = io.StringIO()
-		for i, job_fname in enumerate(schema_files):
+		if not (schema_paths or schema_content):
+			raise ValueError("Please provide either job file path(s) or content")
 
-			if not os.path.exists(job_fname):
-				with out_stack():
-					raise FileNotFoundError(f'Job file not found: "{job_fname}"\n')
+		if schema_paths:
+			content = io.StringIO()
+			for i, job_fname in enumerate(schema_paths):
 
-			with open(job_fname, 'r') as f:
-				lines.write('\n'.join(f.readlines()))
+				if not os.path.exists(job_fname):
+					with out_stack():
+						raise FileNotFoundError(f'Job file not found: "{job_fname}"\n')
 
-		lines.seek(0)
-		job = yaml.safe_load(lines)
+				with open(job_fname, 'r') as f:
+					content.write('\n'.join(f.readlines()))
+
+			content.seek(0)
+
+		job = yaml.safe_load(schema_content or content)
 
 		if not job:
 			return None, None
