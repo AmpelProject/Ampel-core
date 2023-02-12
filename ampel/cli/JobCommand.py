@@ -578,14 +578,15 @@ class JobCommand(AbsCoreCommand):
 
 				logger.info(f'{taskd["unit"]} return value: {x}')
 
+		feedback = f"Job processed (db: {job.mongo.prefix}"
 		if len(run_ids) == 1:
-			runstr = f" (run id: {run_ids[0]})"
+			feedback += f", run id: {run_ids[0]})"
 		elif len(run_ids) > 1:
-			runstr = " (run ids: " + " ".join([str(el) for el in run_ids]) + ")"
+			feedback += ", run ids: " + " ".join([str(el) for el in run_ids]) + ")"
 		else:
-			runstr = ""
+			feedback = ")"
 
-		logger.info(f'Job processed{runstr}')
+		logger.info(feedback)
 		logger.info(f'Time required: {get_time_delta(start_time)}\n')
 
 		if args.get('show_plots') or args.get('show_plots_cmd'):
