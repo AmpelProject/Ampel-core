@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  25.01.2023
+# Last Modified Date:  09.02.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import tarfile, tempfile, ujson, yaml, io, os, signal, sys, \
@@ -97,6 +97,7 @@ class JobCommand(AbsCoreCommand):
 			'show-plots-cmd': 'show command required to show plots created by job (requires ampel-plot-cli)',
 			'wait-pid': 'wait until process with PID completes before processing current job',
 			'print-schema': 'print (potentially edited) schema before execution',
+			'print-schema-after': 'print (potentially edited) schema after execution',
 		})
 
 		parser.req('config', type=str)
@@ -120,6 +121,7 @@ class JobCommand(AbsCoreCommand):
 		parser.opt('secrets', type=str)
 		parser.opt('wait-pid', type=int, default=0)
 		parser.opt('print-schema', action='store_true')
+		parser.opt('print-schema-after', action='store_true')
 
 		# Example
 		parser.example('job job_file.yaml')
@@ -610,6 +612,16 @@ class JobCommand(AbsCoreCommand):
 				rr = subprocess.run(cmd, check=True, capture_output=True, text=True)
 				print(rr.stdout)
 				print(rr.stderr)
+
+		if args['print_schema_after']:
+			print('\nJob schema:\n')
+			print('#'*50)
+			print(
+				'\n' + yaml.dump(
+					job.dict(exclude_unset=True),
+					sort_keys=False, default_flow_style=None
+				)
+			)
 
 
 	@staticmethod
