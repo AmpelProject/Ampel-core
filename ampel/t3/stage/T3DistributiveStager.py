@@ -89,3 +89,5 @@ class T3DistributiveStager(T3ThreadedStager):
 		except Exception as e:
 			self.flush(self.t3_units)
 			self.event_hdlr.handle_error(e, self.logger)
+
+		return None

@@ -93,6 +93,7 @@ class T3PlainUnitExecutor(AbsT3ControlUnit, T3DocBuilder):
 
 			yield x
 
+		return None
 
 	def get_target_cache_config(self) -> int:
 

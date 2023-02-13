@@ -166,7 +166,7 @@ class JobCommand(AbsCoreCommand):
 		if args['no_breakpoint']:
 			os.environ["PYTHONBREAKPOINT"] = "0"
 
-		if isinstance(args['task'], (int, str)):
+		if not isinstance(args['task'], list):
 			args['task'] = [args['task']]
 
 		schema_paths = args['schema'] or [

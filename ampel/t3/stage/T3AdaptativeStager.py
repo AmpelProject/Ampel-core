@@ -186,6 +186,7 @@ class T3AdaptativeStager(T3ThreadedStager):
 
 				self.flush(t3_unit)
 
+		return None
 
 	def filter_channels(self, channels: set[ChannelId]) -> set[ChannelId]:
 

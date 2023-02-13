@@ -83,6 +83,7 @@ class T3SequentialStager(T3BaseStager):
 						)
 					yield x
 
+		return None
 
 	def get_views(self, gen: Generator[AmpelBuffer, None, None]) -> dict[AbsT3ReviewUnit, list[SnapView]]:
 
