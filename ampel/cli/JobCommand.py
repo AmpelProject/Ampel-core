@@ -384,8 +384,8 @@ class JobCommand(AbsCoreCommand):
 
 		# Ensure that job content saved in DB reflects options set dynamically
 		if args['task']:
-			for idx in sorted(args['task'], reverse=True):
-				del job.task[idx]
+			job.task = [task for i, task in enumerate(job.task) if i in args['task']]
+
 
 		jtasks: list[dict[str, Any]] = []
 		for i, model in enumerate(job.task):
@@ -493,10 +493,6 @@ class JobCommand(AbsCoreCommand):
 				del taskd['title']
 			elif i != 0:
 				self.print_chapter(f'Task #{i}', logger)
-
-			if args['task'] is not None and i not in args['task']:
-				logger.info(f'Skipping task #{i} as requested')
-				continue
 
 			taskd['override'] = taskd.pop('override', {}) | {'raise_exc': True}
 
