@@ -384,8 +384,10 @@ class JobCommand(AbsCoreCommand):
 
 		# Ensure that job content saved in DB reflects options set dynamically
 		if args['task']:
+			for i in range(len(job.task)):
+				if not i in args['task']:
+					logger.info(f'Skipping task #{i} as requested')
 			job.task = [task for i, task in enumerate(job.task) if i in args['task']]
-
 
 		jtasks: list[dict[str, Any]] = []
 		for i, model in enumerate(job.task):
