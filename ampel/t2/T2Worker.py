@@ -116,6 +116,16 @@ class T2Worker(AbsWorker[T2Document]):
 		self._pending_codes = set(self.pending_codes)
 
 
+	def _get_trials(self, doc: T2Document):
+		"""Number of attempts to resolve this document"""
+		return len([el for el in doc['meta'] if el['tier'] == 2])
+
+
+	def _is_retriable(self, doc: T2Document, code: DocumentCode):
+		"""Would this code be a permanent failure for this document?"""
+		return code not in self._pending_codes or self._get_trials(doc) == self.max_try
+
+
 	def process_doc(self,
 		doc: T2Document,
 		stock_updr: MongoStockUpdater,
@@ -129,7 +139,7 @@ class T2Worker(AbsWorker[T2Document]):
 		if not isinstance(t2_unit, abs_t2):
 			raise ValueError(f"Unsupported unit: {doc['unit']}")
 
-		if (trials := len([el for el in doc['meta'] if el['tier'] == 2])) <= self.max_try:
+		if (trials := self._get_trials(doc)) <= self.max_try:
 			ret = self.run_t2_unit(t2_unit, doc, logger, stock_updr)
 		else:
 			ret = UnitResult(code=DocumentCode.TOO_MANY_TRIALS)
@@ -307,10 +317,11 @@ class T2Worker(AbsWorker[T2Document]):
 
 			# compound doc must exist (None could mean an ingester bug)
 			if t1_doc is None:
-				report_error(
-					self._ampel_db, msg='T1Document not found', logger=logger,
-					info={'id': t2_doc['link'], 'doc': t2_doc}
-				)
+				if not self._is_retriable(t2_doc, DocumentCode.T2_UNKNOWN_LINK):
+					report_error(
+						self._ampel_db, msg='T1Document not found', logger=logger,
+						info={'id': t2_doc['link'], 'doc': t2_doc}
+					)
 				return UnitResult(code=DocumentCode.T2_UNKNOWN_LINK)
 
 			# Datarights: suppress channel info (T3 uses instead a
@@ -327,10 +338,11 @@ class T2Worker(AbsWorker[T2Document]):
 
 			# Should never happen (only in case of ingestion bug)
 			if not dps:
-				report_error(
-					self._ampel_db, msg='Datapoints not found',
-					logger=logger, info={'t1': t1_doc, 't2': t2_doc}
-				)
+				if not self._is_retriable(t2_doc, DocumentCode.T2_MISSING_INFO):
+					report_error(
+						self._ampel_db, msg='Datapoints not found',
+						logger=logger, info={'t1': t1_doc, 't2': t2_doc}
+					)
 				return UnitResult(code=DocumentCode.T2_MISSING_INFO)
 
 			if len(dps) != len(set(t1_dps_ids)):
@@ -338,10 +350,11 @@ class T2Worker(AbsWorker[T2Document]):
 					set(t1_dps_ids) - {el['id'] for el in dps},
 					key = t1_dps_ids.index
 				)
-				report_error(
-					self._ampel_db, msg='Some datapoints not found',
-					logger=logger, info={'t1': t1_doc, 't2': t2_doc, 'missing': missing}
-				)
+				if not self._is_retriable(t2_doc, DocumentCode.T2_MISSING_INFO):
+					report_error(
+						self._ampel_db, msg='Some datapoints not found',
+						logger=logger, info={'t1': t1_doc, 't2': t2_doc, 'missing': missing}
+					)
 				return UnitResult(code=DocumentCode.T2_MISSING_INFO)
 
 			for dp in dps:
@@ -414,10 +427,11 @@ class T2Worker(AbsWorker[T2Document]):
 			if doc := next(self.col_stock.find({'stock': t2_doc['link']}), None):
 				return (doc, )
 
-			report_error(
-				self._ampel_db, msg='Stock doc not found',
-				logger=logger, info={'doc': t2_doc}
-			)
+			if not self._is_retriable(t2_doc, DocumentCode.T2_UNKNOWN_LINK):
+				report_error(
+					self._ampel_db, msg='Stock doc not found',
+					logger=logger, info={'doc': t2_doc}
+				)
 			return UnitResult(code=DocumentCode.T2_UNKNOWN_LINK)
 
 		elif isinstance(t2_unit, (AbsPointT2Unit, AbsTiedPointT2Unit)):
@@ -440,10 +454,11 @@ class T2Worker(AbsWorker[T2Document]):
 
 				return (doc, )
 
-			report_error(
-				self._ampel_db, msg='Datapoint not found',
-				logger=logger, info={'doc': t2_doc}
-			)
+			if not self._is_retriable(t2_doc, DocumentCode.T2_UNKNOWN_LINK):
+				report_error(
+					self._ampel_db, msg='Datapoint not found',
+					logger=logger, info={'doc': t2_doc}
+				)
 			return UnitResult(code=DocumentCode.T2_UNKNOWN_LINK)
 
 		else:
