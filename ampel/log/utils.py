@@ -12,6 +12,7 @@ from math import log2
 from bson import ObjectId
 from datetime import datetime
 from typing import overload
+from pymongo import WriteConcern
 
 from ampel.types import JDict
 from ampel.core.AmpelDB import AmpelDB
@@ -204,6 +205,7 @@ def insert_trouble(
 	try:
 		ampel_db \
 			.get_collection('trouble') \
+			.with_options(write_concern=WriteConcern(w=1, j=False)) \
 			.insert_one(trouble)
 
 	except Exception as e:
