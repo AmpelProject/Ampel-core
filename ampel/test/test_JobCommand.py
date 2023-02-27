@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Optional
 from unittest.mock import MagicMock
 from pytest_mock import MockerFixture
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 
 from ampel.cli.main import main
 from ampel.cli.utils import get_vault
@@ -239,11 +239,13 @@ def test_expand_with(
         p.read_text("utf-8") == str(v)
 
 
+@pytest.mark.parametrize("suffix", ["", "fail"])
 def test_input_artifacts(
     testing_config,
     mock_db,
     vault: Path,
     tmpdir,
+    suffix,
 ):
 
     value = "flerpyherb"
@@ -272,7 +274,10 @@ def test_input_artifacts(
                     },
                     "inputs": {
                         "parameters": [
-                            {"name": "token", "value": "{{ inputs.artifacts.token }}"}
+                            {
+                                "name": "token",
+                                "value": "{{ inputs.artifacts.token }}" + suffix,
+                            }
                         ],
                         "artifacts": [
                             {
@@ -289,8 +294,9 @@ def test_input_artifacts(
         "schema.yml",
     )
 
-    assert (
-        run(
+    result = None
+    with pytest.raises(AssertionError) if suffix else nullcontext():
+        result = run(
             [
                 "ampel",
                 "job",
@@ -301,8 +307,10 @@ def test_input_artifacts(
                 "--schema",
                 str(schema),
             ]
-        ) is None
-    )
+        )
+    assert result is None
+
+    assert path.read_text("utf-8") == value
 
 
 def test_template_resolution(
