@@ -295,8 +295,7 @@ def test_input_artifacts(
     )
 
     result = None
-    context = pytest.raises(AssertionError) if suffix else nullcontext()
-    with context:
+    with pytest.raises(AssertionError) if suffix else nullcontext(): # type: ignore[attr-defined]
         result = run(
             [
                 "ampel",
