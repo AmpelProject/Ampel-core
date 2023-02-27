@@ -8,9 +8,11 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import gc, signal
+import random
 from math import ceil
-from time import time
+from time import time, sleep
 from typing import ClassVar, Any, TypeVar, Generic, Literal
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 
 from pymongo.write_concern import WriteConcern
 
@@ -39,6 +41,14 @@ from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry, Histogram, 
 from ampel.util.tag import merge_tags
 
 T = TypeVar("T", T1Document, T2Document)
+
+class BackoffConfig(AmpelBaseModel):
+	base: float = 2
+	factor: float = 1
+	jitter: bool = True
+	max_value: float = 10.
+	max_tries: None | int = None
+	max_time: None | float = 60.
 
 
 class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
@@ -87,6 +97,9 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 	#: Avoid 'burning' a run_id for nothing at the cost of a request
 	pre_check: bool = True
+
+	#: Wait for documents to process
+	backoff_on_query: None | BackoffConfig = None
 
 	#: wait for majority acknowledgement of document updates. this introduces
 	#: significant extra latency for replicated mongo clusters.
@@ -160,6 +173,33 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		return None
 
 
+	def find_one_and_update(self, query: dict, update: dict) -> None | Any:
+		"""
+		Get next eligible document, with timeout
+		"""
+		t0 = time()
+		attempts = 0
+		while self._run:
+			doc = self.col.find_one_and_update(
+				query | {'$expr': {'$not': {'$lte': [ceil(time()), {'$last': '$meta.retry_after'}]}}},
+				update
+			)
+			if doc is not None or self.backoff_on_query is None:
+				return doc
+			backoff = self.backoff_on_query
+			if backoff.max_time is not None and time()-t0 > backoff.max_time:
+				break
+			if backoff.max_tries is not None and attempts+1 >= backoff.max_tries:
+				break
+			delay = min(backoff.factor*(backoff.base**attempts), backoff.max_value)
+			if backoff.jitter:
+				delay = random.uniform(0, delay)
+			sleep(delay)
+			attempts += 1
+		
+		return None
+
+
 	def proceed(self, event_hdlr: EventHandler) -> int:
 		""" :returns: number of t2 docs processed """
 
@@ -195,10 +235,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 			# get t1/t2 document (code is usually NEW or NEW_PRIO), excluding
 			# docs with retry times in the future
-			doc = self.col.find_one_and_update(
-				self.query | {'$expr': {'$not': {'$lte': [ceil(time()), {'$last': '$meta.retry_after'}]}}},
-				update
-			)
+			doc = self.find_one_and_update(self.query, update)
 
 			# No match
 			if doc is None:
