@@ -781,6 +781,7 @@ def run_mp_process(
 			'\n' + '#'*len(se) + '\n' + str(e) + '\n' + '#'*len(se) + '\n' +
 			''.join(traceback.format_exception(type(e), e, e.__traceback__))
 		)
+		resource_queue.put(None)
 
 
 def signal_handler(sig, frame):
