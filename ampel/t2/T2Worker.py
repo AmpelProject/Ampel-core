@@ -122,8 +122,8 @@ class T2Worker(AbsWorker[T2Document]):
 
 
 	def _is_retriable(self, doc: T2Document, code: DocumentCode):
-		"""Would this code be a permanent failure for this document?"""
-		return code not in self._pending_codes or self._get_trials(doc) == self.max_try
+		"""Would we retry this document later?"""
+		return code in self._pending_codes and self._get_trials(doc) < self.max_try
 
 
 	def process_doc(self,
