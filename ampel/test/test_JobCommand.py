@@ -199,7 +199,7 @@ def test_expand_with(
 ):
 
     values = ["1", "2", "3"]
-    paths = [tmpdir / f"token{i}" for i in values]
+    paths: list[Path] = [tmpdir / f"token{i}" for i in values]
 
     schema = dump(
         {
@@ -234,6 +234,9 @@ def test_expand_with(
             ]
         ) is None
     )
+
+    for v, p in zip(values, paths):
+        p.read_text("utf-8") == str(v)
 
 
 def test_input_artifacts(

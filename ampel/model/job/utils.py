@@ -8,6 +8,7 @@
 # Last Modified By:    jvs
 
 import re
+from copy import deepcopy
 from typing import Union, Any, Callable
 from ampel.model.job.ExpandWithItems import ExpandWithItems
 from ampel.model.job.ExpandWithSequence import ExpandWithSequence
@@ -61,9 +62,10 @@ def transform_expressions(
 	Replace any expressions of the form {{ expr }} with the result of
 	transformation(expr)
 	"""
+	target = deepcopy(task_dict)
 	walk_and_process_dict(
-		task_dict,
+		target,
 		callback = _transform_expressions_callback,
 		transform = transformation
 	)
-	return task_dict
+	return target
