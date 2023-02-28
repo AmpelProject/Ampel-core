@@ -9,13 +9,13 @@
 
 import tarfile, tempfile, ujson, yaml, io, os, signal, sys, \
 	subprocess, platform, shutil, filecmp, psutil, pkg_resources
+import requests
 from time import time, sleep
 from multiprocessing import Queue, Process
 from argparse import ArgumentParser
 from importlib import import_module
 from typing import Any
 from collections.abc import Sequence
-from urllib.request import urlretrieve
 from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.abstract.AbsProcessorTemplate import AbsProcessorTemplate
 from ampel.model.UnitModel import UnitModel
@@ -701,7 +701,11 @@ class JobCommand(AbsCoreCommand):
 				)
 				os.makedirs(resolved_artifact.path.parent, exist_ok=True)
 				with tempfile.NamedTemporaryFile(delete=False) as tf:
-					urlretrieve(resolved_artifact.http.url, tf.name)
+					r = requests.get(resolved_artifact.http.url, stream=True)
+					r.raise_for_status()
+					for chunk in r.iter_content(chunk_size=1<<13):
+						tf.write(chunk)
+					tf.flush()
 					try:
 						with tarfile.open(tf.name) as archive:
 							logger.info(f'{resolved_artifact.name} is a tarball; extracting')
