@@ -48,7 +48,7 @@ class T3SimpleStager(T3ThreadedStager):
 		if len(self.units) == 1:
 			return self.proceed(
 				self.units[0],
-				SimpleViewGenerator(self.units[0], gen, self.stock_updr),
+				SimpleViewGenerator(self.units[0], gen, self.stock_updr, self.context.config),
 				t3s
 			)
 
