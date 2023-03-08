@@ -61,7 +61,7 @@ class DevAmpelContext(AmpelContext):
 
 
 	def add_channel(self, name: int | str, access: list[str] = []):
-		cm = ChannelModel(channel=name, access=access, version=0)
+		cm = ChannelModel(channel=name, access=access, version=0) # type: ignore[call-arg]
 		conf = self._get_unprotected_conf()
 		for k, v in cm.__dict__.items():
 			set_by_path(conf, f"channel.{name}.{k}", v)
