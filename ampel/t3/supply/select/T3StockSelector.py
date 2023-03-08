@@ -7,6 +7,7 @@
 # Last Modified Date:  16.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+from collections.abc import Collection
 from pymongo.cursor import Cursor
 from typing import Literal, Any
 from ampel.types import ChannelId, Tag
@@ -92,7 +93,7 @@ class T3StockSelector(AbsT3Selector):
 			self.logger.log(
 				VERBOSE,
 				f"Executing stock search query [{col.database.name} "
-				f"{try_reduce(list(col.database.client.nodes))}]",
+				f"{try_reduce(list(col.database.client.nodes)) if isinstance(col.database.client.nodes, Collection) else None}]",
 				extra=safe_query_dict(match_query)
 			)
 

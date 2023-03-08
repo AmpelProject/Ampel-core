@@ -55,6 +55,10 @@ class DevAmpelContext(AmpelContext):
 			self.db.drop_all_databases()
 			self.db.init_db()
 
+		for stored_conf in self.db.get_collection("conf").find({}):
+			confid = stored_conf.pop("_id")
+			dict.__setitem__(self.config._config["confid"], confid, stored_conf)
+
 
 	def add_channel(self, name: int | str, access: list[str] = []):
 		cm = ChannelModel(channel=name, access=access, version=0)

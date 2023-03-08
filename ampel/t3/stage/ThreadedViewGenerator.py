@@ -29,5 +29,8 @@ class ThreadedViewGenerator(BaseViewGenerator[T]):
 	def __iter__(self) -> Generator[T, T3Send, None]:
 		for view in self._it:
 			self.stocks.append(view.id)
-			yield view
-			self.queue.task_done()
+			try:
+				yield view
+			finally:
+				# mark item as done even if the consumer raises an exception
+				self.queue.task_done()
