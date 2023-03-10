@@ -12,6 +12,7 @@ from collections.abc import Generator, Iterable, Sequence
 from itertools import islice
 from multiprocessing import JoinableQueue
 from multiprocessing.pool import ThreadPool
+from typing import Type
 
 from ampel.log import VERBOSE
 from ampel.types import StockId, UBson
@@ -26,7 +27,7 @@ from ampel.abstract.AbsT3Filter import AbsT3Filter
 from ampel.abstract.AbsT3Projector import AbsT3Projector
 from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.t3.stage.T3ThreadedStager import T3ThreadedStager
-from ampel.t3.stage.SimpleViewGenerator import SimpleViewGenerator
+from ampel.t3.stage.SimpleViewGenerator import BaseViewGenerator, SimpleViewGenerator
 from ampel.t3.stage.NoViewGenerator import NoViewGenerator
 from ampel.model.t3.T3ProjectionDirective import T3ProjectionDirective
 
@@ -69,8 +70,6 @@ class T3ProjectingStager(T3ThreadedStager):
 		super().__init__(**kwargs)
 		self.run_blocks: list[RunBlock] = []
 		debug = self.logger.verbose > 1
-		self.ViewGenerator: SimpleViewGenerator[SnapView] = NoViewGenerator if self.keep_buffers \
-			else SimpleViewGenerator # type: ignore
 
 		if debug:
 			self.logger.debug("Setting up T3ProjectingStager")
@@ -120,13 +119,19 @@ class T3ProjectingStager(T3ThreadedStager):
 
 		if len(self.run_blocks) == 1:
 			if len(self.run_blocks[0].units) == 1:
+				unit = self.run_blocks[0].units[0]
+				buffer_generator = self.projected_buffer_generator(self.run_blocks[0], gen)
+				if self.keep_buffers:
+					view_generator: BaseViewGenerator = NoViewGenerator(
+						unit, buffer_generator, self.stock_updr
+					)
+				else:
+					view_generator = SimpleViewGenerator(
+						unit, buffer_generator, self.stock_updr, self.context.config
+					)
 				return self.proceed(
 					self.run_blocks[0].units[0],
-					self.ViewGenerator( # type: ignore[operator]
-						self.run_blocks[0].units[0],
-						self.projected_buffer_generator(self.run_blocks[0], gen),
-						self.stock_updr
-					),
+					view_generator,
 					t3s
 				)
 			else:
