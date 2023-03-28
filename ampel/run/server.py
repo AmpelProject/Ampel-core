@@ -22,7 +22,7 @@ from typing import (
 )
 
 from bson import json_util, tz_util, ObjectId
-from fastapi import FastAPI, Header, HTTPException, Query, Depends
+from fastapi import FastAPI, Header, HTTPException, Path, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from prometheus_client.exposition import choose_encoder
@@ -555,7 +555,7 @@ def transform_doc(doc: dict[str, Any], tier: int) -> dict[str, Any]:
 
 
 @app.get("/stock/{stock_id}/t{tier}")
-def get_tier_docs(stock_id: int, tier: int = Query(..., ge=0, le=2)):
+def get_tier_docs(stock_id: int, tier: int = Path(..., ge=0, le=2)):
     cursor = context.db.get_collection(f"t{tier}").find({"stock": stock_id})
     return {
         "matches": [transform_doc(doc, tier) for doc in cursor for doc in cursor],
@@ -648,7 +648,6 @@ async def query_event(
 # NB: handlers that use Mongo are synchronous; FastAPI implicitly runs them
 # in a thread. Could also use Motor for this.
 @app.get("/events")
-@app.get("/events/{process}")
 def get_events(base_query: dict = Depends(query_event)):
     cursor = context.db.get_collection('event').find(
         {"run": {"$exists": True}, **base_query}
