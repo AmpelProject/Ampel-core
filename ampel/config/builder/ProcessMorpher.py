@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                16.10.2019
-# Last Modified Date:  02.01.2023
+# Last Modified Date:  01.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import json
@@ -20,8 +20,8 @@ class ProcessMorpher:
 
 	def __init__(self,
 		process: dict[str, Any],
-		templates: dict[str, Any],
 		logger: AmpelLogger,
+		templates: None | dict[str, Any] = None,
 		verbose: bool = False,
 		deep_copy: bool = False
 	) -> None:
@@ -79,6 +79,9 @@ class ProcessMorpher:
 
 	def apply_template(self, first_pass_config: dict) -> 'ProcessMorpher':
 		""" Applies template possibly associated with process """
+
+		if self.templates is None:
+			raise ValueError("No template registered")
 
 		# The process embedded in channel def requires templating itself
 		if 'template' in self.process:
