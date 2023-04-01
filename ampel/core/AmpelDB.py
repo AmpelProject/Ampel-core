@@ -75,7 +75,7 @@ class AmpelDB(AmpelUnit):
 		:param one_db: whether to create or load a single database rather than having
 		collections split in in three databases (data, var, ext).
 		If 'auto' is set (for which require_exists must be True), then AmpelDB will try
-		to load a databse in single mode and try again in multi-mode if it fails.
+		to load a database in single-collection mode and try again in multi-collections mode if it fails.
 		Note that ampel 'jobs' usually operate with one_db=True.
 		:raises: ValueError in case a required config entry is missing
 		"""
