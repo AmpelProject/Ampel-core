@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                03.09.2019
-# Last Modified Date:  12.01.2023
+# Last Modified Date:  01.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import os, sys, re, json, yaml, datetime, getpass, importlib, subprocess, pkg_resources
@@ -496,12 +496,10 @@ class ConfigBuilder:
 
 	def new_morpher(self, process: dict[str, Any]) -> ProcessMorpher:
 		"""
-		Returns an instance of ProcessMorpher using the provided
-		process dict and the internal logger and templates
+		Returns an instance of ProcessMorpher using provided process dict
+		and internal logger and templates
 		"""
-		return ProcessMorpher(
-			process, self.templates, self.logger, self.verbose
-		)
+		return ProcessMorpher(process, self.logger, self.templates, self.verbose)
 
 
 	def _get_channel_tpl(self,
