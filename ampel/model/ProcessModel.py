@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                06.10.2019
-# Last Modified Date:  30.12.2021
+# Last Modified Date:  04.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import schedule as sched
@@ -19,7 +19,7 @@ from ampel.config.ScheduleEvaluator import ScheduleEvaluator
 class ProcessModel(AmpelBaseModel):
 
 	name: str
-	version: int | float | str
+	version: None | int | float | str
 	active: bool = True
 	tier: None | Literal[0, 1, 2, 3]
 	schedule: Sequence[str]
