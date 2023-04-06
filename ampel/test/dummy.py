@@ -11,10 +11,9 @@ import pathlib
 import time
 from collections.abc import Sequence
 from typing import Any
-from ampel.abstract.AbsProcessorTemplate import AbsProcessorTemplate
+from ampel.abstract.AbsConfigMorpher import AbsConfigMorpher
 from ampel.core.EventHandler import EventHandler
 from ampel.log.AmpelLogger import AmpelLogger
-from ampel.model.UnitModel import UnitModel
 
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import StockId, UBson
@@ -133,10 +132,10 @@ class DummyInputUnit(AbsEventUnit):
         assert self.value == self.expected_value
 
 
-class DummyProcessorTemplate(AbsProcessorTemplate):
+class DummyProcessorTemplate(AbsConfigMorpher):
 
     value: str
     expected_value: str
 
-    def get_model(self, config: dict[str, Any], logger: AmpelLogger) -> UnitModel:
-        return UnitModel(unit="DummyInputUnit", config=self.dict(exclude={'template'}))
+    def morph(self, config: dict[str, Any], logger: AmpelLogger) -> dict[str, Any]:
+        return {'unit': "DummyInputUnit", 'config': self.dict(exclude={'template'})}
