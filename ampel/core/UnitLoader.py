@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                07.10.2019
-# Last Modified Date:  13.12.2021
+# Last Modified Date:  04.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import os, sys
@@ -36,6 +36,7 @@ from ampel.log.AmpelLogger import AmpelLogger, LogFlag, VERBOSE
 from ampel.log.handlers.ChanRecordBufHandler import ChanRecordBufHandler
 from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
 from ampel.util.hash import build_unsafe_dict_id
+
 
 T = TypeVar('T', bound=AmpelUnit)
 LT = TypeVar('LT', bound=LogicalUnit)
@@ -289,11 +290,15 @@ class UnitLoader:
 	) -> dict[str, Any]:
 		""" :raises: ValueError if config alias is not found """
 
-		ret: None | dict[str, Any] = {}
+		base_conf: dict[str, Any] = {}
 
 		if isinstance(config, (dict, str)):
-			ret = self.resolve_aliases(config)
 
+			base_conf = self.resolve_aliases(config)
+			if base_conf is None:
+				raise ValueError(f"Config alias {config} not found")
+
+		# Hashed t2 unit configs
 		elif isinstance(config, int):
 
 			try:
@@ -307,18 +312,15 @@ class UnitLoader:
 				del l[0]['_id']
 				d = l[0]
 				
-			ret = recursive_unfreeze(d) if unfreeze and isinstance(d, ReadOnlyDict) else d
+			base_conf = recursive_unfreeze(d) if (unfreeze and isinstance(d, ReadOnlyDict)) else d
 
 			# save un-registered (in ampel conf but not in db) confid to external collection for posterity
 			if self.provenance:
 				assert self.db
 				if config not in self.db.conf_ids:
-					self.db.add_conf_id(config, ret)
+					self.db.add_conf_id(config, base_conf)
 
-		if ret is None and config is not None:
-			raise ValueError(f"Config alias {config} not found")
-
-		return merge_dicts([ret, override, kwargs]) or {}
+		return merge_dicts([base_conf, override, kwargs]) or {}
 
 
 	def resolve_aliases(self, value):
@@ -334,8 +336,8 @@ class UnitLoader:
 			return [self.resolve_aliases(v) for v in value]
 		elif isinstance(value, dict):
 			return {k: self.resolve_aliases(v) for k, v in value.items()}
-		else:
-			return value
+
+		return value
 
 
 	def resolve_secrets(self, unit_type: type[AmpelUnit], init_kwargs: dict[str, Any]) -> dict[str, Any]:
