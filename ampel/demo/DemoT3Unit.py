@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                09.06.2020
-# Last Modified Date:  17.12.2021
+# Last Modified Date:  03.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from collections.abc import Generator
@@ -39,5 +39,6 @@ class DemoT3Unit(AbsT3Unit[SnapView]):
 		return UnitResult(
 			body = {'param': 'value'},
 			code = 10,
+			tag = "T3DocTag",
 			journal = JournalAttributes(tag="DemoT3UnitTag")
 		)
