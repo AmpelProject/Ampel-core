@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                28.05.2021
-# Last Modified Date:  15.12.2022
+# Last Modified Date:  03.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import gc, signal
@@ -30,7 +30,6 @@ from ampel.enum.EventCode import EventCode
 from ampel.log import AmpelLogger, LogFlag, VERBOSE, DEBUG
 from ampel.core.EventHandler import EventHandler
 from ampel.log.utils import report_exception, report_error
-from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
 from ampel.util.hash import build_unsafe_dict_id
 from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.abstract.AbsUnitResultAdapter import AbsUnitResultAdapter
@@ -429,25 +428,13 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		# Check if T2 instance exists in this run
 		if k not in self._instances:
 
-			# Create channel (buffering) logger
-			buf_hdlr = DefaultRecordBufferingHandler(level=logger.level)
-			buf_hdlr._unit = doc['unit']
-			buf_logger = AmpelLogger.get_logger(
-				name = k,
-				base_flag = (getattr(logger, 'base_flag', 0) & ~LogFlag.CORE) | LogFlag.UNIT,
-				console = False,
-				handlers = [buf_hdlr]
+			# Instantiates unit with logger based on DefaultRecordBufferingHandler
+			self._instances[k] = self.context.loader.new_safe_logical_unit(
+				UnitModel(unit=doc['unit'], config=doc['config']),
+				unit_type = LogicalUnit, # maybe restrict more in the future
+				logger = logger,
+				_chan = doc.get('channel') # type: ignore # probably not good to
 			)
-
-			# Instantiate unit
-			unit_instance = self._loader.new_logical_unit(
-				model = UnitModel(unit=doc['unit'], config=doc['config']),
-				logger = buf_logger
-			)
-
-			# Shortcut to avoid unit_instance.logger.handlers[?]
-			setattr(unit_instance, '_buf_hdlr', buf_hdlr)
-			self._instances[k] = unit_instance
 
 		return self._instances[k]
 
