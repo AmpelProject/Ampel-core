@@ -4,23 +4,20 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  09.02.2023
+# Last Modified Date:  05.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import tarfile, tempfile, ujson, yaml, io, os, signal, sys, \
+import tempfile, ujson, yaml, io, os, signal, sys, \
 	subprocess, platform, shutil, filecmp, psutil, pkg_resources
-import requests
 from time import time, sleep
 from multiprocessing import Queue, Process
 from argparse import ArgumentParser
-from importlib import import_module
-from typing import Any
+from typing import Any, Type
 from collections.abc import Sequence
 from ampel.abstract.AbsEventUnit import AbsEventUnit
-from ampel.abstract.AbsProcessorTemplate import AbsProcessorTemplate
 from ampel.model.UnitModel import UnitModel
-from ampel.struct.Resource import Resource
 from ampel.core.EventHandler import EventHandler
+from ampel.core.AmpelContext import AmpelContext
 from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogFlag import LogFlag
@@ -28,15 +25,15 @@ from ampel.util.freeze import recursive_freeze
 from ampel.util.hash import build_unsafe_dict_id
 from ampel.util.distrib import get_dist_names
 from ampel.util.collections import try_reduce
+from ampel.util.template import apply_templates
+from ampel.util.pretty import prettyjson
 from ampel.cli.config import get_user_data_config_path
 from ampel.cli.utils import _maybe_int
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.MaybeIntAction import MaybeIntAction
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
 from ampel.model.job.JobModel import JobModel
-from ampel.model.job.InputArtifact import InputArtifact
-from ampel.model.job.TaskUnitModel import TaskUnitModel
-from ampel.model.job.TemplateUnitModel import TemplateUnitModel
+from ampel.model.job.JobTaskModel import JobTaskModel
 from ampel.util.pretty import out_stack, get_time_delta
 from ampel.util.debug import MockPool
 from ampel.util.getch import yes_no
@@ -54,7 +51,7 @@ class JobCommand(AbsCoreCommand):
 	  defined therein are necessary (might be improved in the future)
 	"""
 
-	def __init__(self):
+	def __init__(self) -> None:
 		self.parser = None
 		super().__init__()
 
@@ -62,13 +59,17 @@ class JobCommand(AbsCoreCommand):
 	def get_sub_ops() -> None | list[str]:
 		return None
 
+	def get_cli_op_name(self) -> str:
+		return "job"
+
 	# Mandatory implementation
 	def get_parser(self, sub_op: None | str = None) -> ArgumentParser | AmpelArgumentParser:
 
 		if self.parser:
 			return self.parser
 
-		parser = AmpelArgumentParser('job')
+		op = self.get_cli_op_name()
+		parser = AmpelArgumentParser(op)
 		parser.args_not_required = True
 		parser.set_help_descr({
 			'debug': 'Debug',
@@ -93,7 +94,7 @@ class JobCommand(AbsCoreCommand):
 			'task': 'only execute task(s) with provided index(es) [starting with 0].\n' +
 					'Value "last" is supported. Ignored if -interactive is used',
 			'show-plots': 'show plots created by job (requires ampel-plot-cli. Use "export AMPEL_PLOT_DPI=300" to increase png quality)',
-			'allow-resource-override': 'allow t3 units to overwrite resources previously set by other t3 units',
+			#'allow-resource-override': 'allow t3 units to overwrite resources previously set by other t3 units',
 			'show-plots-cmd': 'show command required to show plots created by job (requires ampel-plot-cli)',
 			'wait-pid': 'wait until process with PID completes before processing current job',
 			'print-schema': 'print (potentially edited) schema before execution',
@@ -116,7 +117,7 @@ class JobCommand(AbsCoreCommand):
 		parser.opt('no-agg', action='store_true')
 		parser.opt('no-breakpoint', action='store_true')
 		parser.opt('no-mp', action='store_true')
-		parser.opt('allow-resource-override', action='store_true')
+		#parser.opt('allow-resource-override', action='store_true')
 		parser.opt('show-plots', action='store_true')
 		parser.opt('show-plots-cmd', action='store_true')
 		parser.opt('secrets', type=str)
@@ -126,12 +127,12 @@ class JobCommand(AbsCoreCommand):
 		parser.opt('stdin', action='store_true')
 
 		# Example
-		parser.example('job job_file.yaml')
-		parser.example('job job_part1.yaml job_part2.yaml')
-		parser.example('job -keep-db -task last job_file.yaml')
-		parser.example('job -show-plots job.yaml')
-		parser.example('job -fzf  [requires fzf command line utility]')
-		parser.example('pbpaste | ampel job -stdin -no-conf-check -show-plots', prepend="")
+		parser.example(f'{op} job_file.yaml')
+		parser.example(f'{op} job_part1.yaml job_part2.yaml')
+		parser.example(f'{op} -keep-db -task last job_file.yaml')
+		parser.example(f'{op} -show-plots job.yaml')
+		parser.example(f'{op} -fzf  [requires fzf command line utility]')
+		parser.example(f'pbpaste | ampel {op} -stdin -no-conf-check -show-plots', prepend="")
 		return parser
 
 
@@ -335,7 +336,6 @@ class JobCommand(AbsCoreCommand):
 			)
 			print('#'*50)
 
-		# DevAmpelContext hashes automatically confid from potential IngestDirectives
 		ctx = self.get_context(
 			args, unknown_args, logger,
 			freeze_config = False,
@@ -385,71 +385,15 @@ class JobCommand(AbsCoreCommand):
 		# Ensure that job content saved in DB reflects options set dynamically
 		if args['task']:
 			for i in range(len(job.task)):
-				if not i in args['task']:
+				if i not in args['task']:
 					logger.info(f'Skipping task #{i} as requested')
 			job.task = [task for i, task in enumerate(job.task) if i in args['task']]
 
-		jtasks: list[dict[str, Any]] = []
-		for i, model in enumerate(job.task):
-
-			if isinstance(model, TemplateUnitModel):
-
-				if model.template not in ctx.config._config['template']:
-					raise ValueError(f'Unknown process template: {model.template}')
-
-				fqn = ctx.config._config['template'][model.template]
-				if ':' in fqn:
-					fqn, class_name = fqn.split(':')
-				else:
-					class_name = fqn.split('.')[-1]
-				Tpl = getattr(import_module(fqn), class_name)
-				if not issubclass(Tpl, AbsProcessorTemplate):
-					raise ValueError(f'Unexpected template type: {Tpl}')
-
-				tpl = Tpl(**model.config)
-				morphed_um = tpl \
-					.get_model(ctx.config._config, model.dict()) \
-					.dict(exclude_unset=True)
-
-				if args.get('debug'):
-					from ampel.util.pretty import prettyjson
-					logger.info('Task model morphed by template:')
-					for el in prettyjson(morphed_um, indent=4).split('\n'):
-						logger.info(el)
-
-				jtasks.append(morphed_um)
-
-			else:
-				jtasks.append(
-					model.dict(
-						exclude={'inputs', 'outputs', 'expand_with'},
-						exclude_unset=True
-					)
-				)
-
-			logger.info(
-				f'Registering job task#{i} with ' +
-				str(len(list(model.expand_with)) if model.expand_with else 1) +
-				'x multiplier'
-			)
+		# Morphes tasks as well (templates)
+		jtasks = self.load_tasks(ctx, job, logger, args.get('debug', False))
 
 		# recreate JobModel with templates resolved
-		job_dict = ujson.loads(
-			JobModel(
-				**(
-					job.dict(exclude_unset=True) | # type: ignore[arg-type]
-					{
-						'task': [
-							td | task.dict(
-								include={'inputs', 'outputs', 'expand_with', 'title'},
-								exclude_unset=True
-							)
-							for task, td in zip(job.task, jtasks)
-						]
-					}
-				)
-			).json(exclude_unset=True)
-		)
+		job_dict = self.get_job_dict(job, jtasks)
 
 		if args.get('edit') == 'model':
 			fd, fname = tempfile.mkstemp(suffix='.yml')
@@ -477,112 +421,15 @@ class JobCommand(AbsCoreCommand):
 
 		logger.info('Saving job schema')
 		job_sig = build_unsafe_dict_id(job_dict, size=-64)
+		job.sig = job_sig
 		ctx.db.get_collection('job').update_one(
 			{'_id': job_sig},
 			{'$setOnInsert': job_dict},
 			upsert=True
 		)
 
-		run_ids = []
-		resources: dict[str, Resource] = {}
-		for i, taskd in enumerate(jtasks):
-
-			process_name = f'{job.name or schema_descr}#{i}'
-
-			if 'title' in taskd:
-				self.print_chapter(taskd['title'] if taskd.get('title') else f'Task #{i}', logger)
-				#process_name += f' [{taskd['title']}]'
-				del taskd['title']
-			elif i != 0:
-				self.print_chapter(f'Task #{i}', logger)
-
-			taskd['override'] = taskd.pop('override', {}) | {'raise_exc': True}
-
-			# Beacons have no real use in jobs (unlike prod)
-			if taskd['unit'] == 'T2Worker' and 'send_beacon' not in taskd['config']:
-				taskd['config']['send_beacon'] = False
-
-			if (expand_with := job.task[i].expand_with) is not None:
-
-				process_queues: list[Process] = []
-				result_queues: list[Any] = []
-				resource_queues: list[Queue[Resource]] = []
-
-				signal.signal(signal.SIGINT, signal_handler)
-				signal.signal(signal.SIGTERM, signal_handler)
-
-				try:
-					for item in expand_with:
-
-						self._fetch_inputs(job, job.task[i], item, logger)
-
-						result_queue: Queue = Queue()
-						resource_queue: Queue[Resource] = Queue()
-						p = Process(
-							target = run_mp_process,
-							args = (
-								result_queue,
-								resource_queue,
-								config_dict,
-								job.resolve_expressions(
-									taskd,
-									job.task[i],
-									item
-								),
-								process_name,
-							),
-							daemon = True,
-						)
-						p.start()
-						process_queues.append(p)
-						result_queues.append(result_queue)
-						resource_queues.append(resource_queue)
-					
-					for i, (p, r1, r2) in enumerate(zip(process_queues, result_queues, resource_queues)):
-						p.join()
-						if (m := r1.get()):
-							logger.info(f'{taskd["unit"]}#{i} return value: {m}')
-						for r in iter(r2.get, None):
-							if r.name in resources and not args['allow_resource_override']:
-								continue
-							resources[k] = r
-
-				except KeyboardInterrupt:
-					sys.exit(1)
-			
-			else:
-				
-				self._fetch_inputs(job, job.task[i], None, logger)
-
-				proc = ctx.loader.new_context_unit(
-					model = UnitModel(**job.resolve_expressions(taskd, job.task[i])),
-					context = ctx,
-					process_name = process_name,
-					job_sig = job_sig,
-					sub_type = AbsEventUnit,
-					base_log_flag = LogFlag.MANUAL_RUN
-				)
-
-				event_hdlr = EventHandler(
-					proc.process_name,
-					ctx.get_database(),
-					raise_exc = proc.raise_exc,
-					job_sig = job_sig,
-					extra = {'task': i},
-					resources = resources
-				)
-
-				x = proc.run(event_hdlr)
-				if event_hdlr.run_id:
-					run_ids.append(event_hdlr.run_id)
-
-				if event_hdlr.resources:
-					for name, resource in event_hdlr.resources.items():
-						if name in resources and not args['allow_resource_override']:
-							continue
-						resources[name] = resource
-
-				logger.info(f'{taskd["unit"]} return value: {x}')
+		# Heavy lifting happens here
+		run_ids = self.run_tasks(ctx, job, jtasks, schema_descr, logger)
 
 		feedback = f"Job processed (db: {job.mongo.prefix}"
 		if len(run_ids) == 1:
@@ -628,6 +475,138 @@ class JobCommand(AbsCoreCommand):
 			)
 
 
+	def run_tasks(self,
+		ctx: AmpelContext,
+		job: JobModel,
+		jtasks: list[dict[str, Any]],
+		schema_descr: str,
+		logger: AmpelLogger
+	) -> list[int]:
+
+		run_ids = []
+		for i, taskd in enumerate(jtasks):
+
+			process_name = f'{job.name or schema_descr}#{i}'
+
+			if isinstance(taskd.get('template', None), dict) and 'live' in taskd['template']:
+				taskd = apply_templates(ctx, taskd['template']['live'], taskd, logger)
+				del taskd['template']
+
+			if 'title' in taskd:
+				self.print_chapter(taskd['title'] if taskd.get('title') else f'Task #{i}', logger)
+				#process_name += f' [{taskd['title']}]'
+				del taskd['title']
+			elif i != 0:
+				self.print_chapter(f'Task #{i}', logger)
+				
+			if (multiplier := taskd.pop('multiplier', 1)) > 1:
+
+				try:
+
+					process_queues: list[Process] = []
+					result_queues: list[Any] = []
+
+					signal.signal(signal.SIGINT, signal_handler)
+					signal.signal(signal.SIGTERM, signal_handler)
+
+					for item in range(multiplier):
+						result_queue: Queue = Queue()
+						p = Process(
+							target = run_mp_process,
+							args = (result_queue, ctx.config._config, taskd, process_name),
+							daemon = True
+						)
+						p.start()
+						process_queues.append(p)
+						result_queues.append(result_queue)
+					
+					for i, (p, r1) in enumerate(zip(process_queues, result_queues)):
+						p.join()
+						if (m := r1.get()):
+							logger.info(f'{taskd["unit"]}#{i} return value: {m}')
+
+				except KeyboardInterrupt:
+					sys.exit(1)
+			
+			else:
+				
+				proc = ctx.loader.new_context_unit(
+					model = UnitModel(**taskd),
+					context = ctx,
+					process_name = process_name,
+					job_sig = job.sig,
+					sub_type = AbsEventUnit,
+					base_log_flag = LogFlag.MANUAL_RUN
+				)
+
+				event_hdlr = EventHandler(
+					proc.process_name,
+					ctx.get_database(),
+					raise_exc = proc.raise_exc,
+					job_sig = job.sig,
+					extra = {'task': i}
+				)
+
+				x = proc.run(event_hdlr)
+				if event_hdlr.run_id:
+					run_ids.append(event_hdlr.run_id)
+
+				logger.info(f'{taskd["unit"]} return value: {x}')
+
+		return run_ids
+
+
+	def load_tasks(self,
+		ctx: AmpelContext, job: JobModel, logger: AmpelLogger, debug: bool = False
+	) -> list[dict[str, Any]]:
+
+		jtasks: list[dict[str, Any]] = []
+		for i, model in enumerate(job.task):
+			if isinstance(model.template, Sequence):
+				taskd = apply_templates(ctx, model.template, model.dict(), logger)
+				del taskd['template']
+				if debug:
+					self.print_task(taskd, logger)
+			elif (
+				isinstance(model.template, dict) and
+				'pre' in model.template and model.template['pre']
+			):
+				taskd = apply_templates(ctx, model.template['pre'], model.dict(), logger)
+				del taskd['template']['pre']
+				if debug:
+					self.print_task(taskd, logger)
+			else:
+				taskd = self.get_task_dict(model)
+
+			taskd['override'] = taskd.pop('override', {}) | {'raise_exc': True}
+			# Beacons have no real use in jobs (unlike prod)
+			if taskd['unit'] == 'T2Worker' and 'send_beacon' not in taskd['config']:
+				taskd['config']['send_beacon'] = False
+
+			jtasks.append(taskd)
+			logger.info(
+				f'Registering job task#{i} with {model.get_multiplier()}x multiplier'
+			)
+
+		return jtasks
+
+
+	def print_task(self, taskd: dict[str, Any], logger: AmpelLogger) -> None:
+		logger.info('Task model morphed by template:')
+		for el in prettyjson(taskd, indent=4).split('\n'):
+			logger.info(el)
+
+
+	def get_task_dict(self, task_model: JobTaskModel) -> dict[str, Any]:
+		return task_model.dict(exclude_unset=True)
+
+
+	def get_job_dict(self, job: JobModel, jtasks: list[dict[str, Any]]) -> dict[str, Any]:
+		out = job.dict(exclude_unset=True)
+		out['task'] = jtasks
+		return out
+
+
 	@staticmethod
 	def print_chapter(msg: str, logger: AmpelLogger) -> None:
 		logger.info(' ')
@@ -641,7 +620,8 @@ class JobCommand(AbsCoreCommand):
 	def get_job_schema(cls,
 		schema_paths: None | Sequence[str] = None,
 		schema_content: None | str = None,
-		compute_sig: bool = True
+		compute_sig: bool = True,
+		Model: Type = JobModel
 	) -> tuple[None, None] | tuple[JobModel, int]:
 
 		if not (schema_paths or schema_content):
@@ -671,49 +651,7 @@ class JobCommand(AbsCoreCommand):
 			if k.startswith('%'):
 				del job[k]
 
-		return JobModel(**job), build_unsafe_dict_id(job, size=-64) if compute_sig else 0
-
-
-	@staticmethod
-	def _fetch_inputs(
-		job: JobModel,
-		task: TaskUnitModel | TemplateUnitModel,
-		item: None | str | dict | list,
-		logger: AmpelLogger,
-	):
-		"""
-		Ensure that input artifacts exist
-		"""
-		for artifact in task.inputs.artifacts:
-
-			resolved_artifact = InputArtifact(
-				**job.resolve_expressions(
-					ujson.loads(artifact.json()), task, item
-				)
-			)
-
-			if resolved_artifact.path.exists():
-				logger.info(f'Artifact {resolved_artifact.name} exists at {resolved_artifact.path}')
-			else:
-				logger.info(
-					f'Fetching artifact {resolved_artifact.name} from '
-					f'{resolved_artifact.http.url} to {resolved_artifact.path}'
-				)
-				os.makedirs(resolved_artifact.path.parent, exist_ok=True)
-				with tempfile.NamedTemporaryFile(delete=False) as tf:
-					r = requests.get(resolved_artifact.http.url, stream=True)
-					r.raise_for_status()
-					for chunk in r.iter_content(chunk_size=1<<13):
-						tf.write(chunk)
-					tf.flush()
-					try:
-						with tarfile.open(tf.name) as archive:
-							logger.info(f'{resolved_artifact.name} is a tarball; extracting')
-							os.makedirs(resolved_artifact.path)
-							archive.extractall(resolved_artifact.path)
-						os.unlink(tf.name)
-					except tarfile.ReadError:
-						os.rename(tf.name, resolved_artifact.path)
+		return Model(**job), build_unsafe_dict_id(job, size=-64) if compute_sig else 0
 
 
 	@staticmethod
@@ -737,7 +675,6 @@ class JobCommand(AbsCoreCommand):
 
 def run_mp_process(
 	result_queue: Queue,
-	resource_queue: Queue,
 	config: dict[str, Any],
 	tast_unit_model: dict[str, Any],
 	process_name: str,
@@ -772,12 +709,6 @@ def run_mp_process(
 			processor.run(eh)
 		)
 
-		if eh.resources:
-			for v in eh.resources.values():
-				resource_queue.put(v)
-		else:
-			resource_queue.put(None)
-
 	except Exception as e:
 		import traceback
 		se = str(e)
@@ -785,7 +716,6 @@ def run_mp_process(
 			'\n' + '#'*len(se) + '\n' + str(e) + '\n' + '#'*len(se) + '\n' +
 			''.join(traceback.format_exception(type(e), e, e.__traceback__))
 		)
-		resource_queue.put(None)
 
 
 def signal_handler(sig, frame):
