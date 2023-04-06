@@ -12,7 +12,7 @@ from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.model.UnitModel import UnitModel
 from ampel.log import AmpelLogger
 from ampel.core.EventHandler import EventHandler
-from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
+from ampel.abstract.AbsT3Unit import AbsT3Unit
 
 
 class DemoProcessor(AbsEventUnit):
@@ -49,9 +49,9 @@ class DemoProcessor(AbsEventUnit):
 
 		# With which base units can be instantiated
 		unit = loader.new_logical_unit(
-			model = UnitModel(unit = "DemoReviewT3Unit"),
+			model = UnitModel(unit = "DemoT3Unit"),
 			logger = logger,
-			sub_type = AbsT3ReviewUnit
+			sub_type = AbsT3Unit
 		)
 
 		print(unit)

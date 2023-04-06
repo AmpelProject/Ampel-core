@@ -9,7 +9,7 @@
 
 from typing import Iterable
 from collections.abc import Generator
-from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
+from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
@@ -19,7 +19,7 @@ from ampel.t3.stage.BaseViewGenerator import BaseViewGenerator, T, T3Send
 class SimpleViewGenerator(BaseViewGenerator[T]):
 
 	def __init__(self,
-		unit: AbsT3ReviewUnit,
+		unit: AbsT3Unit,
 		buffers: Iterable[AmpelBuffer],
 		stock_updr: MongoStockUpdater,
 		config: AmpelConfig,

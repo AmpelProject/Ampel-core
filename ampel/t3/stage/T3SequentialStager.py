@@ -4,17 +4,18 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                22.04.2021
-# Last Modified Date:  25.11.2022
-# Last Modified By:    simeon reusch <simeon.reusch@desy.de>
+# Last Modified Date:  03.04.2023
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
+from typing import Annotated
 from collections.abc import Generator, Iterable, Sequence
+from ampel.abstract.AbsT3Unit import AbsT3Unit, T
 from ampel.struct.T3Store import T3Store
 from ampel.view.T3DocView import T3DocView
 from ampel.view.SnapView import SnapView
 from ampel.model.UnitModel import UnitModel
 from ampel.content.T3Document import T3Document
-from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit, T
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.t3.stage.BaseViewGenerator import BaseViewGenerator, T3Send
 from ampel.t3.stage.T3BaseStager import T3BaseStager
@@ -23,7 +24,7 @@ from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
 
 class SimpleGenerator(BaseViewGenerator[T]):
 
-	def __init__(self, unit: AbsT3ReviewUnit, views: Iterable[T], stock_updr: MongoStockUpdater) -> None:
+	def __init__(self, unit: AbsT3Unit, views: Iterable[T], stock_updr: MongoStockUpdater) -> None:
 		super().__init__(unit_name = unit.__class__.__name__, stock_updr = stock_updr)
 		self.views = views
 
@@ -49,11 +50,14 @@ class T3SequentialStager(T3BaseStager):
 
 	propagate: bool = True
 
-	#: t3 units (AbsT3ReviewUnit) to execute
-	execute: Sequence[UnitModel]
+	#: t3 units to execute
+	execute: Annotated[Sequence[UnitModel], AbsT3Unit]
 
 
 	def __init__(self, **kwargs) -> None:
+
+		if isinstance(kwargs.get('execute'), dict):
+			kwargs['execute'] = [kwargs['execute']]
 
 		super().__init__(**kwargs)
 
@@ -75,6 +79,7 @@ class T3SequentialStager(T3BaseStager):
 
 			sg = SimpleGenerator(t3_unit, views, self.stock_updr)
 			ts = time()
+
 			if (ret := t3_unit.process(sg, t3s)):
 				if (x := self.handle_t3_result(t3_unit, ret, t3s, sg.stocks, ts)):
 					if self.propagate:
@@ -85,7 +90,8 @@ class T3SequentialStager(T3BaseStager):
 
 		return None
 
-	def get_views(self, gen: Generator[AmpelBuffer, None, None]) -> dict[AbsT3ReviewUnit, list[SnapView]]:
+
+	def get_views(self, gen: Generator[AmpelBuffer, None, None]) -> dict[AbsT3Unit, list[SnapView]]:
 
 		Views: set[type[SnapView]] = {u._View for u in self.units}
 		conf = self.context.config
@@ -112,7 +118,7 @@ class T3SequentialStager(T3BaseStager):
 
 			else:
 
-				optd: dict[type[SnapView], list[AbsT3ReviewUnit]] = {}
+				optd: dict[type[SnapView], list[AbsT3Unit]] = {}
 				for unit in self.units:
 					if unit._View not in optd:
 						optd[unit._View] = []
