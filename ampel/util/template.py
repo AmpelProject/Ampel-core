@@ -4,18 +4,23 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.07.2021
-# Last Modified Date: 30.12.2021
+# Last Modified Date: 04.04.2023
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+from typing import Type, Any, Literal
 from importlib import import_module
 from functools import cache
-from typing import Any
 from collections.abc import Sequence
 from ampel.types import JDict
 from ampel.abstract.AbsTiedT2Unit import AbsTiedT2Unit
+from ampel.abstract.AbsConfigMorpher import AbsConfigMorpher
+from ampel.abstract.AbsConfigUpdater import AbsConfigUpdater
+from ampel.core.AmpelContext import AmpelContext
+from ampel.log.AmpelLogger import AmpelLogger
 from ampel.model.UnitModel import UnitModel
 from ampel.model.ingest.T2Compute import T2Compute
 from ampel.config.builder.FirstPassConfig import FirstPassConfig
+from ampel.util.collections import ampel_iter
 
 
 def check_tied_units(
@@ -86,3 +91,32 @@ def filter_units(
 
 def resolve_shortcut(unit: str | JDict) -> JDict:
 	return unit if isinstance(unit, dict) else {'unit': unit}
+
+
+def load_tpl_class(fqn) -> Type:
+	if ':' in fqn:
+		fqn, class_name = fqn.split(':')
+	else:
+		class_name = fqn.split('.')[-1]
+	return getattr(import_module(fqn), class_name)
+
+
+def apply_templates(
+	ctx: AmpelContext,
+	templates: str | Sequence[str],
+	target: dict[str, Any],
+	logger: AmpelLogger
+) -> dict[str, Any]:
+
+	for name in ampel_iter(templates):
+		Tpl = load_tpl_class(ctx.config.get(f'template.{name}', str, raise_exc=True))
+		if issubclass(Tpl, AbsConfigMorpher):
+			logger.info(f"Morphing config using {name}")
+			target = Tpl(**target).morph(ctx.config._config, logger)
+		elif issubclass(Tpl, AbsConfigUpdater):
+			logger.info(f"Altering config using {name}")
+			target = Tpl().alter(ctx, target, logger)
+		else:
+			raise ValueError(f"Unknown template: {Tpl.__class__.__name__}")
+
+	return target
