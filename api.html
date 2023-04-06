@@ -53,9 +53,127 @@
 <dd><p>Base class for units requiring a reference to an AmpelContext instance</p>
 </dd></dl>
 
+<dl class="py class">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.abstract.AbsEventUnit.</span></span><span class="sig-name descname"><span class="pre">AbsEventUnit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/abstract/AbsEventUnit.html#AbsEventUnit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class for units orchestrating an ampel event.
+Ampel processes (from the ampel config) are the most common events.
+They define specifications of an event using a standardized model/schema:
+which subclass of this abstract class is to be run by a given controller
+at (a) given time(s) using a specific configuration.</p>
+<p>An ampel event must be registered and traceable and thus generates:
+- a new run-id
+- a new event document (in the event collection)
+- possibly Log entries (less is better)
+- new trace ids if not registered previously</p>
+<p>Subclassses of this class typically modify tier documents
+whereby the changes originate from results of logical unit(s)
+instantiated by this class.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit.process_name">
+<span class="sig-name descname"><span class="pre">process_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">Annotated</span></code><span class="pre">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a><span class="pre">]</span></em><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.process_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>name of the associated process</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit.job_sig">
+<span class="sig-name descname"><span class="pre">job_sig</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.11)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a><span class="pre">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a><span class="pre">]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.job_sig" title="Permalink to this definition">¶</a></dt>
+<dd><p>hash of potentially underlying job schema</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit.channel">
+<span class="sig-name descname"><span class="pre">channel</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.11)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a><span class="pre">[</span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.11)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a><span class="pre">[</span><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a><span class="pre">[</span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.11)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a><span class="pre">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a><span class="pre">,</span> <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a><span class="pre">]],</span> <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a><span class="pre">,</span> <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a><span class="pre">]]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.channel" title="Permalink to this definition">¶</a></dt>
+<dd><p>channels associated with the process</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit.raise_exc">
+<span class="sig-name descname"><span class="pre">raise_exc</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.raise_exc" title="Permalink to this definition">¶</a></dt>
+<dd><p>raise exceptions instead of catching and logging
+if True, troubles collection will not be populated if an exception occurs</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit.log_profile">
+<span class="sig-name descname"><span class="pre">log_profile</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'default'</span></em><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.log_profile" title="Permalink to this definition">¶</a></dt>
+<dd><p>logging configuration to use, from the logging section of the Ampel config</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit.base_log_flag">
+<span class="sig-name descname"><span class="pre">base_log_flag</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">LogFlag</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">32</span></em><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.base_log_flag" title="Permalink to this definition">¶</a></dt>
+<dd><p>flag to apply to all log records created</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit.db_handler_kwargs">
+<span class="sig-name descname"><span class="pre">db_handler_kwargs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.11)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a><span class="pre">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a><span class="pre">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a><span class="pre">,</span> <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.11)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a><span class="pre">]]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.db_handler_kwargs" title="Permalink to this definition">¶</a></dt>
+<dd><p>optional additional kwargs to pass to <code class="xref py py-class docutils literal notranslate"><span class="pre">DBLoggingHandler</span></code></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit.provenance">
+<span class="sig-name descname"><span class="pre">provenance</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.provenance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Some subclasses allow for non-serializable input parameter out of convenience (jupyter notebooks).
+For example, an AlertSupplier instance can be passed as argument of an AlertConsumer.
+Unless a custom serialization is implemented, this disables the hashing of input parameters
+and thus the generation of “trace ids”.
+Set provenance to False to ignore trace ids generation error which will be raised otherwise.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit.prepare">
+<span class="sig-name descname"><span class="pre">prepare</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_hdlr</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/abstract/AbsEventUnit.html#AbsEventUnit.prepare"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.prepare" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gives units the opportunity to cancel the subsequent call to the proceed() method
+by returning EventCode.PRE_CHECK_EXIT (which avoids ‘burning’ a run id)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.11)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">EventCode</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit.new">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">new</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">templates</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/abstract/AbsEventUnit.html#AbsEventUnit.new"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.new" title="Permalink to this definition">¶</a></dt>
+<dd><p>To use with jupyter when templating is wished for</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Self</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 <section id="processor-units">
 <h2>Processor units<a class="headerlink" href="#processor-units" title="Permalink to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="ampel.t3.T3Processor.T3Processor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.t3.T3Processor.</span></span><span class="sig-name descname"><span class="pre">T3Processor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/t3/T3Processor.html#T3Processor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.t3.T3Processor.T3Processor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ampel.abstract.AbsEventUnit.AbsEventUnit" title="ampel.abstract.AbsEventUnit.AbsEventUnit"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsEventUnit</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.t3.T3Processor.T3Processor.channel">
+<span class="sig-name descname"><span class="pre">channel</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.11)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a><span class="pre">[</span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.11)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a><span class="pre">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a><span class="pre">,</span> <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a><span class="pre">]]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#ampel.t3.T3Processor.T3Processor.channel" title="Permalink to this definition">¶</a></dt>
+<dd><p>channels associated with the process</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.t3.T3Processor.T3Processor.supply">
+<span class="sig-name descname"><span class="pre">supply</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">Annotated</span></code><span class="pre">[</span><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.model.UnitModel.UnitModel" title="(in ampel-interface v0.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">UnitModel</span></code></a><span class="pre">]</span></em><a class="headerlink" href="#ampel.t3.T3Processor.T3Processor.supply" title="Permalink to this definition">¶</a></dt>
+<dd><p>Unit must be a subclass of AbsT3Supplier</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.t3.T3Processor.T3Processor.stage">
+<span class="sig-name descname"><span class="pre">stage</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">Annotated</span></code><span class="pre">[</span><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.model.UnitModel.UnitModel" title="(in ampel-interface v0.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">UnitModel</span></code></a><span class="pre">]</span></em><a class="headerlink" href="#ampel.t3.T3Processor.T3Processor.stage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Unit must be a subclass of AbsT3Stager</p>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 <section id="t3-machinery">
 <h2>T3 machinery<a class="headerlink" href="#t3-machinery" title="Permalink to this heading">¶</a></h2>
