@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                13.01.2018
-# Last Modified Date:  22.04.2022
+# Last Modified Date:  04.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from bson.codec_options import CodecOptions
@@ -153,14 +153,8 @@ class DataLoader:
 
 				# whether to replace init config integer hash with 'resolved' config dict
 				if directive.resolve_config:
-
-					config_keys = self.ctx.config.get('t2.config_keys', dict)
-					if not config_keys:
-						raise ValueError("Cannot load t2 configs")
-
 					for el in res:
-						#: init config integer hash with 'resolved' config dict
-						dict.__setitem__(el, 'config', el[config_keys[el['config']]]) # type: ignore[index]
+						dict.__setitem__(el, 'config', self.ctx.config.get_conf_id(el['config']))
 
 				inc(len(res))
 
