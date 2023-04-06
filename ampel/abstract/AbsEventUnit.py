@@ -4,10 +4,12 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                04.02.2020
-# Last Modified Date:  25.07.2022
+# Last Modified Date:  05.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
+from typing_extensions import Self
+from collections.abc import Sequence
 from ampel.types import ChannelId, OneOrMany, Traceless
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod, defaultmethod
@@ -15,6 +17,8 @@ from ampel.core.EventHandler import EventHandler
 from ampel.core.ContextUnit import ContextUnit
 from ampel.enum.EventCode import EventCode
 from ampel.log.LogFlag import LogFlag
+from ampel.log.utils import get_logger
+from ampel.util.template import apply_templates
 
 
 class AbsEventUnit(AmpelABC, ContextUnit, abstract=True):
@@ -80,6 +84,13 @@ class AbsEventUnit(AmpelABC, ContextUnit, abstract=True):
 		...
 
 
+	@classmethod
+	def new(cls, templates: str | Sequence[str], **kwargs) -> Self:
+		""" To use with jupyter when templating is wished for """
+		with get_logger(kwargs['context'].config, kwargs.get('log_profile', None)) as logger:
+			return cls(**apply_templates(kwargs['context'], templates, kwargs, logger))
+
+
 	def run(self, event_hdlr: None | EventHandler = None) -> Any:
 
 		if event_hdlr is None:
@@ -117,5 +128,5 @@ class AbsEventUnit(AmpelABC, ContextUnit, abstract=True):
 		# Update duration and code in event doc
 		event_hdlr.update()
 
-		# Forward returned run() value to caller
+		# Forward value returned by proceed() to caller
 		return ret
