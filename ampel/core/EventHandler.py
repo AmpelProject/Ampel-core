@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                26.09.2018
-# Last Modified Date:  19.12.2022
+# Last Modified Date:  02.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
@@ -23,7 +23,8 @@ if TYPE_CHECKING:
 # TODO: (much later) remove explicit dependency on pymongo
 class EventHandler:
 	"""
-	Handles the creation and publication of event documents into the event database
+	Handles creation and publication of event documents into the event database.
+	Dynamic resources can also be registered with this class.
 	"""
 
 	def __init__(self,
@@ -54,10 +55,11 @@ class EventHandler:
 
 	def register(self,
 		run_id: None | int = None,
-		tier: None | Literal[-1, 0, 1, 2, 3] = None,
+		tier: None | Literal[-1, 0, 1, 2, 3, 4] = None,
 		task_nbr: None | int = None,
 		code: EventCode = EventCode.RUNNING
 	) -> None:
+		""" Registers event, which, unless self.dry_run is True, creates an EventDocument in the DB """
 
 		doc = {'process': self.process_name} | self.extra
 		doc['code'] = code
@@ -112,7 +114,7 @@ class EventHandler:
 		self.resources[resource.name] = resource
 
 
-	def set_tier(self, val: Literal[0, 1, 2, 3]) -> None:
+	def set_tier(self, val: Literal[0, 1, 2, 3, 4]) -> None:
 		self.extra['tier'] = val
 
 
@@ -120,6 +122,10 @@ class EventHandler:
 		if self.code == EventCode.EXCEPTION and val != EventCode.EXCEPTION:
 			raise ValueError("Cannot override EventCode.EXCEPTION")
 		self.code = val
+
+
+	def get_resources(self) -> dict[str, Resource]:
+		return self.resources
 
 
 	def handle_error(self, e: Exception, logger: AmpelLogger) -> None:
