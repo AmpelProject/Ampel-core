@@ -81,6 +81,7 @@
 		<span class="bp">self</span><span class="o">.</span><span class="n">loader</span> <span class="o">=</span> <span class="n">loader</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">admin_msg</span> <span class="o">=</span> <span class="n">admin_msg</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">resource</span> <span class="o">=</span> <span class="n">resource</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">run_time_aliases</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 		
 		<span class="c1"># try to register aux units globally</span>
 		<span class="k">try</span><span class="p">:</span>
@@ -216,12 +217,24 @@
 			<span class="k">return</span> <span class="n">l</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
 
+	<span class="k">def</span> <span class="nf">add_conf_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conf_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">unit_config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">add_conf_id</span><span class="p">(</span><span class="n">conf_id</span><span class="p">,</span> <span class="n">unit_config</span><span class="p">)</span>
+		<span class="nb">dict</span><span class="o">.</span><span class="fm">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s2">&quot;confid&quot;</span><span class="p">],</span> <span class="n">conf_id</span><span class="p">,</span> <span class="n">unit_config</span><span class="p">)</span>
+
+
+	<span class="k">def</span> <span class="nf">add_run_time_alias</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+		<span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="n">key</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;%&#39;</span> <span class="o">!=</span> <span class="n">key</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+			<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Run time aliases must begin with </span><span class="si">%%</span><span class="s1">&#39;</span><span class="p">)</span>
+		<span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_time_aliases</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">overwrite</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Run time alias </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2"> already defined, set overwrite=True to ignore&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">run_time_aliases</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+
 	<span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 		<span class="k">return</span> <span class="s2">&quot;&lt;AmpelContext&gt;&quot;</span>
 
 
 	<span class="k">def</span> <span class="nf">deactivate_processes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">		</span><span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
 		<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
 			<span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;process.t</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">raise_exc</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
 				<span class="n">p</span><span class="p">[</span><span class="s1">&#39;active&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>

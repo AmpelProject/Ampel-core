@@ -60,7 +60,7 @@
 <span id="structure-t3"></span><h3>Tier 3: React<a class="headerlink" href="#tier-3-react" title="Permalink to this heading">¶</a></h3>
 <p>Perform action based on collections of Ampel objects.</p>
 <p>The default top level implementation provided by <code class="docutils literal notranslate"><span class="pre">ampel-core</span></code>
-is the class <a class="reference internal" href="api.html#ampel.t3.T3Processor.T3Processor" title="ampel.t3.T3Processor.T3Processor"><code class="xref py py-class docutils literal notranslate"><span class="pre">T3Processor</span></code></a>, which is capable of spawning and executing
+is the class <code class="xref py py-class docutils literal notranslate"><span class="pre">T3Processor</span></code>, which is capable of spawning and executing
 T3 processes according to the provided configuration.
 The execution typically follows a 5-step process specified by the following fields of <code class="xref py py-class docutils literal notranslate"><span class="pre">T3Directive</span></code>:</p>
 <ul class="simple">
@@ -297,8 +297,8 @@ and posts them to “#blue” and the second one sub-selects red entities and po
 </tbody>
 </table>
 <p>Last stage during which T3 units are instantiated and <code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelBuffer</span></code> instances
-converted into <em>views</em> (e.g. <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.view.SnapView.SnapView" title="(in ampel-interface v0.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">SnapView</span></code></a> and subclasses, containing pseudo-immutable structures).</p>
-<p>T3 unit instances (i.e. instances of <code class="xref py py-class docutils literal notranslate"><span class="pre">AbsT3Unit</span></code>) are provided both with <em>views</em> and
+converted into <em>views</em> (e.g. <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.view.SnapView.SnapView" title="(in ampel-interface v0.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">SnapView</span></code></a> and subclasses, containing pseudo-immutable structures).</p>
+<p>T3 unit instances (i.e. instances of <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.abstract.AbsT3Unit.AbsT3Unit" title="(in ampel-interface v0.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsT3Unit</span></code></a>) are provided both with <em>views</em> and
 <a class="reference external" href="t3-directive-context">global information</a> loaded during the previous stages.
 They have also the possibility to customize the journal entry
 created each time the underlying process is run.</p>
