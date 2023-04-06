@@ -47,6 +47,7 @@ class AmpelContext:
 		self.loader = loader
 		self.admin_msg = admin_msg
 		self.resource = resource
+		self.run_time_aliases: dict[str, Any] = {}
 		
 		# try to register aux units globally
 		try:
@@ -182,12 +183,24 @@ class AmpelContext:
 			return l[0]
 
 
+	def add_conf_id(self, conf_id: int, unit_config: dict[str, Any]) -> None:
+		self.db.add_conf_id(conf_id, unit_config)
+		dict.__setitem__(self.config._config["confid"], conf_id, unit_config)
+
+
+	def add_run_time_alias(self, key: str, value: Any, overwrite: bool = False) -> None:
+		if not isinstance(key, str) or key[0] != '%' != key[1]:
+			raise ValueError('Run time aliases must begin with %%')
+		if key in self.run_time_aliases and not overwrite:
+			raise ValueError(f"Run time alias {key} already defined, set overwrite=True to ignore")
+		self.run_time_aliases[key] = value
+
+
 	def __repr__(self) -> str:
 		return "<AmpelContext>"
 
 
 	def deactivate_processes(self) -> None:
-		""" """
 		for i in range(4):
 			for p in self.config.get(f'process.t{i}', dict, raise_exc=True).values():
 				p['active'] = False
