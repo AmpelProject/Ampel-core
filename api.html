@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 
 <html lang="en">
@@ -162,13 +161,13 @@ by returning EventCode.PRE_CHECK_EXIT (which avoids ‘burning’ a run id)</p>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="ampel.t3.T3Processor.T3Processor.supply">
-<span class="sig-name descname"><span class="pre">supply</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">Annotated</span></code><span class="pre">[</span><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.model.UnitModel.UnitModel" title="(in ampel-interface v0.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">UnitModel</span></code></a><span class="pre">]</span></em><a class="headerlink" href="#ampel.t3.T3Processor.T3Processor.supply" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">supply</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">Annotated</span></code><span class="pre">[</span><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.model.UnitModel.UnitModel" title="(in ampel-interface v0.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">UnitModel</span></code></a><span class="pre">]</span></em><a class="headerlink" href="#ampel.t3.T3Processor.T3Processor.supply" title="Permalink to this definition">¶</a></dt>
 <dd><p>Unit must be a subclass of AbsT3Supplier</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="ampel.t3.T3Processor.T3Processor.stage">
-<span class="sig-name descname"><span class="pre">stage</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">Annotated</span></code><span class="pre">[</span><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.model.UnitModel.UnitModel" title="(in ampel-interface v0.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">UnitModel</span></code></a><span class="pre">]</span></em><a class="headerlink" href="#ampel.t3.T3Processor.T3Processor.stage" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">stage</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">Annotated</span></code><span class="pre">[</span><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.model.UnitModel.UnitModel" title="(in ampel-interface v0.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">UnitModel</span></code></a><span class="pre">]</span></em><a class="headerlink" href="#ampel.t3.T3Processor.T3Processor.stage" title="Permalink to this definition">¶</a></dt>
 <dd><p>Unit must be a subclass of AbsT3Stager</p>
 </dd></dl>
 
@@ -210,7 +209,7 @@ of handling multiple AmpelConfig/AmpelDB instances</p>
 <blockquote>
 <div><p>whether to convert the elements contained of ampel config
 into immutable structures (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a> -&gt;
-<a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.view.ReadOnlyDict.ReadOnlyDict" title="(in ampel-interface v0.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReadOnlyDict</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> -&gt; <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>).
+<a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.view.ReadOnlyDict.ReadOnlyDict" title="(in ampel-interface v0.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReadOnlyDict</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> -&gt; <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>).
 Parameter does only apply if the config is loaded by this method, i.e if parameter ‘config’ is a str.</p>
 </div></blockquote>
 </dd></dl>
@@ -219,7 +218,7 @@ Parameter does only apply if the config is loaded by this method, i.e if paramet
 <dt class="sig sig-object py" id="ampel.core.AmpelContext.AmpelContext.build">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">build</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ignore_errors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pwd_file_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pwds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freeze_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/core/AmpelContext.html#AmpelContext.build"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.AmpelContext.AmpelContext.build" title="Permalink to this definition">¶</a></dt>
 <dd><p>Instantiates a new AmpelContext instance.</p>
-<p>The required underlying ampel configuration (<a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.config.AmpelConfig.AmpelConfig" title="(in ampel-interface v0.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelConfig</span></code></a>) is built from scratch,
+<p>The required underlying ampel configuration (<a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.config.AmpelConfig.AmpelConfig" title="(in ampel-interface v0.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelConfig</span></code></a>) is built from scratch,
 meaning all available configurations defined in the various ampel repositories available locally
 are collected, merged merged together and morphed the info into the final ampel config.
 This is a convenience method, do not use for production</p>
@@ -251,7 +250,7 @@ single process invocation. This ID is unique and monotonicaly increasing.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.config.AmpelConfig.AmpelConfig" title="(in ampel-interface v0.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelConfig</span></code></a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.config.AmpelConfig.AmpelConfig" title="(in ampel-interface v0.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelConfig</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -297,7 +296,7 @@ and the kwargs provided to this method (the latter having prevalance)
 :raises: ValueError is the unit defined in the model is unknown</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.11)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypeVar" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code></a>(<code class="docutils literal notranslate"><span class="pre">LT</span></code>, bound= <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.base.LogicalUnit.LogicalUnit" title="(in ampel-interface v0.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">LogicalUnit</span></code></a>), <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.base.LogicalUnit.LogicalUnit" title="(in ampel-interface v0.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">LogicalUnit</span></code></a>]</p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.11)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypeVar" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code></a>(<code class="docutils literal notranslate"><span class="pre">LT</span></code>, bound= <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.base.LogicalUnit.LogicalUnit" title="(in ampel-interface v0.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">LogicalUnit</span></code></a>), <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.base.LogicalUnit.LogicalUnit" title="(in ampel-interface v0.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">LogicalUnit</span></code></a>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -308,7 +307,7 @@ and the kwargs provided to this method (the latter having prevalance)
 <dd><p>Returns a logical unit with dedicated logger containing no db handler</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypeVar" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code></a>(<code class="docutils literal notranslate"><span class="pre">LT</span></code>, bound= <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.base.LogicalUnit.LogicalUnit" title="(in ampel-interface v0.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">LogicalUnit</span></code></a>)</p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypeVar" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code></a>(<code class="docutils literal notranslate"><span class="pre">LT</span></code>, bound= <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.base.LogicalUnit.LogicalUnit" title="(in ampel-interface v0.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">LogicalUnit</span></code></a>)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1106,7 +1105,7 @@ Ex: BaseAlertRegister adds the current run id</p>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018-2021, Ampel Project.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 6.1.3.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.0.1.
     </div>
   </body>
 </html>
