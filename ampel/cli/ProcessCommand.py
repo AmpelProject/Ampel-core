@@ -7,10 +7,12 @@
 # Last Modified Date:  14.08.2022
 # Last Modified By:    jvs
 
-import signal, traceback, yaml
+from contextlib import contextmanager
+import signal, traceback, yaml, os
+from ampel.core.Schedulable import Schedulable
 from argparse import ArgumentParser
 from time import time
-from typing import Any, Optional, Sequence, Union
+from typing import Any, Generator, Optional, Sequence, Union
 
 from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
@@ -18,6 +20,7 @@ from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
 from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogFlag import LogFlag
+from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 from ampel.model.ChannelModel import ChannelModel
 from ampel.model.UnitModel import UnitModel
 from ampel.util.freeze import recursive_freeze
@@ -54,7 +57,8 @@ class ProcessCommand(AbsCoreCommand):
                 "log-profile": "logging profile to use",
                 "config": "path to an ampel config file (yaml/json)",
                 "schema": "path to YAML job file",
-                "name": "process name",
+                "name": "task name",
+                "workflow": "parent workflow name",
                 "secrets": "path to a secret store; either SOPS YAML or mounted k8s Secret directory",
                 "db": "database to use",
                 "channel": "path to YAML channel file",
@@ -69,6 +73,7 @@ class ProcessCommand(AbsCoreCommand):
 
         parser.opt("channel")
         parser.opt("alias")
+        parser.opt("workflow", default=None, type=str)
         parser.opt("log-profile", default="prod")
         parser.opt("debug", default=False, action="store_true")
         parser.opt("secrets", type=str)
@@ -125,6 +130,20 @@ class ProcessCommand(AbsCoreCommand):
         
         return ctx
 
+    @contextmanager
+    def push_metrics(self, process_name: str, logger: AmpelLogger) -> Generator:
+        if not (pushgateway := os.environ.get("PROMETHEUS_PUSHGATEWAY")):
+            yield
+            return
+
+        task = Schedulable()
+        task.get_scheduler().every(1).minute.do(AmpelMetricsRegistry.push, pushgateway, process_name)
+        with task.run_in_thread():
+            yield
+        try:
+            task.get_scheduler().run_all()
+        except Exception as exc:
+            logger.error("Failed to push metrics", exc_info=exc)
 
     def run(self,
         args: dict[str, Any],
@@ -151,15 +170,21 @@ class ProcessCommand(AbsCoreCommand):
             logger,
         )
 
+        if args["workflow"]:
+            process_name = f'{args["workflow"]}.{args["name"]}'
+        else:
+            process_name = args["name"]
+
         proc = ctx.loader.new_context_unit(
             model=unit_model,
             context=ctx,
-            process_name=args["name"],
+            process_name=process_name,
             sub_type=AbsEventUnit,
             base_log_flag=LogFlag.MANUAL_RUN,
             log_profile=args["log_profile"],
         )
-        x = proc.run()
+        with self.push_metrics(process_name, logger):
+            x = proc.run()
         logger.info(f"{unit_model.unit} return value: {x}")
 
         dm = divmod(time() - start_time, 60)
@@ -168,6 +193,4 @@ class ProcessCommand(AbsCoreCommand):
             % (round(dm[0]), round(dm[1]))
         )
         logger.flush()
-        # signal.signal(signal.SIGALRM, _handle_traceback)
-        # signal.alarm(1)
-        print("ProcessCommand.run() done; returning")
+

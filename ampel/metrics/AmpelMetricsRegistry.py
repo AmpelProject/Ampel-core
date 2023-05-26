@@ -1,7 +1,7 @@
 import os
 from typing import Any, ClassVar
 
-from prometheus_client import CollectorRegistry, Counter, Gauge, Histogram
+from prometheus_client import CollectorRegistry, Counter, Gauge, Histogram, push_to_gateway
 from prometheus_client.multiprocess import MultiProcessCollector
 
 
@@ -15,6 +15,10 @@ class AmpelMetricsRegistry(CollectorRegistry):
         if cls._registry is None:
             cls._registry = CollectorRegistry()
         return cls._registry
+    
+    @classmethod
+    def push(cls, gateway: str, job: str, timeout: float | None = 30):
+        push_to_gateway(gateway, job, cls.registry(), timeout=timeout)
 
     @classmethod
     def collect(cls):
