@@ -466,7 +466,7 @@ def register_stats(tier: int) -> tuple[Histogram, Counter]:
 		'docs_processed',
 		f'Number of T{tier} documents processed',
 		subsystem=f't{tier}',
-		labelnames=('unit', )
+		labelnames=('unit', 'code',)
 	)
 
 	return hist, counter

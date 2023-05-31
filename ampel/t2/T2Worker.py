@@ -68,6 +68,7 @@ class BackoffConfig(AmpelBaseModel):
 	factor: float = 1
 	jitter: bool = True
 
+DOCUMENT_CODES: dict[int, str] = {v: k for k,v in DocumentCode.__members__.items()}
 
 class T2Worker(AbsWorker[T2Document]):
 	"""
@@ -147,11 +148,6 @@ class T2Worker(AbsWorker[T2Document]):
 		# Used as timestamp and to compute duration below (using before_run)
 		now = time()
 
-		# _id is an ObjectId, but declared as bytes in ampel-interface to avoid
-		# an explicit dependency on pymongo
-		if doc['meta']: # robustify against manual changes of the db
-			stat_latency.labels(doc['unit']).observe(now - doc['meta'][0]['ts'])
-		stat_count.labels(doc['unit']).inc()
 		self._doc_counter += 1
 		body = None
 		tag = None
@@ -264,6 +260,12 @@ class T2Worker(AbsWorker[T2Document]):
 				logger, doc, None, exception=e, msg='An exception occured',
 				meta = self.gen_meta(stock_updr.run_id, t2_unit._trace_id, round(now - before_run, 3))
 			)
+
+		# _id is an ObjectId, but declared as bytes in ampel-interface to avoid
+		# an explicit dependency on pymongo
+		if doc['meta']: # robustify against manual changes of the db
+			stat_latency.labels(doc['unit']).observe(now - doc['meta'][0]['ts'])
+		stat_count.labels(doc['unit'], DOCUMENT_CODES.get(code, 'unknown')).inc()
 
 		return body, code
 
