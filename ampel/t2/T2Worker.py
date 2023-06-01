@@ -55,7 +55,7 @@ abs_t2 = (
 	AbsTiedStateT2Unit, AbsCustomStateT2Unit, AbsTiedCustomStateT2Unit
 )
 
-stat_latency, stat_count = register_stats(tier=2)
+stat_latency, stat_count, stat_time = register_stats(tier=2)
 
 class BackoffConfig(AmpelBaseModel):
 	code_match: Sequence[int] = [
@@ -141,7 +141,8 @@ class T2Worker(AbsWorker[T2Document]):
 			raise ValueError(f"Unsupported unit: {doc['unit']}")
 
 		if (trials := self._get_trials(doc)) <= self.max_try:
-			ret = self.run_t2_unit(t2_unit, doc, logger, stock_updr)
+			with stat_time.labels(doc["unit"], "run").time():
+				ret = self.run_t2_unit(t2_unit, doc, logger, stock_updr)
 		else:
 			ret = UnitResult(code=DocumentCode.TOO_MANY_TRIALS)
 
@@ -242,10 +243,11 @@ class T2Worker(AbsWorker[T2Document]):
 				)
 
 			meta['code'] = code
-			self.commit_update(
-				{'_id': doc['_id']}, # type: ignore[typeddict-item]
-				meta, logger, body=body, tag=tag, code=code
-			)
+			with stat_time.labels(doc["unit"], "commit_update").time():
+				self.commit_update(
+					{'_id': doc['_id']}, # type: ignore[typeddict-item]
+					meta, logger, body=body, tag=tag, code=code
+				)
 
 			# Update stock document
 			if len(stock_updr._updates) >= self.updates_buffer_size:
@@ -311,11 +313,12 @@ class T2Worker(AbsWorker[T2Document]):
 			)
 		):
 			dps: list[DataPoint] = []
-			t1_doc: None | T1Document = next(
-				self.col_t1.find(
-					{'stock': t2_doc['stock'], 'link': t2_doc['link']}
-				), None
-			)
+			with stat_time.labels(t2_doc["unit"], "load_t1").time():
+				t1_doc: None | T1Document = next(
+					self.col_t1.find(
+						{'stock': t2_doc['stock'], 'link': t2_doc['link']}
+					), None
+				)
 
 			# compound doc must exist (None could mean an ingester bug)
 			if t1_doc is None:
@@ -333,10 +336,11 @@ class T2Worker(AbsWorker[T2Document]):
 			t1_dps_ids = list(t1_doc['dps'])
 
 			# Sort DPS from DB in the same order than referenced by 'dps' from t1 doc
-			dps = sorted(
-				self.col_t0.find({'id': {'$in': t1_dps_ids}}),
-				key = lambda dp: t1_dps_ids.index(dp['id'])
-			)
+			with stat_time.labels(t2_doc["unit"], "load_t0").time():
+				dps = sorted(
+					self.col_t0.find({'id': {'$in': t1_dps_ids}}),
+					key = lambda dp: t1_dps_ids.index(dp['id'])
+				)
 
 			# Should never happen (only in case of ingestion bug)
 			if not dps:
@@ -404,7 +408,8 @@ class T2Worker(AbsWorker[T2Document]):
 
 					queries.append(d)
 
-				qres = self.run_tied_queries(queries, t2_doc, stock_updr, logger)
+				with stat_time.labels(t2_doc["unit"], "load_tied").time():
+					qres = self.run_tied_queries(queries, t2_doc, stock_updr, logger)
 
 				# Dependency missing
 				if isinstance(qres, UnitResult):
@@ -652,7 +657,8 @@ class T2Worker(AbsWorker[T2Document]):
 
 		try:
 
-			ret = t2_unit.process(*args)
+			with stat_time.labels(t2_doc["unit"], "process").time():
+				ret = t2_unit.process(*args)
 
 			if t2_unit._buf_hdlr.buffer: # type: ignore[union-attr]
 				t2_unit._buf_hdlr.forward( # type: ignore[union-attr]

@@ -37,7 +37,7 @@ from ampel.abstract.AbsUnitResultAdapter import AbsUnitResultAdapter
 from ampel.model.UnitModel import UnitModel
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
 from ampel.mongo.utils import maybe_use_each
-from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry, Histogram, Counter
+from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry, Histogram, TimingCounter, Summary
 from ampel.util.tag import merge_tags
 
 T = TypeVar("T", T1Document, T2Document)
@@ -50,6 +50,13 @@ class BackoffConfig(AmpelBaseModel):
 	max_tries: None | int = None
 	max_time: None | float = 60.
 
+stat_time = AmpelMetricsRegistry.summary(
+    "time",
+    "Processing time",
+    unit="microseconds",
+    subsystem="worker",
+    labelnames=("tier", "phase", "unit"),
+)
 
 class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 	"""
@@ -173,7 +180,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		return None
 
 
-	def find_one_and_update(self, query: dict, update: dict) -> None | Any:
+	def find_one_and_update(self, query: dict, update: dict) -> None | T:
 		"""
 		Get next eligible document, with timeout
 		"""
@@ -235,7 +242,9 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 			# get t1/t2 document (code is usually NEW or NEW_PRIO), excluding
 			# docs with retry times in the future
-			doc = self.find_one_and_update(self.query, update)
+			with stat_time.time() as timer:
+				doc = self.find_one_and_update(self.query, update)
+				timer.labels(self.tier, "find_one_and_update", doc["unit"] if doc else None)
 
 			# No match
 			if doc is None:
@@ -243,7 +252,8 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 			elif logger.verbose > 1:
 				logger.debug(f'T{self.tier} doc to process', extra={'doc': doc})
 
-			self.process_doc(doc, stock_updr, logger)
+			with stat_time.labels(self.tier, "process_doc", doc["unit"]).time():
+				self.process_doc(doc, stock_updr, logger)
 
 			# Check possibly defined doc_limit
 			if doc_limit and self._doc_counter >= doc_limit:
@@ -452,9 +462,9 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		return self._instances[k]
 
 
-def register_stats(tier: int) -> tuple[Histogram, Counter]:
+def register_stats(tier: int) -> tuple[Histogram, TimingCounter, Summary]:
 
-	hist = AmpelMetricsRegistry.histogram(
+	latency = AmpelMetricsRegistry.histogram(
 		'latency',
 		f'Delay between T{tier} doc creation and processing',
 		subsystem=f't{tier}',
@@ -462,11 +472,19 @@ def register_stats(tier: int) -> tuple[Histogram, Counter]:
 		labelnames=('unit', ),
 	)
 
-	counter = AmpelMetricsRegistry.counter(
+	docs = AmpelMetricsRegistry.counter(
 		'docs_processed',
 		f'Number of T{tier} documents processed',
 		subsystem=f't{tier}',
 		labelnames=('unit', 'code',)
 	)
 
-	return hist, counter
+	processing_time = AmpelMetricsRegistry.summary(
+		'processing_time',
+		f'Time spent processing of T{tier} documents processed',
+		subsystem=f't{tier}',
+		unit='microseconds',
+		labelnames=('unit', 'phase')
+	)
+
+	return latency, docs, processing_time
