@@ -1,8 +1,23 @@
 import os
 from typing import Any, ClassVar
 
-from prometheus_client import CollectorRegistry, Counter, Gauge, Histogram, push_to_gateway
+from prometheus_client import (
+    CollectorRegistry,
+    Counter,
+    Gauge,
+    Histogram,
+    push_to_gateway,
+)
 from prometheus_client.multiprocess import MultiProcessCollector
+from prometheus_client.metrics import MetricWrapperBase
+
+
+def reset_metric(metric: MetricWrapperBase) -> None:
+    if metric._is_parent():
+        for child in metric._metrics.values():
+            reset_metric(child)
+    elif hasattr(metric, "_value"):
+        metric._value.set(0)
 
 
 class AmpelMetricsRegistry(CollectorRegistry):
@@ -15,10 +30,17 @@ class AmpelMetricsRegistry(CollectorRegistry):
         if cls._registry is None:
             cls._registry = CollectorRegistry()
         return cls._registry
-    
+
     @classmethod
-    def push(cls, gateway: str, job: str, timeout: float | None = 30):
-        push_to_gateway(gateway, job, cls.registry(), timeout=timeout)
+    def push(
+        cls, gateway: str, job: str, timeout: float | None = 30, reset: bool = False
+    ):
+        registry = cls.registry()
+        push_to_gateway(gateway, job, registry, timeout=timeout)
+        if reset:
+            for metric in registry._names_to_collectors.values():
+                if isinstance(metric, MetricWrapperBase):
+                    reset_metric(metric)
 
     @classmethod
     def collect(cls):

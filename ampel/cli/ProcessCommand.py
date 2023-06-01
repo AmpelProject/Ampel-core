@@ -137,7 +137,7 @@ class ProcessCommand(AbsCoreCommand):
             return
 
         task = Schedulable()
-        task.get_scheduler().every(1).minute.do(AmpelMetricsRegistry.push, pushgateway, process_name)
+        task.get_scheduler().every(30).seconds.do(AmpelMetricsRegistry.push, pushgateway, process_name, reset=True)
         with task.run_in_thread():
             yield
         try:
