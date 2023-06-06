@@ -21,8 +21,24 @@ def reset_metric(metric: MetricWrapperBase) -> None:
     if metric._is_parent():
         for child in metric._metrics.values():
             reset_metric(child)
-    elif hasattr(metric, "_value"):
-        metric._value.set(0)
+    else:
+        if isinstance(metric, (Counter, Gauge)):
+            metric._value.set(0)
+        elif isinstance(metric, Summary):
+            metric._sum.set(0)
+            metric._count.set(0)
+        elif isinstance(metric, Histogram):
+            metric._sum.set(0)
+            for bucket in metric._buckets:
+                bucket.set(0)
+        else:
+            raise TypeError(f"don't know how to reset metric of type {type(metric)}")
+
+
+def reset_registry(registry: CollectorRegistry) -> None:
+    for metric in registry._names_to_collectors.values():
+        if isinstance(metric, MetricWrapperBase):
+            reset_metric(metric)
 
 
 class UnitTimer(Timer):
@@ -99,9 +115,7 @@ class AmpelMetricsRegistry(CollectorRegistry):
         registry = cls.registry()
         push_to_gateway(gateway, job, registry, timeout=timeout)
         if reset:
-            for metric in registry._names_to_collectors.values():
-                if isinstance(metric, MetricWrapperBase):
-                    reset_metric(metric)
+            reset_registry(registry)
 
     @classmethod
     def collect(cls):
