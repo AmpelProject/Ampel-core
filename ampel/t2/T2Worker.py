@@ -224,7 +224,7 @@ class T2Worker(AbsWorker[T2Document]):
 					)
 
 				if ret.journal:
-					jrec.update(ret.journal) # type: ignore
+					ret.journal.into(jrec)
 					activity['action'] |= MetaActionCode.EXTRA_JOURNAL
 					jrec['action'] |= JournalActionCode.T2_EXTRA_JOURNAL
 
