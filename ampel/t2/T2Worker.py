@@ -184,13 +184,8 @@ class T2Worker(AbsWorker[T2Document]):
 			# Unit requested customizations
 			if isinstance(ret, UnitResult):
 
-				if ret.adapter:
-					if ret.adapter not in self._adapters:
-						self._adapters[ret.adapter] = getattr(
-							import_module(f"ampel.core.adapter.{ret.adapter}"),
-							ret.adapter
-						)(context=self.context, run_id=stock_updr.run_id)
-					ret = self._adapters[ret.adapter].handle(ret)
+				if ret.adapter_model:
+					ret = self.get_adapter_instance(ret.adapter_model).handle(ret)
 
 				if ret.body:
 					body = ret.body

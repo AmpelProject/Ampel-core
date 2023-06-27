@@ -28,6 +28,7 @@ from ampel.struct.UnitResult import UnitResult
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.enum.MetaActionCode import MetaActionCode
 from ampel.enum.JournalActionCode import JournalActionCode
+from ampel.model.UnitModel import UnitModel
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
 from ampel.struct.T3Store import T3Store
 from ampel.util.mappings import dictify
@@ -49,7 +50,7 @@ class T3DocBuilder(ContextUnit, T3DocBuilderModel):
 	def __init__(self, **kwargs) -> None:
 
 		super().__init__(**kwargs)
-		self.adapters: dict[str, AbsUnitResultAdapter] = {}
+		self.adapters: dict[int, AbsUnitResultAdapter] = {}
 		self.stock_updr = MongoStockUpdater(
 			ampel_db = self.context.db,
 			tier = 3,
@@ -61,6 +62,21 @@ class T3DocBuilder(ContextUnit, T3DocBuilderModel):
 			update_journal = self.update_journal,
 			bump_updated = False
 		)
+
+
+	def get_adapter_instance(self, model: UnitModel) -> AbsUnitResultAdapter:
+		config_id = build_unsafe_dict_id(model.dict())
+
+		if config_id not in self.adapters:
+			unit_instance = self.context.loader.new_context_unit(
+				model = model,
+				context = self.context,
+				run_id = self.event_hdlr.get_run_id(),
+				sub_type = AbsUnitResultAdapter,
+			)
+			self.adapters[config_id] = unit_instance
+
+		return self.adapters[config_id]
 
 
 	def handle_t3_result(self,
@@ -159,13 +175,8 @@ class T3DocBuilder(ContextUnit, T3DocBuilderModel):
 
 			if res.body:
 
-				if res.adapter:
-					if res.adapter not in self.adapters:
-						self.adapters[res.adapter] = getattr(
-							import_module(f"ampel.core.adapter.{res.adapter}"),
-							res.adapter
-						)(context=self.context, run_id=self.event_hdlr.get_run_id())
-					res = self.adapters[res.adapter].handle(res)
+				if res.adapter_model:
+					res = self.get_adapter_instance(res.adapter_model).handle(res)
 
 				t3d['body'] = res.body
 				actact |= MetaActionCode.ADD_BODY

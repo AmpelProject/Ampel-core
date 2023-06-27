@@ -161,8 +161,8 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		# Key: set(unit name + config), value: unit instance
 		self._instances: JDict = {}
 
-		self._adapters: dict[str, AbsUnitResultAdapter] = {}
-
+		self._current_run_id: None | int = None
+		self._adapters: dict[int, AbsUnitResultAdapter] = {}
 
 
 	@abstractmethod
@@ -212,6 +212,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 		event_hdlr.set_tier(self.tier)
 		run_id = event_hdlr.get_run_id()
+		self._current_run_id = run_id
 
 		logger = AmpelLogger.from_profile(
 			self.context, self.log_profile, run_id,
@@ -267,6 +268,8 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 		logger.flush()
 		self._instances.clear()
+		self._adapters.clear()
+		self._current_run_id = None
 
 		return self._doc_counter
 
@@ -460,6 +463,22 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 			self._instances[k] = unit_instance
 
 		return self._instances[k]
+
+
+	def get_adapter_instance(self, model: UnitModel) -> AbsUnitResultAdapter:
+		assert self._current_run_id is not None
+		config_id = build_unsafe_dict_id(model.dict())
+
+		if config_id not in self._adapters:
+			unit_instance = self._loader.new_context_unit(
+				model = model,
+				context = self.context,
+				run_id = self._current_run_id,
+				sub_type = AbsUnitResultAdapter,
+			)
+			self._adapters[config_id] = unit_instance
+
+		return self._adapters[config_id]
 
 
 def register_stats(tier: int) -> tuple[Histogram, TimingCounter, Summary]:
