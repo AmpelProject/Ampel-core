@@ -218,7 +218,6 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 		event_hdlr.set_tier(self.tier)
 		run_id = event_hdlr.get_run_id()
-		self._current_run_id = run_id
 
 		logger = AmpelLogger.from_profile(
 			self.context, self.log_profile, run_id,
@@ -243,39 +242,41 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		garbage_collect = self.garbage_collect
 		doc_limit = self.doc_limit
 
-		# Process docs until next() returns None (breaks condition below)
-		self._run = True
-		while self._run:
+		try:
+			self._current_run_id = run_id
+			self._run = True
+			# Process docs until next() returns None (breaks condition below)
+			while self._run:
 
-			# get t1/t2 document (code is usually NEW or NEW_PRIO), excluding
-			# docs with retry times in the future
-			with stat_time.time() as timer:
-				doc = self.find_one_and_update(self.query, update)
-				timer.labels(self.tier, "find_one_and_update", doc["unit"] if doc else None)
+				# get t1/t2 document (code is usually NEW or NEW_PRIO), excluding
+				# docs with retry times in the future
+				with stat_time.time() as timer:
+					doc = self.find_one_and_update(self.query, update)
+					timer.labels(self.tier, "find_one_and_update", doc["unit"] if doc else None)
 
-			# No match
-			if doc is None:
-				break
-			elif logger.verbose > 1:
-				logger.debug(f'T{self.tier} doc to process', extra={'doc': doc})
+				# No match
+				if doc is None:
+					break
+				elif logger.verbose > 1:
+					logger.debug(f'T{self.tier} doc to process', extra={'doc': doc})
 
-			with stat_time.labels(self.tier, "process_doc", doc["unit"]).time():
-				self.process_doc(doc, stock_updr, logger)
+				with stat_time.labels(self.tier, "process_doc", doc["unit"]).time():
+					self.process_doc(doc, stock_updr, logger)
 
-			# Check possibly defined doc_limit
-			if doc_limit and self._doc_counter >= doc_limit:
-				break
+				# Check possibly defined doc_limit
+				if doc_limit and self._doc_counter >= doc_limit:
+					break
 
-			if garbage_collect:
-				gc.collect()
+				if garbage_collect:
+					gc.collect()
+		finally:
+			stock_updr.flush()
+			event_hdlr.add_extra(docs=self._doc_counter)
 
-		stock_updr.flush()
-		event_hdlr.add_extra(docs=self._doc_counter)
-
-		logger.flush()
-		self._instances.clear()
-		self._adapters.clear()
-		self._current_run_id = None
+			logger.flush()
+			self._instances.clear()
+			self._adapters.clear()
+			self._current_run_id = None
 
 		return self._doc_counter
 
