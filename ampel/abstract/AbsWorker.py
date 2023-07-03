@@ -15,6 +15,7 @@ from typing import ClassVar, Any, TypeVar, Generic, Literal
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 
 from pymongo.write_concern import WriteConcern
+from pymongo.read_concern import ReadConcern
 
 from ampel.types import OneOrMany, JDict, UBson, Tag
 from ampel.base.decorator import abstractmethod
@@ -112,6 +113,9 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 	#: significant extra latency for replicated mongo clusters.
 	wait_for_durable_write: bool = True
 
+	#: read only commmitted updates
+	durable_read: bool = False
+
 	#: minimum number of stock document updates to commit at once
 	updates_buffer_size: int = 500
 
@@ -148,6 +152,8 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 			# updates being lost if the primary goes down before the write can
 			# be replicated, but if this happens the doc can simply be rerun.
 			self.col = self.col.with_options(write_concern=WriteConcern(w=1, j=False))
+		if self.durable_read:
+			self.col = self.col.with_options(read_concern=ReadConcern(level="majority"))
 
 		if self.send_beacon:
 			self.create_beacon()
