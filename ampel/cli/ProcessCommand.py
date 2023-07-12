@@ -54,6 +54,7 @@ class ProcessCommand(AbsCoreCommand):
         parser.set_help_descr(
             {
                 "debug": "enable traceback printing",
+                "handle-exc": "record exceptions in the db",
                 "log-profile": "logging profile to use",
                 "config": "path to an ampel config file (yaml/json)",
                 "schema": "path to YAML job file",
@@ -76,6 +77,7 @@ class ProcessCommand(AbsCoreCommand):
         parser.opt("workflow", default=None, type=str)
         parser.opt("log-profile", default="prod")
         parser.opt("debug", default=False, action="store_true")
+        parser.opt("handle-exc", default=False, action="store_true")
         parser.opt("secrets", type=str)
 
         # Example
@@ -162,7 +164,7 @@ class ProcessCommand(AbsCoreCommand):
         with open(args["schema"], "r") as f:
             unit_model = UnitModel(**yaml.safe_load(f))
         # always raise exceptions
-        unit_model.override = (unit_model.override or {}) | {"raise_exc": True}
+        unit_model.override = (unit_model.override or {}) | {"raise_exc": not args["handle_exc"]}
 
         ctx = self._get_context(
             args,
