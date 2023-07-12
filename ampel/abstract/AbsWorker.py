@@ -7,12 +7,14 @@
 # Last Modified Date:  15.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import gc, signal
+import gc, signal, sys
 import random
 from math import ceil
 from time import time, sleep
-from typing import ClassVar, Any, TypeVar, Generic, Literal
+from typing import ClassVar, Any, TypeVar, Generic, Literal, Sequence, Generator
 from ampel.base.AmpelBaseModel import AmpelBaseModel
+from contextlib import contextmanager
+from threading import Event
 
 from pymongo.write_concern import WriteConcern
 from pymongo.read_concern import ReadConcern
@@ -58,6 +60,19 @@ stat_time = AmpelMetricsRegistry.summary(
     subsystem="worker",
     labelnames=("tier", "phase", "unit"),
 )
+
+@contextmanager
+def stop_on_signal(signals: Sequence[signal.Signals], logger: AmpelLogger) -> Generator[Event, None, None]:
+	stop_token = Event()
+	def handle_signal(signum: int, frame):
+		logger.log(LogFlag.SHOUT, f"caught {signal.Signals(signum).name}")
+		stop_token.set()
+	prev_handlers = {sig: signal.signal(sig, handle_signal) for sig in signals}
+	try:
+		yield stop_token
+	finally:
+		for sig, handler in prev_handlers.items():
+			signal.signal(sig, handler)
 
 class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 	"""
@@ -158,10 +173,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		if self.send_beacon:
 			self.create_beacon()
 
-		self._run = True
 		self._doc_counter = 0
-		signal.signal(signal.SIGTERM, self.sig_exit)
-		signal.signal(signal.SIGINT, self.sig_exit)
 
 		# _instances stores unit instances so that they can be re-used in run()
 		# Key: set(unit name + config), value: unit instance
@@ -186,13 +198,13 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		return None
 
 
-	def find_one_and_update(self, query: dict, update: dict) -> None | T:
+	def find_one_and_update(self, query: dict, update: dict, stop_token: Event) -> None | T:
 		"""
 		Get next eligible document, with timeout
 		"""
 		t0 = time()
 		attempts = 0
-		while self._run:
+		while not stop_token.is_set():
 			doc = self.col.find_one_and_update(
 				query | {'$expr': {'$not': {'$lte': [ceil(time()), {'$last': '$meta.retry_after'}]}}},
 				update
@@ -207,7 +219,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 			delay = min(backoff.factor*(backoff.base**attempts), backoff.max_value)
 			if backoff.jitter:
 				delay = random.uniform(0, delay)
-			sleep(delay)
+			stop_token.wait(delay)
 			attempts += 1
 		
 		return None
@@ -242,41 +254,46 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		garbage_collect = self.garbage_collect
 		doc_limit = self.doc_limit
 
-		try:
-			self._current_run_id = run_id
-			self._run = True
-			# Process docs until next() returns None (breaks condition below)
-			while self._run:
+		with stop_on_signal(
+			[signal.SIGINT, signal.SIGTERM, signal.SIGQUIT, signal.SIGHUP],
+			logger
+		) as stop_token:
+			try:
+				self._current_run_id = run_id
+				# Process docs until next() returns None (breaks condition below)
+				while not stop_token.is_set():
 
-				# get t1/t2 document (code is usually NEW or NEW_PRIO), excluding
-				# docs with retry times in the future
-				with stat_time.time() as timer:
-					doc = self.find_one_and_update(self.query, update)
-					timer.labels(self.tier, "find_one_and_update", doc["unit"] if doc else None)
+					# get t1/t2 document (code is usually NEW or NEW_PRIO), excluding
+					# docs with retry times in the future
+					with stat_time.time() as timer:
+						doc = self.find_one_and_update(self.query, update, stop_token)
+						timer.labels(self.tier, "find_one_and_update", doc["unit"] if doc else None)
 
-				# No match
-				if doc is None:
-					break
-				elif logger.verbose > 1:
-					logger.debug(f'T{self.tier} doc to process', extra={'doc': doc})
+					# No match
+					if doc is None:
+						if not stop_token.is_set():
+							logger.log(LogFlag.SHOUT, "No more docs to process")
+						break
+					elif logger.verbose > 1:
+						logger.debug(f'T{self.tier} doc to process', extra={'doc': doc})
 
-				with stat_time.labels(self.tier, "process_doc", doc["unit"]).time():
-					self.process_doc(doc, stock_updr, logger)
+					with stat_time.labels(self.tier, "process_doc", doc["unit"]).time():
+						self.process_doc(doc, stock_updr, logger)
 
-				# Check possibly defined doc_limit
-				if doc_limit and self._doc_counter >= doc_limit:
-					break
+					# Check possibly defined doc_limit
+					if doc_limit and self._doc_counter >= doc_limit:
+						break
 
-				if garbage_collect:
-					gc.collect()
-		finally:
-			stock_updr.flush()
-			event_hdlr.add_extra(docs=self._doc_counter)
+					if garbage_collect:
+						gc.collect()
+			finally:
+				stock_updr.flush()
+				event_hdlr.add_extra(docs=self._doc_counter)
 
-			logger.flush()
-			self._instances.clear()
-			self._adapters.clear()
-			self._current_run_id = None
+				logger.flush()
+				self._instances.clear()
+				self._adapters.clear()
+				self._current_run_id = None
 
 		return self._doc_counter
 
@@ -402,12 +419,6 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 			d['jobid'] = self.job_sig
 
 		return d
-
-
-	def sig_exit(self, signum: int, frame) -> None:
-		""" Executed when SIGTERM/SIGINT is caught. Stops doc processing in run() """
-		self._run = False
-
 
 	def create_beacon(self) -> None:
 		""" Creates a beacon document if it does not exist yet """
