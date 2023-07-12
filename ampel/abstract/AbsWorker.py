@@ -173,8 +173,6 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		if self.send_beacon:
 			self.create_beacon()
 
-		self._doc_counter = 0
-
 		# _instances stores unit instances so that they can be re-used in run()
 		# Key: set(unit name + config), value: unit instance
 		self._instances: JDict = {}
@@ -249,7 +247,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		)
 
 		# Loop variables
-		self._doc_counter = 0
+		doc_counter = 0
 		update = {'$set': {'code': DocumentCode.RUNNING}}
 		garbage_collect = self.garbage_collect
 		doc_limit = self.doc_limit
@@ -279,23 +277,24 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 					with stat_time.labels(self.tier, "process_doc", doc["unit"]).time():
 						self.process_doc(doc, stock_updr, logger)
+					doc_counter += 1
 
 					# Check possibly defined doc_limit
-					if doc_limit and self._doc_counter >= doc_limit:
+					if doc_limit and doc_counter >= doc_limit:
 						break
 
 					if garbage_collect:
 						gc.collect()
 			finally:
 				stock_updr.flush()
-				event_hdlr.add_extra(docs=self._doc_counter)
+				event_hdlr.add_extra(docs=doc_counter)
 
 				logger.flush()
 				self._instances.clear()
 				self._adapters.clear()
 				self._current_run_id = None
 
-		return self._doc_counter
+		return doc_counter
 
 
 	def _processing_error(self,

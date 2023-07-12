@@ -149,7 +149,6 @@ class T2Worker(AbsWorker[T2Document]):
 		# Used as timestamp and to compute duration below (using before_run)
 		now = time()
 
-		self._doc_counter += 1
 		body = None
 		tag = None
 		code = 0
