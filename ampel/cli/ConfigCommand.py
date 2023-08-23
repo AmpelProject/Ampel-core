@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import os, subprocess, json, yaml, shutil
-from io import StringIO
+from io import StringIO, UnsupportedOperation
 from pathlib import Path
 from time import time
 from typing import Any, TextIO, Iterable
@@ -118,7 +118,7 @@ class ConfigCommand(AbsCoreCommand):
 		builder.opt('exclude-distributions', 'build|install', nargs="+", default=[])
 		builder.opt('file', 'install|validate|transform', type=FileType('r'))
 		builder.opt('secrets', 'validate', type=FileType('r'))
-		builder.opt('out', 'transform', type=FileType('w'))
+		builder.opt('out', 'transform', type=FileType('a'))
 		builder.opt('filter', 'transform')
 		builder.opt('validate', 'transform', action='store_true')
 
@@ -315,6 +315,12 @@ class ConfigCommand(AbsCoreCommand):
 					output_yaml.seek(0)
 					self._validate(output_yaml)
 				output_yaml.seek(0)
+				# truncate now, in case writing back to the input file
+				try:
+					args['out'].seek(0)
+					args['out'].truncate()
+				except UnsupportedOperation:
+					...
 				args['out'].write(output_yaml.read())
 
 		elif sub_op == 'validate':
