@@ -135,10 +135,23 @@ class T2Worker(AbsWorker[T2Document]):
 
 		before_run = time()
 
-		t2_unit = self.get_unit_instance(doc, logger)
+		try:
+			t2_unit = self.get_unit_instance(doc, logger)
 
-		if not isinstance(t2_unit, abs_t2):
-			raise ValueError(f"Unsupported unit: {doc['unit']}")
+			if not isinstance(t2_unit, abs_t2):
+				raise ValueError(f"Unsupported unit: {doc['unit']}")
+
+		except Exception as e:
+
+			if self.raise_exc:
+				raise
+
+			self._processing_error(
+				logger, doc, None, exception=e, msg='Could not instantiate unit',
+				meta = self.gen_meta(stock_updr.run_id, None, 0)
+			)
+
+			return None, DocumentCode.EXCEPTION
 
 		if (trials := self._get_trials(doc)) <= self.max_try:
 			with stat_time.labels(doc["unit"], "run").time():

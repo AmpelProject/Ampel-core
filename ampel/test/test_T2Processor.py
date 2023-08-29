@@ -45,7 +45,8 @@ def test_metrics(integration_context, ingest_stock_t2):
     assert stats[("ampel_t2_latency_seconds_sum", (("unit", "DummyStockT2Unit"),))] > 0
 
 
-def test_error_reporting(integration_context: DevAmpelContext):
+@pytest.mark.parametrize("config", [None, {"raise_exc": True}])
+def test_error_reporting(integration_context: DevAmpelContext, config):
     integration_context.register_unit(DummyPointT2Unit)
     # DummyPointT2Unit will raise an error on the malformed T0 doc
     integration_context.db.get_collection("t0").insert_one({"id": 42})
@@ -53,7 +54,7 @@ def test_error_reporting(integration_context: DevAmpelContext):
     doc: T2Document = {
         "unit": "DummyPointT2Unit",
         "code": DocumentCode.NEW,
-        "config": None,
+        "config": config,
         "col": "t0",
         "stock": 42,
         "link": 42,
@@ -69,7 +70,11 @@ def test_error_reporting(integration_context: DevAmpelContext):
     assert (doc := integration_context.db.get_collection("t2").find_one({})) # type: ignore[assignment]
     assert doc["code"] == DocumentCode.EXCEPTION
     assert (trouble := integration_context.db.get_collection('trouble').find_one({}))
-    assert trouble["channel"] == channels
+    if config is None:
+        assert trouble["channel"] == channels
+        assert trouble["msg"] is None
+    else:
+        assert trouble["extra"]["msg"] == "Could not instantiate unit"
 
 
 def test_tied_t2s(integration_context, ingest_tied_t2):
