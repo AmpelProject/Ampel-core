@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 
 <html lang="en">
@@ -5,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Ampel-core &#8212; ampel-core 0.9.0 documentation</title>
+    <title>Ampel-core &#8212; ampel-core 0.8.7a0 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
@@ -28,7 +29,7 @@
         <li class="right" >
           <a href="structure.html" title="Structure"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.9.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.8.7a0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Ampel-core</a></li> 
       </ul>
     </div>  
@@ -101,7 +102,7 @@ if True, troubles collection will not be populated if an exception occurs</p>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit.base_log_flag">
-<span class="sig-name descname"><span class="pre">base_log_flag</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">LogFlag</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">32</span></em><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.base_log_flag" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">base_log_flag</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">LogFlag</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">16</span></em><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.base_log_flag" title="Permalink to this definition">¶</a></dt>
 <dd><p>flag to apply to all log records created</p>
 </dd></dl>
 
@@ -133,17 +134,6 @@ by returning EventCode.PRE_CHECK_EXIT (which avoids ‘burning’ a run id)</p>
 </dl>
 </dd></dl>
 
-<dl class="py method">
-<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit.new">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">new</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">templates</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/abstract/AbsEventUnit.html#AbsEventUnit.new"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.new" title="Permalink to this definition">¶</a></dt>
-<dd><p>To use with jupyter when templating is wished for</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Self</span></code></p>
-</dd>
-</dl>
-</dd></dl>
-
 </dd></dl>
 
 </section>
@@ -153,24 +143,6 @@ by returning EventCode.PRE_CHECK_EXIT (which avoids ‘burning’ a run id)</p>
 <dt class="sig sig-object py" id="ampel.t3.T3Processor.T3Processor">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.t3.T3Processor.</span></span><span class="sig-name descname"><span class="pre">T3Processor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/t3/T3Processor.html#T3Processor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.t3.T3Processor.T3Processor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#ampel.abstract.AbsEventUnit.AbsEventUnit" title="ampel.abstract.AbsEventUnit.AbsEventUnit"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsEventUnit</span></code></a></p>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="ampel.t3.T3Processor.T3Processor.channel">
-<span class="sig-name descname"><span class="pre">channel</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.11)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a><span class="pre">[</span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.11)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a><span class="pre">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a><span class="pre">,</span> <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a><span class="pre">]]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#ampel.t3.T3Processor.T3Processor.channel" title="Permalink to this definition">¶</a></dt>
-<dd><p>channels associated with the process</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="ampel.t3.T3Processor.T3Processor.supply">
-<span class="sig-name descname"><span class="pre">supply</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">Annotated</span></code><span class="pre">[</span><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.model.UnitModel.UnitModel" title="(in ampel-interface v0.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">UnitModel</span></code></a><span class="pre">]</span></em><a class="headerlink" href="#ampel.t3.T3Processor.T3Processor.supply" title="Permalink to this definition">¶</a></dt>
-<dd><p>Unit must be a subclass of AbsT3Supplier</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="ampel.t3.T3Processor.T3Processor.stage">
-<span class="sig-name descname"><span class="pre">stage</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">Annotated</span></code><span class="pre">[</span><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.model.UnitModel.UnitModel" title="(in ampel-interface v0.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">UnitModel</span></code></a><span class="pre">]</span></em><a class="headerlink" href="#ampel.t3.T3Processor.T3Processor.stage" title="Permalink to this definition">¶</a></dt>
-<dd><p>Unit must be a subclass of AbsT3Stager</p>
-</dd></dl>
-
 </dd></dl>
 
 </section>
@@ -1099,13 +1071,13 @@ Ex: BaseAlertRegister adds the current run id</p>
         <li class="right" >
           <a href="structure.html" title="Structure"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.9.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.8.7a0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Ampel-core</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018-2021, Ampel Project.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.0.1.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 6.1.3.
     </div>
   </body>
 </html>
