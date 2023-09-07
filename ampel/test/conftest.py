@@ -145,12 +145,10 @@ def ingest_stock(integration_context, ampel_logger):
 def ingest_stock_t2(integration_context: DevAmpelContext, ampel_logger):
     run_id = 0
     updates_buffer = DBUpdatesBuffer(integration_context.db, run_id=run_id, logger=ampel_logger)
-    ingester = MongoT2Ingester(
-        updates_buffer=updates_buffer,
-    )
     stock_id = "stockystock"
-    compiler = T2Compiler(run_id=run_id, tier=2)
-    compiler.add(
+    now = datetime.datetime.now().timestamp()
+    t2_compiler = T2Compiler(run_id=run_id, tier=2)
+    t2_compiler.add(
         unit="DummyStockT2Unit",
         config=None,
         stock=stock_id,
@@ -158,8 +156,18 @@ def ingest_stock_t2(integration_context: DevAmpelContext, ampel_logger):
         channel="TEST_CHANNEL",
         traceid={},
     )
-    compiler.commit(ingester, datetime.datetime.now().timestamp())
-    ingester.updates_buffer.push_updates()
+    t2_compiler.commit(
+        MongoT2Ingester(updates_buffer=updates_buffer), now
+    )
+    
+    stock_compiler = StockCompiler(run_id=run_id, tier=2)
+    stock_compiler.add(stock_id, "TEST_CHANNEL", {"tier": 2})
+    stock_compiler.commit(
+        MongoStockIngester(updates_buffer=updates_buffer), now
+    )
+    
+    updates_buffer.push_updates()
+    assert integration_context.db.get_collection("stock").count_documents({}) == 1
     assert integration_context.db.get_collection("t2").count_documents({}) == 1
 
     integration_context.register_unit(DummyStockT2Unit)

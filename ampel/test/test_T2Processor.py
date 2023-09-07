@@ -40,7 +40,7 @@ def test_metrics(integration_context, ingest_stock_t2):
         assert t2.run() == 1
 
     assert (
-        stats[("ampel_t2_docs_processed_total", (("unit", "DummyStockT2Unit"),))] == 1
+        stats[("ampel_t2_docs_processed_total", (("unit", "DummyStockT2Unit"), ('code', 'OK')))] == 1
     )
     assert stats[("ampel_t2_latency_seconds_sum", (("unit", "DummyStockT2Unit"),))] > 0
 
@@ -72,7 +72,7 @@ def test_error_reporting(integration_context: DevAmpelContext, config):
     assert (trouble := integration_context.db.get_collection('trouble').find_one({}))
     if config is None:
         assert trouble["channel"] == channels
-        assert trouble["msg"] is None
+        assert trouble.get("msg") is None
     else:
         assert trouble["extra"]["msg"] == "Could not instantiate unit"
 
