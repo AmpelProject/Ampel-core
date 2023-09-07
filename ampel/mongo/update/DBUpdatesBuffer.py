@@ -14,7 +14,7 @@ from pymongo.errors import BulkWriteError
 from pymongo.collection import Collection
 from pymongo import UpdateOne, InsertOne, UpdateMany
 from typing import Any, Generator, Literal, Union, Mapping
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Iterator
 from contextlib import contextmanager
 
 from ampel.core.Schedulable import Schedulable
@@ -88,6 +88,7 @@ class DBUpdatesBuffer(Schedulable):
 		run_id: int | list[int],
 		logger: AmpelLogger,
 		error_callback: None | Callable[[], None] = None,
+		acknowledge_callback: None | Callable[[Iterator[Any]], None] = None,
 		catch_signals: bool = True,
 		log_doc_ids: None | Iterable[int] = None,
 		push_interval: None | float = 3.,
@@ -97,6 +98,7 @@ class DBUpdatesBuffer(Schedulable):
 	):
 		"""
 		:param error_callback: callback method to be called on errors
+		:param acknowledge_callback: method to call to acknowledge processing of a message bunch
 		:param catch_signals: see Schedulable docstring
 		:param log_doc_ids: logs inserted/updated document IDs for the given collections.
 		Collection integer identifiers are: 't0' -> 0, 't1' -> 1, 't2' -> 2, 'stock' -> 3.
@@ -118,6 +120,7 @@ class DBUpdatesBuffer(Schedulable):
 		Schedulable.__init__(self, catch_signals=catch_signals)
 		self._new_buffer()
 		self.error_callback = error_callback
+		self.acknowledge_callback = acknowledge_callback
 
 		self._cols: dict[AmpelMainCol, Collection] = {
 			col_name: ampel_db.get_collection(col_name)
@@ -162,6 +165,7 @@ class DBUpdatesBuffer(Schedulable):
 		self.db_ops: dict[AmpelMainCol, list[DBOp]] = {
 			't2': [], 't0': [], 'stock': [], 't1': []
 		}
+		self._messages_to_ack: set[Any] = set()
 
 
 	def stop(self) -> None:
@@ -172,6 +176,15 @@ class DBUpdatesBuffer(Schedulable):
 		if self.thread_pool:
 			self.thread_pool.close()
 			self.thread_pool.join()
+
+
+	def acknowledge_on_push(self, message: Any) -> None:
+		"""
+		Add a message to be passed to acknowledge_callback when the current
+		buffer has been pushed
+		"""
+		if self.acknowledge_callback:
+			self._messages_to_ack.add(message)
 
 
 	def add_updates(self, updates: dict[AmpelMainCol, list[DBOp]]) -> None:
@@ -268,6 +281,7 @@ class DBUpdatesBuffer(Schedulable):
 
 		# Reference instance buffer locally before creating a new one
 		db_ops = self.db_ops
+		messages = self._messages_to_ack
 		self._new_buffer()
 
 		for col_name in db_ops.keys():
@@ -278,6 +292,9 @@ class DBUpdatesBuffer(Schedulable):
 					)
 				else:
 					self.call_bulk_write(col_name, db_ops[col_name])
+
+		if self.acknowledge_callback:
+			self.acknowledge_callback(iter(messages))
 
 
 	def call_bulk_write(self, col_name: AmpelMainCol, db_ops: list, *, extra: None | dict = None) -> None:
