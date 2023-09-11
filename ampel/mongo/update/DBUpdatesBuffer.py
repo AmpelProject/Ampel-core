@@ -293,8 +293,13 @@ class DBUpdatesBuffer(Schedulable):
 				else:
 					self.call_bulk_write(col_name, db_ops[col_name])
 
-		if self.acknowledge_callback:
-			self.acknowledge_callback(iter(messages))
+		if self.acknowledge_callback and messages:
+			try:
+				self.acknowledge_callback(iter(messages))
+			except Exception as exc:
+				if self.raise_exc:
+					raise
+				report_exception(self._ampel_db, self.logger, exc=exc)
 
 
 	def call_bulk_write(self, col_name: AmpelMainCol, db_ops: list, *, extra: None | dict = None) -> None:
