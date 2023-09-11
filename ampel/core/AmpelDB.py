@@ -342,11 +342,11 @@ class AmpelDB(AmpelUnit):
 
 		try:
 			idx_params = index_data.dict(exclude_unset=True)
-			logger.info(f"  Creating index: {idx_params}")
+			logger.info(f"  Creating index for {col.database.name}.{col.name}: {idx_params}")
 			col.create_index(idx_params['index'], **idx_params.get('args', {}))
 		except Exception as e:
 			logger.error(
-				f"Index creation failed for '{col.name}' (args: {idx_params})",
+				f"Index creation failed for '{col.database.name}.{col.name}': (args: {idx_params})",
 				exc_info=e
 			)
 
