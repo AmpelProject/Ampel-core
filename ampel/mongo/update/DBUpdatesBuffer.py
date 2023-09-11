@@ -91,7 +91,7 @@ class DBUpdatesBuffer(Schedulable):
 		acknowledge_callback: None | Callable[[Iterator[Any]], None] = None,
 		catch_signals: bool = True,
 		log_doc_ids: None | Iterable[int] = None,
-		push_interval: None | float = 3.,
+		push_interval: None | int = 3,
 		max_size: None | int = None,
 		threads: None | int = None,
 		raise_exc: bool = False
@@ -142,16 +142,14 @@ class DBUpdatesBuffer(Schedulable):
 		self._block_autopush = False
 		self._last_update = time()
 
+		self.push_interval = push_interval
 		if push_interval:
-			self.push_interval = push_interval
 			self.get_scheduler() \
 				.every(push_interval) \
 				.seconds \
 				.do(self.request_autopush)
 
 			self._job = self.get_scheduler().jobs[0]
-		else:
-			self.push_interval = inf
 
 		self.thread_pool = ThreadPool(threads) if threads else None
 
@@ -237,7 +235,7 @@ class DBUpdatesBuffer(Schedulable):
 	def request_autopush(self) -> None:
 
 		t = time()
-		if t - self._last_update > self.push_interval:
+		if self.push_interval is None or t - self._last_update > self.push_interval:
 			if self._block_autopush:
 				self._autopush_asap = True
 			else:
