@@ -10,7 +10,7 @@
 from collections.abc import Generator
 from ampel.types import UBson, T3Send
 from ampel.cli.T3BufferExporterStager import TextExportOptions
-from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
+from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.abstract.AbsIdMapper import AbsIdMapper
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.struct.UnitResult import UnitResult
@@ -19,7 +19,7 @@ from ampel.struct.T3Store import T3Store
 from ampel.cli.export import txt_export, bin_export, get_fd
 
 
-class T3BufferExporterUnit(AbsT3ReviewUnit[SnapView]):
+class T3BufferExporterUnit(AbsT3Unit[SnapView]):
 
 	# None means stdout
 	fd: None | str = None

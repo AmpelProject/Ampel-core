@@ -1,23 +1,20 @@
-from ampel.content.JournalRecord import JournalRecord
-import mongomock, pytest
-import pymongo
+import mongomock, pytest, pymongo, subprocess, json, datetime
 from os import environ
 from pathlib import Path, PosixPath
 from typing import Any
-import subprocess
-import json
-import datetime
 
 from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
 from ampel.config.builder.DisplayOptions import DisplayOptions
 from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
 from ampel.dev.DevAmpelContext import DevAmpelContext
+from ampel.content.JournalRecord import JournalRecord
 
 from ampel.mongo.update.MongoStockIngester import MongoStockIngester
 from ampel.mongo.update.MongoT2Ingester import MongoT2Ingester
 from ampel.ingest.T2Compiler import T2Compiler
 from ampel.ingest.StockCompiler import StockCompiler
 from ampel.log.AmpelLogger import AmpelLogger
+from ampel.util.config import get_unit_confid
 
 from ampel.model.ingest.T1Combine import T1Combine
 from ampel.model.ingest.T2Compute import T2Compute
@@ -186,12 +183,9 @@ def ingest_tied_t2(integration_context: DevAmpelContext, ampel_logger, request):
         integration_context.register_unit(unit)
 
     dependency = request.param
-    tied_config_id = integration_context.gen_config_id(
-        unit="DummyTiedStateT2Unit",
-        arg={"t2_dependency": [{"unit": dependency}]},
-        logger=ampel_logger,
-    )
-
+    unit_conf = {"t2_dependency": [{"unit": dependency}]}
+    tied_config_id = get_unit_confid(integration_context.loader, unit="DummyTiedStateT2Unit", config=unit_conf)
+    integration_context.add_conf_id(tied_config_id, unit_conf)
     run_id = 0
     channel = "TEST_CHANNEL"
     #now = datetime.datetime.now()
@@ -200,9 +194,7 @@ def ingest_tied_t2(integration_context: DevAmpelContext, ampel_logger, request):
     if "stock" in dependency.lower():
         body = IngestBody(
             stock_t2=[T2Compute(unit=dependency)],
-            combine=[
-                T1Combine(unit="T1SimpleCombiner", state_t2=[T2Compute(unit="DummyTiedStateT2Unit", config=tied_config_id)])  # type: ignore[arg-type]
-            ],
+            combine=[T1Combine(unit="T1SimpleCombiner", state_t2 = [T2Compute(unit="DummyTiedStateT2Unit", config=tied_config_id)])], # type: ignore[arg-type]
         )
     elif "point" in dependency.lower():
         body = IngestBody(

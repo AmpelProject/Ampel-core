@@ -50,13 +50,13 @@ async def test_get_config(dev_context: AmpelContext, test_client: AsyncClient):
     assert response.status_code == 200
     assert response.json() == json.loads(json.dumps(dev_context.config.get()))
 
-    response = await test_client.get("/config/unit/DemoReviewT3Unit/")
+    response = await test_client.get("/config/unit/DemoT3Unit/")
     assert response.status_code == 200
     assert response.json() == json.loads(
-        json.dumps(dev_context.config.get(["unit", "DemoReviewT3Unit"]))
+        json.dumps(dev_context.config.get(["unit", "DemoT3Unit"]))
     )
 
-    response = await test_client.get("/config/unit/DemoReviewT3Unit/0")
+    response = await test_client.get("/config/unit/DemoT3Unit/0")
     assert response.status_code == 404
 
 

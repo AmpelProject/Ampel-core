@@ -4,18 +4,19 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                14.05.2022
-# Last Modified Date:  17.07.2022
+# Last Modified Date:  03.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+from typing import Any
 from ampel.struct.T3Store import T3Store
-from ampel.abstract.AbsT3PlainUnit import AbsT3PlainUnit
+from ampel.abstract.AbsT3Unit import AbsT3Unit
 
 
-class T3LogAggregatedStocks(AbsT3PlainUnit):
+class T3LogAggregatedStocks(AbsT3Unit):
 
 	input_unit: str = "T3AggregatingStager"
 
-	def process(self, t3s: None | T3Store = None):
+	def process(self, gen: Any, t3s: T3Store):
 
 		self.logger.info(f"Running {self.__class__.__name__}")
 

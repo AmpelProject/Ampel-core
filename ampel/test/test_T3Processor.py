@@ -22,12 +22,13 @@ from ampel.enum.EventCode import EventCode
 from ampel.view.SnapView import SnapView
 from ampel.struct.T3Store import T3Store
 from ampel.test.dummy import DummyStateT2Unit
+from ampel.util.config import get_unit_confid
 
-from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit, T3Send
+from ampel.abstract.AbsT3Unit import AbsT3Unit, T3Send
 from ampel.t3.T3Processor import T3Processor
 
 
-class Mutineer(AbsT3ReviewUnit):
+class Mutineer(AbsT3Unit):
     raise_on_process: bool = False
 
     def process(self, views, t3s=None):
@@ -38,31 +39,24 @@ class Mutineer(AbsT3ReviewUnit):
 def mutineer_process(config={}):
 
     return {
-        "execute": [
-            {
-                "unit": "T3ReviewUnitExecutor",
-                "config": {
-                    "supply": {
-                        "unit": "T3DefaultBufferSupplier",
-                        "config": {
-                            "select": {"unit": "T3StockSelector"},
-                            "load": {
-                                "unit": "T3SimpleDataLoader",
-                                "config": {
-                                    "directives": [{"col": "stock"}]
-                                }
-                            }
-                        }
-                    },
-                    "stage": {
-                        "unit": "T3SimpleStager",
-                        "config": {
-                            "execute": [{"unit": "Mutineer", "config": config}]
-                        }
+        "supply": {
+            "unit": "T3DefaultBufferSupplier",
+            "config": {
+                "select": {"unit": "T3StockSelector"},
+                "load": {
+                    "unit": "T3SimpleDataLoader",
+                    "config": {
+                        "directives": [{"col": "stock"}]
                     }
                 }
             }
-        ]
+        },
+        "stage": {
+            "unit": "T3SimpleStager",
+            "config": {
+                "execute": [{"unit": "Mutineer", "config": config}]
+            }
+        }
     }
 
 
@@ -89,7 +83,7 @@ def test_unit_raises_error(
 
 def test_view_generator(integration_context: DevAmpelContext, ingest_stock):
 
-    class SendySend(AbsT3ReviewUnit):
+    class SendySend(AbsT3Unit):
         raise_on_process: bool = False
 
         def process(self, gen: Generator[SnapView, T3Send, None], t3s: None | T3Store = None):
@@ -111,31 +105,24 @@ def test_view_generator(integration_context: DevAmpelContext, ingest_stock):
         context=integration_context,
         raise_exc=True,
         process_name="t3",
-        execute = [
-            {
-                "unit": "T3ReviewUnitExecutor",
-                "config": {
-                    "supply": {
-                        "unit": "T3DefaultBufferSupplier",
-                        "config": {
-                            "select": {"unit": "T3StockSelector"},
-                            "load": {
-                                "unit": "T3SimpleDataLoader",
-                                "config": {
-                                    "directives": [{"col": "stock"}]
-                                }
-                            }
-                        }
-                    },
-                    "stage": {
-                        "unit": "T3SimpleStager",
-                        "config": {
-                            "execute": [{"unit": "SendySend"}]
-                        }
+        supply = {
+            "unit": "T3DefaultBufferSupplier",
+            "config": {
+                "select": {"unit": "T3StockSelector"},
+                "load": {
+                    "unit": "T3SimpleDataLoader",
+                    "config": {
+                        "directives": [{"col": "stock"}]
                     }
                 }
             }
-        ]
+        },
+        stage = {
+            "unit": "T3SimpleStager",
+            "config": {
+                "execute": [{"unit": "SendySend"}]
+            }
+        }
     )
     t3.run()
 
@@ -150,45 +137,38 @@ def test_view_generator(integration_context: DevAmpelContext, ingest_stock):
 def test_empty_generator(integration_context: DevAmpelContext, ingest_stock):
     """
     Empty selection returns cleanly, rather than raising
-    """ 
+    """
     t3 = T3Processor(
         context=integration_context,
         raise_exc=True,
         process_name="t3",
-        execute = [
-            {
-                "unit": "T3ReviewUnitExecutor",
-                "config": {
-                    "supply": {
-                        "unit": "T3DefaultBufferSupplier",
-                        "config": {
-                            "select": {
-                                "unit": "T3StockSelector",
-                                # ensure that no stocks will be selected
-                                "config": {"channel": "nonesuch"}
-                            },
-                            "load": {
-                                "unit": "T3SimpleDataLoader",
-                                "config": {
-                                    "directives": [{"col": "stock"}],
-                                }
-                            }
-                        }
-                    },
-                    "stage": {
-                        "unit": "T3SimpleStager",
-                        "config": {
-                            "execute": [{"unit": "DemoReviewT3Unit"}]
-                        }
+        supply = {
+            "unit": "T3DefaultBufferSupplier",
+            "config": {
+                "select": {
+                    "unit": "T3StockSelector",
+                    # ensure that no stocks will be selected
+                    "config": {"channel": "nonesuch"}
+                },
+                "load": {
+                    "unit": "T3SimpleDataLoader",
+                    "config": {
+                        "directives": [{"col": "stock"}],
                     }
                 }
             }
-        ]
+        },
+        stage = {
+            "unit": "T3SimpleStager",
+            "config": {
+                "execute": [{"unit": "DemoT3Unit"}]
+            }
+        }
     )
     t3.run()
 
 
-class ViewExaminer(AbsT3ReviewUnit):
+class ViewExaminer(AbsT3Unit):
     class DidAThing(Exception):
         ...
 
@@ -203,21 +183,18 @@ class ViewExaminer(AbsT3ReviewUnit):
 
 @pytest.mark.parametrize("num_units", [1, 2])
 def test_t2_config_resolution(mock_context: DevAmpelContext, num_units: int):
-    """
-    T3 stagers pass through resolved config ids
-    """
+    """ T3 stagers pass through resolved config ids """
+
     for unit in (ViewExaminer, DummyStateT2Unit):
         mock_context.register_unit(unit)
 
     expected_config = {"foo": 42}
-    config_id = mock_context.gen_config_id("DummyStateT2Unit", expected_config)
-
-    stock: StockDocument = {
-        "stock": 0,
-    }
+    stock: StockDocument = {"stock": 0}
+    confid = get_unit_confid(mock_context.loader, "DummyStateT2Unit", expected_config)
+    mock_context.add_conf_id(confid, expected_config)
     t2: T2Document = {
         "unit": "DummyStateT2Unit",
-        "config": config_id,
+        "config": confid,
         "stock": 0,
         "link": 0,
         "channel": "TEST",
@@ -232,39 +209,32 @@ def test_t2_config_resolution(mock_context: DevAmpelContext, num_units: int):
         context=mock_context,
         raise_exc=True,
         process_name="t3",
-        execute=[
-            {
-                "unit": "T3ReviewUnitExecutor",
-                "config": {
-                    "supply": {
-                        "unit": "T3DefaultBufferSupplier",
-                        "config": {
-                            "select": {
-                                "unit": "T3StockSelector",
-                            },
-                            "load": {
-                                "unit": "T3SimpleDataLoader",
-                                "config": {
-                                    "directives": [{"col": "t2"}],
-                                },
-                            },
-                        },
-                    },
-                    "stage": {
-                        "unit": "T3SimpleStager",
-                        "config": {
-                            "execute": [
-                                {
-                                    "unit": "ViewExaminer",
-                                    "config": {"expected_config": expected_config},
-                                }
-                            ]
-                            * num_units
-                        },
-                    },
+        supply = {
+            "unit": "T3DefaultBufferSupplier",
+            "config": {
+                "select": {
+                    "unit": "T3StockSelector",
                 },
+                "load": {
+                    "unit": "T3SimpleDataLoader",
+                    "config": {
+                        "directives": [{"col": "t2"}],
+                    }
+                }
             }
-        ],
+        },
+        stage = {
+            "unit": "T3SimpleStager",
+            "config": {
+                "execute": [
+                    {
+                        "unit": "ViewExaminer",
+                        "config": {"expected_config": expected_config},
+                    }
+                ]
+                * num_units
+            }
+        }
     )
     with pytest.raises(ViewExaminer.DidAThing):
         t3.run()

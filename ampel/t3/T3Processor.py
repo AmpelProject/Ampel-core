@@ -4,19 +4,16 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                26.02.2018
-# Last Modified Date:  19.12.2022
+# Last Modified Date:  03.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from importlib import import_module
 from typing import Any, Annotated
 
-from ampel.types import OneOrMany
+from ampel.types import ChannelId
 from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.abstract.AbsT3Supplier import AbsT3Supplier
-from ampel.abstract.AbsT3ControlUnit import AbsT3ControlUnit
-from ampel.abstract.AbsProcessorTemplate import AbsProcessorTemplate
+from ampel.abstract.AbsT3Stager import AbsT3Stager
 from ampel.struct.T3Store import T3Store
-from ampel.view.T3DocView import T3DocView
 from ampel.model.UnitModel import UnitModel
 from ampel.model.t3.T3IncludeDirective import T3IncludeDirective
 from ampel.core.EventHandler import EventHandler
@@ -25,40 +22,23 @@ from ampel.log import AmpelLogger, LogFlag, SHOUT
 
 class T3Processor(AbsEventUnit):
 
-	template: None | str = None
+	# Require single channel for now (super classes allow multi-channel)
+	channel: None | ChannelId = None
+
 	include: None | T3IncludeDirective
-	execute: Annotated[OneOrMany[UnitModel], AbsT3ControlUnit]
+
+	#: Unit must be a subclass of AbsT3Supplier
+	supply: Annotated[UnitModel, AbsT3Supplier]
+
+	#: Unit must be a subclass of AbsT3Stager
+	stage: Annotated[UnitModel, AbsT3Stager]
 
 
-	def __init__(self, **kwargs) -> None:
-
-		if 'template' in kwargs:
-			tpl_name = kwargs.pop("template")
-			ctx = kwargs.pop("context")
-			if ctx is None:
-				raise ValueError("Context required")
-
-			if tpl_name not in ctx.config._config.get('template', []):
-				raise ValueError(f"Unknown process template: {tpl_name}")
-
-			fqn = ctx.config._config['template'][tpl_name]
-			class_name = fqn.split(".")[-1]
-			Tpl = getattr(import_module(fqn), class_name)
-			if not issubclass(Tpl, AbsProcessorTemplate):
-				raise ValueError(f"Unexpected template type: {Tpl}")
-
-			tpl = Tpl(
-				**{
-					k: v for k, v in kwargs.items()
-					if k not in AbsEventUnit._annots
-				}
-			)
-			kwargs.update(
-				tpl.get_model(ctx.config._config, kwargs).dict()['config']
-			)
-			kwargs['context'] = ctx
-
-		super().__init__(**kwargs)
+	def post_init(self):
+		if self.supply.unit not in self.context.config._config['unit']:
+			raise ValueError(f"Unknown supply unit: {self.supply.unit}")
+		if self.stage.unit not in self.context.config._config['unit']:
+			raise ValueError(f"Unknown stager unit: {self.stage.unit}")
 
 
 	def proceed(self, event_hdlr: EventHandler) -> None:
@@ -75,7 +55,6 @@ class T3Processor(AbsEventUnit):
 			# Feedback
 			logger.log(SHOUT, f'Running {self.process_name}')
 
-			loader = self.context.loader
 			t3s = T3Store()
 
 			if self.include:
@@ -86,7 +65,7 @@ class T3Processor(AbsEventUnit):
 				if (x := self.include.session):
 					sdict: dict[str, Any] = {}
 					for model in [x] if isinstance(x, UnitModel) else x:
-						rd = loader.new_context_unit(
+						rd = self.context.loader.new_context_unit(
 							model = model,
 							context = self.context,
 							sub_type = AbsT3Supplier,
@@ -98,43 +77,51 @@ class T3Processor(AbsEventUnit):
 					if sdict:
 						t3s.add_session_info(sdict)
 
-			units = self.context.config._config['unit']
-			for i, um in enumerate([self.execute] if isinstance(self.execute, UnitModel) else self.execute):
+			supplier = self.context.loader.new_context_unit(
+				model = self.supply,
+				context = self.context,
+				sub_type = AbsT3Supplier,
+				logger = logger,
+				event_hdlr = event_hdlr
+			)
 
-				if um.unit not in units:
-					raise ValueError(f"Unknown unit: {um.unit}")
+			# Stager unit
+			#############
 
-				if "AbsT3ControlUnit" not in units[um.unit]['base']:
-					raise ValueError("T3Processor executes only AbsT3ControlUnit units")
-
-				t3_unit = loader.new_context_unit(
-					model = um,
-					context = self.context,
-					sub_type = AbsT3ControlUnit,
-					logger = logger,
-					event_hdlr = event_hdlr,
-					channel = self.channel
+			stager = self.context.loader.new_context_unit(
+				model = self.stage,
+				context = self.context,
+				sub_type = AbsT3Stager,
+				logger = logger,
+				event_hdlr = event_hdlr,
+				channel = (
+					self.stage.config['channel'] # type: ignore
+					if self.stage.config and self.stage.config.get('channel') # type: ignore[union-attr]
+					else self.channel
 				)
+			)
 
-				logger.info(
-					f"Processing run block {i}",
-					extra={'unit': t3_unit.__class__.__name__}
-				)
+			logger.info("Running stager", extra={'unit': self.stage.unit})
 
-				# Potential T3Document to be included in the t3 collection
-				if (ret := t3_unit.process(t3s)):
-					for t3d in ret:
-						t3s.add_view(T3DocView.of(t3d, self.context.config))
-						if 'meta' not in t3d:
-							raise ValueError("Invalid T3Document")
-						t3d['meta']['traceid'] = {'t3processor': self._trace_id}
-						if event_hdlr.job_sig:
-							t3d['meta']['jobid'] = event_hdlr.job_sig
-						self.context.db.get_collection('t3').insert_one(t3d) # type: ignore[arg-type]
+			if (doc_gen := stager.stage(supplier.supply(t3s), t3s)):
+				for t3d in doc_gen:
+					if 'meta' not in t3d:
+						raise ValueError("Invalid T3Document")
+					t3d['meta']['traceid'] = {'t3processor': self._trace_id}
+					if event_hdlr.job_sig:
+						t3d['meta']['jobid'] = event_hdlr.job_sig
+					self.context.db.get_collection('t3').insert_one(t3d) # type: ignore[arg-type]
 
+			"""
 			if t3s.resources:
 				for v in t3s.resources.values():
-					event_hdlr.add_resource(v)
+					event_hdlr.add_resource(v, overwrite=self.allow_resource_override)
+
+			if t3s.aliases:
+				for k, v in t3s.aliases.items():
+					event_hdlr.add_alias(k, v, overwrite=self.allow_alias_override)
+			"""
+
 
 		except Exception as e:
 			event_hdlr.handle_error(e, logger)

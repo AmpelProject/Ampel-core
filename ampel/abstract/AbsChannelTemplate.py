@@ -4,23 +4,24 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                27.10.2019
-# Last Modified Date:  07.04.2020
+# Last Modified Date:  04.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
 from ampel.base.decorator import abstractmethod
+from ampel.base.AmpelABC import AmpelABC
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.model.ChannelModel import ChannelModel
 from ampel.config.builder.FirstPassConfig import FirstPassConfig
-from ampel.config.builder.AbsConfigTemplate import AbsConfigTemplate
 
 
-class AbsChannelTemplate(AbsConfigTemplate, ChannelModel, abstract=True):
+class AbsChannelTemplate(AmpelABC, ChannelModel, abstract=True):
 
+	template: None | str
 
 	def get_channel(self, logger: AmpelLogger) -> dict[str, Any]:
 		keys = ChannelModel.get_model_keys()
-		return {k: v for k,v in self.__dict__.items() if k in keys}
+		return {k: v for k, v in self.__dict__.items() if k in keys}
 
 	@abstractmethod
 	def get_processes(self, logger: AmpelLogger, first_pass_config: FirstPassConfig) -> list[dict[str, Any]]:

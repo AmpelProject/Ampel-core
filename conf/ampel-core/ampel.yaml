@@ -7,7 +7,6 @@ mongo:
     t3: MongoT3Ingester
 
 unit:
-
 # Controller units
 - ampel.core.DefaultProcessController
 
@@ -16,8 +15,6 @@ unit:
 - ampel.ops.OpsProcessor
 - ampel.t2.T2Worker
 - ampel.t3.T3Processor
-- ampel.t3.T3PlainUnitExecutor
-- ampel.t3.T3ReviewUnitExecutor
 - ampel.t3.include.session.T3SessionLastRunTime
 - ampel.t3.include.session.T3SessionAlertsNumber
 - ampel.t3.supply.T3DefaultBufferSupplier
@@ -36,6 +33,8 @@ unit:
 - ampel.t3.stage.T3AggregatingStager
 - ampel.t3.stage.T3SequentialStager
 - ampel.t3.stage.T3DistributiveStager
+- ampel.t4.T4Processor
+- ampel.t4.T4RunTimeContextUpdater
 - ampel.cli.T3BufferExporterStager
 - ampel.cli.T3BufferExporterUnit
 - ampel.demo.DemoProcessor
@@ -46,11 +45,9 @@ unit:
 - ampel.t1.T1SimpleRetroCombiner
 - ampel.demo.DemoPointT2Unit
 - ampel.demo.DemoFirstPointT2Unit
-- ampel.demo.DemoReviewT3Unit
-- ampel.demo.DemoPlainT3Unit
-- ampel.demo.DemoResourceT3Unit
+- ampel.demo.DemoT3Unit
+- ampel.demo.DemoT4RunTimeAliasGenerator
 - ampel.t3.unit.T3LogAggregatedStocks
-- ampel.t3.unit.T3PrintStore
 - ampel.dev.NoShaper
 
 # Aux units
@@ -93,12 +90,14 @@ alias:
       col: t2
 
 resource:
-
   '%mongo': mongodb://localhost:27017
   '%extcats': mongodb://localhost:27017
 
-process:
+template:
+  hash_t2_config: ampel.config.alter.HashT2Config
+  resolve_run_time_aliases: ampel.config.alter.ResolveRunTimeAliases
 
+process:
   - name: DefaultT2Process
     tier: 2
     schedule: every(5).minutes
@@ -113,6 +112,3 @@ process:
       config:
         execute:
           unit: AmpelExceptionPublisher
-
-template:
-  compact_t3: ampel.template.TPLCompactT3

@@ -32,6 +32,10 @@ collections:
   indexes:
   - field: process
   - field: meta.ts
+- name: t4
+  indexes:
+  - field: process
+  - field: meta.ts
 role:
   r: logger
   w: writer

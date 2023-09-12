@@ -9,7 +9,7 @@
 
 from multiprocessing import JoinableQueue
 from typing import Generator
-from ampel.abstract.AbsT3ReviewUnit import T, T3Send
+from ampel.abstract.AbsT3Unit import T, T3Send
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
 from ampel.t3.stage.BaseViewGenerator import BaseViewGenerator
 

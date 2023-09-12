@@ -4,12 +4,12 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                03.09.2019
-# Last Modified Date:  12.01.2023
+# Last Modified Date:  01.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import os, sys, re, json, yaml, datetime, getpass, importlib, subprocess, pkg_resources
-from multiprocessing import Pool
 from typing import Any
+from multiprocessing import Pool
 from collections.abc import Iterable
 
 from ampel.log.utils import log_exception
@@ -85,23 +85,23 @@ class ConfigBuilder:
 				self.first_pass_config[k].add(d[k], dist_name, version, register_file)
 
 		if 'template' in d:
-			self.register_channel_templates(d['template'], dist_name, version, register_file)
+			self.register_templates(d['template'], dist_name, version, register_file)
 
 
-	def register_channel_templates(self,
-		chan_templates: dict[str, str],
+	def register_templates(self,
+		arg: dict[str, str],
 		dist_name: str,
 		version: str | float | int,
-		register_file: str
+		register_file: str,
 	) -> None:
 
-		if not isinstance(chan_templates, dict):
+		if not isinstance(arg, dict):
 			raise ValueError('Provided argument must be a dict instance')
 
-		for k, v in chan_templates.items():
+		for k, v in arg.items():
 
 			if k in self.templates:
-				raise ValueError('Duplicated channel template: ' + k)
+				raise ValueError('Duplicated template: ' + k)
 
 			if self.verbose:
 				self.logger.log(VERBOSE,
@@ -207,6 +207,10 @@ class ConfigBuilder:
 						out['unit'][res[0]]['dependencies'] = list(res[1].keys())
 						all_deps.update(res[1])
 
+
+		# Register templates in config
+		out['template'] = {k: v.__module__ for k, v in self.templates.items()}
+
 		# Add t2 init config collector (in which both hashed values of t2 run configs
 		# and t2 init config will be added)
 		out['confid'] = T02ConfigCollector(
@@ -248,7 +252,7 @@ class ConfigBuilder:
 					dist_name = fp_procs_collector._origin[p["name"]][0]
 					try:
 						p_collector.add(
-							self.new_morpher(p) \
+							ProcessMorpher(p, self.logger, self.templates, self.verbose) \
 								.scope_aliases(self.first_pass_config, dist_name) \
 								.apply_template(self.first_pass_config) \
 								.hash_t2_config(out) \
@@ -332,7 +336,7 @@ class ConfigBuilder:
 							# Add transformed process to final process collector
 							dist_name = fp_chan_collector._origin[chan_name][0]
 							out['process'][f't{p["tier"]}'].add(
-								self.new_morpher(p) \
+								ProcessMorpher(p, self.logger, self.templates, self.verbose) \
 									.scope_aliases(self.first_pass_config, dist_name) \
 									.apply_template(self.first_pass_config) \
 									.hash_t2_config(out) \
@@ -385,9 +389,6 @@ class ConfigBuilder:
 				else:
 					d[k] = secret.get()
 
-	
-		# Register templates in config (might be used by the 'ampel job' CLI)
-		out['template'] = {k: v.__module__ for k, v in self.templates.items()}
 		self.logger.info('Done building config')
 
 		# Error Summary
@@ -492,16 +493,6 @@ class ConfigBuilder:
 				self.logger.info(f'Config file saved as {path} [{len(file.readlines())} lines]')
 
 		return d
-
-
-	def new_morpher(self, process: dict[str, Any]) -> ProcessMorpher:
-		"""
-		Returns an instance of ProcessMorpher using the provided
-		process dict and the internal logger and templates
-		"""
-		return ProcessMorpher(
-			process, self.templates, self.logger, self.verbose
-		)
 
 
 	def _get_channel_tpl(self,

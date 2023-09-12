@@ -13,7 +13,7 @@ from ampel.types import OneOrMany, Annotated
 from ampel.struct.T3Store import T3Store
 from ampel.model.UnitModel import UnitModel
 from ampel.content.T3Document import T3Document
-from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
+from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.t3.stage.T3ThreadedStager import T3ThreadedStager
 from ampel.t3.stage.SimpleViewGenerator import SimpleViewGenerator
@@ -25,13 +25,13 @@ class T3SimpleStager(T3ThreadedStager):
 	Otherwise, use T3ProjectingStager.
 	"""
 
-	#: t3 units (AbsT3ReviewUnit) to execute
-	execute: OneOrMany[Annotated[UnitModel, AbsT3ReviewUnit]]
+	#: t3 units (AbsT3Unit) to execute
+	execute: OneOrMany[Annotated[UnitModel, AbsT3Unit]]
 
 	def __init__(self, **kwargs) -> None:
 
 		super().__init__(**kwargs)
-		self.units: list[AbsT3ReviewUnit] = []
+		self.units: list[AbsT3Unit] = []
 
 		if self.logger.verbose > 1:
 			self.logger.debug("Setting up T3SimpleStager")

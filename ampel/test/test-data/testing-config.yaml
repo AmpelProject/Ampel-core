@@ -230,22 +230,6 @@ unit:
     distrib: ampel-core
     file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
     version: 0.8.0a1
-  T3ReviewUnitExecutor:
-    fqn: ampel.t3.T3ReviewUnitExecutor
-    base:
-    - AbsT3ControlUnit
-    - ContextUnit
-    distrib: ampel-core
-    file: Ampel-core/conf/ampel-core/ampel.yaml
-    version: 0.8.25
-  T3PlainUnitExecutor:
-    fqn: ampel.t3.T3PlainUnitExecutor
-    base:
-    - AbsT3ControlUnit
-    - ContextUnit
-    distrib: ampel-core
-    file: Ampel-core/conf/ampel-core/ampel.yaml
-    version: 0.8.25
   AmpelExceptionPublisher:
     fqn: ampel.ops.AmpelExceptionPublisher
     base:
@@ -452,10 +436,10 @@ unit:
     distrib: ampel-core
     file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
     version: 0.8.0a1
-  DemoReviewT3Unit:
-    fqn: ampel.demo.DemoReviewT3Unit
+  DemoT3Unit:
+    fqn: ampel.demo.DemoT3Unit
     base:
-    - AbsT3ReviewUnit
+    - AbsT3Unit
     - LogicalUnit
     distrib: ampel-core
     file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
@@ -619,12 +603,12 @@ unit:
     version: 0.8.0a1
     base:
       - AbsEventUnit
-  DemoReviewT3Unit:
-    fqn: ampel.demo.DemoReviewT3Unit
+  DemoT3Unit:
+    fqn: ampel.demo.DemoT3Unit
     version: 0.8.2a2
     base:
-    - DemoReviewT3Unit
-    - AbsT3ReviewUnit
+    - DemoT3Unit
+    - AbsT3Unit
     - LogicalUnit
     distrib: ampel-core
     file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-cor

@@ -1,22 +1,22 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File:                Ampel-core/ampel/demo/DemoReviewT3Unit.py
+# File:                Ampel-core/ampel/demo/DemoT3Unit.py
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                09.06.2020
-# Last Modified Date:  17.12.2021
+# Last Modified Date:  03.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from collections.abc import Generator
 from ampel.types import UBson, T3Send
-from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
+from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.struct.UnitResult import UnitResult
 from ampel.view.SnapView import SnapView
 from ampel.struct.T3Store import T3Store
 
 
-class DemoReviewT3Unit(AbsT3ReviewUnit[SnapView]):
+class DemoT3Unit(AbsT3Unit[SnapView]):
 
 	parameter: int = 10
 
@@ -25,7 +25,7 @@ class DemoReviewT3Unit(AbsT3ReviewUnit[SnapView]):
 		t3s: T3Store
 	) -> UBson | UnitResult:
 
-		self.logger.info(f"DemoReviewT3Unit output (parameter={self.parameter}):")
+		self.logger.info(f"DemoT3Unit output (parameter={self.parameter}):")
 
 		for i, v in enumerate(gen, 1):
 
@@ -39,5 +39,6 @@ class DemoReviewT3Unit(AbsT3ReviewUnit[SnapView]):
 		return UnitResult(
 			body = {'param': 'value'},
 			code = 10,
-			journal = JournalAttributes(tag="DemoReviewT3UnitTag")
+			tag = "T3DocTag",
+			journal = JournalAttributes(tag="DemoT3UnitTag")
 		)

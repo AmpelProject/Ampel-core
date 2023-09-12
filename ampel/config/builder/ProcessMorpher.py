@@ -4,11 +4,12 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                16.10.2019
-# Last Modified Date:  02.01.2023
+# Last Modified Date:  04.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import json
 from typing import Any
+from typing_extensions import Self
 from importlib import import_module
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
 from ampel.model.ProcessModel import ProcessModel
@@ -20,16 +21,18 @@ class ProcessMorpher:
 
 	def __init__(self,
 		process: dict[str, Any],
-		templates: dict[str, Any],
 		logger: AmpelLogger,
+		templates: None | dict[str, Any] = None,
 		verbose: bool = False,
-		deep_copy: bool = False
+		deep_copy: bool = False,
+		proc_name: None | str = None # enable process name override
 	) -> None:
 
 		self.process = json.loads(json.dumps(process)) if deep_copy else process
 		self.templates = templates
 		self.logger = logger
 		self.verbose = verbose
+		self.proc_name = proc_name or self.process['name']
 
 
 	def get(self) -> dict[str, Any]:
@@ -37,7 +40,7 @@ class ProcessMorpher:
 		return ProcessModel(**(self.process | {'version': 0})).dict()
 
 
-	def enforce_t3_channel_selection(self, chan_name: str) -> 'ProcessMorpher':
+	def enforce_t3_channel_selection(self, chan_name: str) -> Self:
 
 		if self.process['tier'] == 3:
 
@@ -77,8 +80,11 @@ class ProcessMorpher:
 		return self
 
 
-	def apply_template(self, first_pass_config: dict) -> 'ProcessMorpher':
+	def apply_template(self, first_pass_config: dict) -> Self:
 		""" Applies template possibly associated with process """
+
+		if self.templates is None:
+			raise ValueError("No template registered")
 
 		# The process embedded in channel def requires templating itself
 		if 'template' in self.process:
@@ -86,18 +92,16 @@ class ProcessMorpher:
 			if self.verbose:
 				self.logger.log(VERBOSE,
 					f'Applying {self.process["template"]} template '
-					f'to process {self.process["name"]} '
+					f'to process {self.proc_name} '
 				)
 
-			self.process = self.templates[
-				self.process['template']
-			](**self.process).get_process(first_pass_config, self.logger)
+			self.process = self.templates[self.process['template']](**self.process) \
+				.morph(first_pass_config, self.logger)
 
 		return self
 
 
-	def scope_aliases(self, first_pass_config: dict, dist_name: str) -> 'ProcessMorpher':
-		""" Note: should be called before hash_t2_config """
+	def scope_aliases(self, first_pass_config: dict, dist_name: str) -> Self:
 
 		if self.verbose:
 			self.logger.debug("Scoping aliases")
@@ -157,9 +161,10 @@ class ProcessMorpher:
 		return False
 
 
-	def resolve_aliases(self, t2d: dict[str, Any], aliases: dict[str, Any], root_path: str):
+	def resolve_aliases(self, arg: dict[str, Any], aliases: dict[str, Any], root_path: str) -> None:
 		"""
-		Resolves aliases recursively (necessary before hashing t2 config)
+		Resolves aliases recursively
+		(no longer necessary before hash_t2_config(..) as it does it itself)
 		"""
 
 		if self.verbose:
@@ -168,7 +173,7 @@ class ProcessMorpher:
 		recurse = False
 
 		while walk_and_process_dict(
-			arg = t2d,
+			arg = arg,
 			callback = self._resolve_alias_callback,
 			match = ['config'],
 			aliases = aliases,
@@ -194,7 +199,7 @@ class ProcessMorpher:
 
 		if d[k] not in aliases:
 			raise ValueError(
-				f'Unknown T2 config alias ({d[k]}) defined in process {self.process["name"]}'
+				f'Unknown T2 config alias ({d[k]}) defined in process {self.proc_name}'
 			)
 
 		if self.verbose:
@@ -203,7 +208,7 @@ class ProcessMorpher:
 		d[k] = aliases[d[k]]
 
 
-	def hash_t2_config(self, out_config: dict) -> 'ProcessMorpher':
+	def hash_t2_config(self, out_config: dict, target: None | dict[str, Any] = None) -> Self:
 		"""
 		This method modifies the underlying self._process dict structure.
 		The 'config' (dict) value of UnitModel instances is replaced by a hash value (int).
@@ -215,7 +220,7 @@ class ProcessMorpher:
 		:param out_config: used to store new map entries in the ampel config: {<confid>: {<hash>: <conf dict>}}.
 		"""
 
-		if self.process['tier'] not in (0, 1):
+		if target is None and self.process['tier'] not in (0, 1):
 			return self
 
 		if self.verbose:
@@ -228,7 +233,7 @@ class ProcessMorpher:
 		conf_dicts: dict[str, dict[str, Any]] = {}
 
 		walk_and_process_dict(
-			arg = self.process["processor"]["config"]["directives"],
+			arg = target or self.process["processor"]["config"]["directives"],
 			callback = self._gather_t2_config_callback,
 			match = ['point_t2', 'stock_t2', 'state_t2'],
 			conf_dicts = conf_dicts
@@ -246,15 +251,15 @@ class ProcessMorpher:
 			conf = d.get("config", {})
 
 			if self.verbose:
-				extra = {'process': self.process['name'], 'conf': k + ".config"}
-				self.logger.debug("Hashing T2 config", extra=extra)
+				extra = {'process': self.proc_name}
+				self.logger.debug(f"Hashing T2 config {k}.config", extra=extra)
 
 			# Replace alias with content
 			if isinstance(conf, str):
 			
 				if conf not in out_config['alias']['t2']:
 					raise ValueError(
-						f'Unknown T2 config alias ({conf}) defined in process {self.process["name"]}'
+						f'Unknown T2 config alias ({conf}) defined in process {self.proc_name}'
 					)
 
 				if self.verbose:
@@ -278,7 +283,7 @@ class ProcessMorpher:
 						extra=extra
 					)
 
-				if self.verbose:
+				if self.verbose > 1:
 					self.logger.debug("Computing hash", extra=extra)
 
 				if conf is None:
@@ -289,13 +294,9 @@ class ProcessMorpher:
 			# For internal use only
 			elif isinstance(conf, int):
 				if conf not in out_config['confid']:
-					raise ValueError(
-						f'Unknown T2 config (int) alias defined by {k}:\n {t2_unit}'
-					)
+					raise ValueError(f'Unknown T2 config (int) alias defined by {k}:\n {t2_unit}')
 			else:
-				raise ValueError(
-					f'Unknown T2 config defined by {k}:\n {t2_unit}'
-				)
+				raise ValueError(f'Unknown T2 config defined by {k}:\n {t2_unit}')
 
 		return self
 
@@ -305,12 +306,12 @@ class ProcessMorpher:
 		Used by walk_and_process_dict(...) from hash_t2_config(...)
 		"""
 
-		if self.verbose:
+		if self.verbose > 1:
 			self.logger.info(f"# path: {path}.{k}")
 
 		if d[k]:
 			for i, el in enumerate(d[k]):
-				if self.verbose:
+				if self.verbose > 1:
 					self.logger.info(f"# path: {path}.{k}.{i}")
 					self.logger.info(el)
 				kwargs['conf_dicts'][f"{path}.{k}.{i}"] = el

@@ -12,17 +12,14 @@ from collections.abc import Generator, Iterable, Sequence
 from itertools import islice
 from multiprocessing import JoinableQueue
 from multiprocessing.pool import ThreadPool
-from typing import Type
 
 from ampel.log import VERBOSE
 from ampel.types import StockId, UBson
-from ampel.t3.T3DocBuilder import AbsT3s
 from ampel.struct.T3Store import T3Store
-from ampel.view.SnapView import SnapView
 from ampel.struct.UnitResult import UnitResult
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.content.T3Document import T3Document
-from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
+from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.abstract.AbsT3Filter import AbsT3Filter
 from ampel.abstract.AbsT3Projector import AbsT3Projector
 from ampel.base.AuxUnitRegister import AuxUnitRegister
@@ -38,7 +35,7 @@ class RunBlock:
 	"""
 	filter: None | AbsT3Filter
 	projector: None | AbsT3Projector
-	units: list[AbsT3ReviewUnit]
+	units: list[AbsT3Unit]
 	stock_ids: None | list[StockId]
 	qdict: dict[type, list[JoinableQueue]]
 
@@ -83,6 +80,7 @@ class T3ProjectingStager(T3ThreadedStager):
 				if debug:
 					self.logger.debug(f"Setting up filter {directive.filter.unit}")
 
+				# TODO: provide buffering logger ?
 				rb.filter = self.context.loader.new(
 					model = directive.filter,
 					unit_type = AbsT3Filter,
@@ -98,6 +96,7 @@ class T3ProjectingStager(T3ThreadedStager):
 				if debug:
 					self.logger.debug(f"Setting up projector {directive.project.unit}")
 
+				# TODO: provide buffering logger ?
 				rb.projector = AuxUnitRegister.new_unit(
 					model = directive.project,
 					sub_type = AbsT3Projector,
@@ -261,16 +260,17 @@ class T3ProjectingStager(T3ThreadedStager):
 							if (z := self.handle_t3_result(t3_unit, t3_unit_result, t3s, generator.stocks, ts)):
 								yield z
 
-				for i, rb in enumerate(self.run_blocks):
-					self.flush(rb.units, extra={'directive': i})
+				if self.stock_updr.update_journal:
+					self.stock_updr.flush()
 
 		except Exception as e:
-			self.flush(all_units)
+			if self.stock_updr.update_journal:
+				self.stock_updr.flush()
 			self.event_hdlr.handle_error(e, self.logger)
 
 
 	def craft_t3_doc(self,
-		t3_unit: AbsT3s,
+		t3_unit: AbsT3Unit,
 		res: None | UBson | UnitResult,
 		t3s: T3Store,
 		ts: float,

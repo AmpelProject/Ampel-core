@@ -16,7 +16,7 @@ class ConfigCollector(dict):
 
 	def __init__(self,
 		conf_section: str,
-		options: DisplayOptions,
+		options: DisplayOptions = DisplayOptions(),
 		content: None | dict = None,
 		logger: None | AmpelLogger = None,
 		tier: None | Literal[0, 1, 2, 3, "ops"] = None

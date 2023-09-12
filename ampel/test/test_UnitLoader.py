@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Optional
 from ampel.base.LogicalUnit import LogicalUnit
 from ampel.model.ingest.CompilerOptions import CompilerOptions
 from ampel.secret.NamedSecret import NamedSecret
@@ -170,37 +170,28 @@ def test_unit_validation(dev_context: DevAmpelContext):
         with pytest.raises(TypeError):
             UnitModel(unit="Dummy", config={"nonexistant_param": True})
 
-        t3_config: dict[str, Any] = {
-            "execute": [
-                {
-                    "unit": "T3ReviewUnitExecutor",
-                    "config": {
-                        "supply": {
-                            "unit": "T3DefaultBufferSupplier",
-                            "config": {
-                                "select": {"unit": "T3StockSelector"},
-                                "load": {
-                                    "unit": "T3SimpleDataLoader",
-                                    "config": {"directives": [{"col": "stock"}]},
-                                },
-                            },
-                        },
-                        "stage": {
-                            "unit": "T3SimpleStager",
-                            "config": {"execute": [{"unit": "DemoReviewT3Unit"}]},
-                        },
+        t3_config = dict(
+            supply = {
+                "unit": "T3DefaultBufferSupplier",
+                "config": {
+                    "select": {"unit": "T3StockSelector"},
+                    "load": {
+                        "unit": "T3SimpleDataLoader",
+                        "config": {"directives": [{"col": "stock"}]},
                     },
-                }
-            ],
-        }
+                },
+            },
+            stage = {
+                "unit": "T3SimpleStager",
+                "config": {"execute": [{"unit": "DemoT3Unit"}]},
+            }
+        )
 
         # recursive validation
         UnitModel(unit="T3Processor", config=t3_config)
 
         with pytest.raises(TypeError):
-            t3_config["execute"][0]["config"]["supply"]["config"]["select"][
-                "unit"
-            ] = "NotActuallyAUnit"
+            t3_config["supply"]["config"]["select"]["unit"] = "NotActuallyAUnit" # type: ignore
             UnitModel(unit="T3Processor", config=t3_config)
 
 

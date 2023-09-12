@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                08.12.2021
-# Last Modified Date:  16.01.2022
+# Last Modified Date:  04.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
@@ -13,9 +13,9 @@ from typing import Any
 from collections.abc import Generator, Sequence
 
 from ampel.types import UBson, OneOrMany
-from ampel.t3.T3DocBuilder import T3DocBuilder
+from ampel.t3.stage.T3SequentialStager import T3SequentialStager
 from ampel.struct.T3Store import T3Store
-from ampel.abstract.AbsT3Stager import AbsT3Stager
+from ampel.view.T3DocView import T3DocView
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.content.T3Document import T3Document
 from ampel.content.MetaRecord import MetaRecord
@@ -29,7 +29,7 @@ class TargetModel(AmpelBaseModel):
 	field: OneOrMany[str]
 
 
-class T3AggregatingStager(AbsT3Stager, T3DocBuilder):
+class T3AggregatingStager(T3SequentialStager):
 	"""
 	Example:
 
@@ -98,6 +98,14 @@ class T3AggregatingStager(AbsT3Stager, T3DocBuilder):
 	t1: None | OneOrMany[TargetModel]
 	t2: None | OneOrMany[TargetModel]
 
+	def __init__(self, **kwargs) -> None:
+
+		super().__init__(**kwargs)
+
+		for i, um in enumerate(self.execute):
+			if um.unit not in self.context.config._config['unit']:
+				raise ValueError(f"Unknown unit: {um.unit}")
+
 
 	def stage(self,
 		gen: Generator[AmpelBuffer, None, None],
@@ -148,28 +156,52 @@ class T3AggregatingStager(AbsT3Stager, T3DocBuilder):
 								t2d[sid].update(ret)
 
 		if t0 and not t1 and not t2:
-			return self._craft(t0d, 't0', t3s)
+			t3d = self._craft(t0d, 't0', t3s)
 
-		if t1 and not t0 and not t2:
-			return self._craft(t1d, 't1', t3s)
+		elif t1 and not t0 and not t2:
+			t3d = self._craft(t1d, 't1', t3s)
 
-		if t2 and not t1 and not t0:
-			return self._craft(t2d, 't2', t3s)
+		elif t2 and not t1 and not t0:
+			t3d = self._craft(t2d, 't2', t3s)
 
-		out: dict[str, Any] = {}
+		else:
+			out: dict[str, Any] = {}
+			if t0:
+				self._upd(out, t0d, 't0')
+			if t1:
+				self._upd(out, t1d, 't1')
+			if t2:
+				self._upd(out, t2d, 't2')
+			t3d = self._craft(out, '', t3s)
 
-		if t0:
-			self._upd(out, t0d, 't0')
-		if t1:
-			self._upd(out, t1d, 't1')
-		if t2:
-			self._upd(out, t2d, 't2')
+		yield t3d
 
-		return self._craft(out, '', t3s)
+		if self.propagate:
+			t3s.add_view(T3DocView.of(t3d, self.context.config))
+
+		for i, t3_unit in enumerate(self.units):
+			ts = time()
+			self.logger.info(f"Processing run block {i}", extra={'unit': t3_unit.__class__.__name__})
+			if (t3_ret := t3_unit.process(self.empty_gen(), t3s)):
+				if (x := self.handle_t3_result(t3_unit, t3_ret, t3s, None, ts)):
+					if self.propagate:
+						t3s.add_view(T3DocView.of(x, self.context.config))
+					yield x
+
+		return None
 
 
-	def _craft(self, d: dict[str, Any], s: str, t3s: T3Store) -> Generator[T3Document, None, None]:
-		yield self.craft_t3_doc(
+	def empty_gen(self):
+		"""
+		yield turns method into generator, preceding it with return
+		terminatesthe generator before yielding anything
+		"""
+		return
+		yield
+
+
+	def _craft(self, d: dict[str, Any], s: str, t3s: T3Store) -> T3Document:
+		return self.craft_t3_doc(
 			self, # type: ignore
 			{k: {s: v} for k, v in d.items()} if self.split_tiers else d,
 			t3s,

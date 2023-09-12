@@ -21,7 +21,7 @@ from ampel.content.T3Document import T3Document
 from ampel.log import VERBOSE
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.base.AuxUnitRegister import AuxUnitRegister
-from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
+from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.abstract.AbsT3Filter import AbsT3Filter
 from ampel.abstract.AbsT3Projector import AbsT3Projector
 from ampel.t3.stage.T3ThreadedStager import T3ThreadedStager
@@ -33,7 +33,8 @@ class T3AdaptativeStager(T3ThreadedStager):
 	"""
 	Unit stager that for each channel found in the elements loaded by the previous stages:
 	
-	- spawns a dedicated :class:`~ampel.t3.run.T3ProjectingStager.T3ProjectingStager` instance configured to filter and project elements wrt this channel
+	- spawns a dedicated :class:`~ampel.t3.run.T3ProjectingStager.T3ProjectingStager`
+	  instance configured to filter and project elements wrt this channel
 	- execute the associated T3 units
 
 	Example:
@@ -54,6 +55,8 @@ class T3AdaptativeStager(T3ThreadedStager):
 	- Object 2 and 3  to be posted to slack channel #B
 	- Object 3 to be posted to slack channel #C
 	- Object 3 to be posted to slack channel #D
+
+	Note: uses put_views and create_threaded_generators from parent class but not proceed_threaded
 	"""
 
 	execute: Sequence[UnitModel]
@@ -89,7 +92,7 @@ class T3AdaptativeStager(T3ThreadedStager):
 		if self.black_list and self.white_list:
 			raise ValueError("Can't have both black and white lists")
 
-		self.queues: dict[AbsT3ReviewUnit, JoinableQueue[SnapView]] = {}
+		self.queues: dict[AbsT3Unit, JoinableQueue[SnapView]] = {}
 		self.generators: list[ThreadedViewGenerator] = []
 		self.async_results: list[AsyncResult] = []
 
@@ -177,16 +180,19 @@ class T3AdaptativeStager(T3ThreadedStager):
 			for q in self.queues.values():
 				q.put(None) # type: ignore[arg-type]
 
-			for async_res, generator, t3_unit in zip(self.async_results, self.generators, list(self.queues.keys())):
-
+			for async_res, generator, t3_unit in zip(
+				self.async_results, self.generators, list(self.queues.keys())
+			):
 				# potential T3Record to be included in the T3Document
 				if (t3_unit_result := async_res.get()):
 					if (z := self.handle_t3_result(t3_unit, t3_unit_result, t3s, generator.stocks, ts)):
 						yield z
 
-				self.flush(t3_unit)
+			if self.stock_updr.update_journal:
+				self.stock_updr.flush()
 
 		return None
+
 
 	def filter_channels(self, channels: set[ChannelId]) -> set[ChannelId]:
 

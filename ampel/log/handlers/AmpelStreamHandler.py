@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                17.10.2018
-# Last Modified Date:  24.05.2021
+# Last Modified Date:  03.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import sys, time
@@ -148,12 +148,11 @@ class AmpelStreamHandler:
 
 		if self.provenance and record.filename:
 			if record.filename[0] == '<': # ipython
-				print(lvl)
-				out += f' {record.filename} {levels[lvl >> 8]}'
+				out += f' {record.filename} {levels[lvl >> 9]}'
 			else:
-				out += f' {record.filename[:-3]}:{record.lineno} {levels[lvl >> 8]}'
+				out += f' {record.filename[:-3]}:{record.lineno} {levels[lvl >> 9]}'
 		else:
-			out += f' {levels[lvl >> 8]}'
+			out += f' {levels[lvl >> 9]}'
 
 		if record.extra:
 			suffix = [f'{k}={record.extra[k]}' for k in record.extra]

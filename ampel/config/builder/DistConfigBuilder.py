@@ -8,10 +8,11 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import json, yaml, pkg_resources, os, re
-from functools import partial
-from pkg_resources import EggInfoDistribution, DistInfoDistribution # type: ignore[attr-defined]
 from typing import Any
+from functools import partial
 from collections.abc import Callable
+from pkg_resources import EggInfoDistribution, DistInfoDistribution # type: ignore[attr-defined]
+
 from ampel.config.builder.ConfigBuilder import ConfigBuilder
 from ampel.util.distrib import get_dist_names, get_files
 from ampel.log import VERBOSE, SHOUT
@@ -104,7 +105,7 @@ class DistConfigBuilder(ConfigBuilder):
 				if key == "alias":
 					continue
 				if section_conf_file := self.get_conf_file(all_conf_files, f"{key}.{ext}"):
-					self.load_conf_using_func(distrib, section_conf_file, self.first_pass_config[key].add) # type: ignore
+					self.load_conf_using_func(distrib, section_conf_file, self.first_pass_config[key].add)
 
 			# ("controller", "processor", "unit", "alias", "process")
 			for unit_type in ("alias", "process"):
@@ -116,11 +117,11 @@ class DistConfigBuilder(ConfigBuilder):
 			# Try to load templates from folder template (defined by 'Ampel-ZTF' for ex.)
 			if template_conf_files := self.get_conf_files(all_conf_files, "/template/"):
 				for f in template_conf_files:
-					self.load_conf_using_func(distrib, f, self.register_channel_templates)
+					self.load_conf_using_func(distrib, f, self.register_templates)
 
 			# Try to load templates from template.conf
 			if template_conf := self.get_conf_file(all_conf_files, "/template.{ext}"):
-				self.load_conf_using_func(distrib, template_conf, self.register_channel_templates) # type: ignore
+				self.load_conf_using_func(distrib, template_conf, self.register_templates)
 
 			if all_conf_files:
 				self.logger.info(f"Not all conf files were loaded from distribution '{distrib.project_name}'")
@@ -158,6 +159,7 @@ class DistConfigBuilder(ConfigBuilder):
 		file_rel_path: str,
 		func: Callable[[dict[str, Any], str, str, str], None],
 		raise_exc: bool = True,
+		**kwargs
 	) -> None:
 
 		try:
@@ -182,7 +184,8 @@ class DistConfigBuilder(ConfigBuilder):
 				load(payload),
 				distrib.project_name,
 				distrib.version,
-				file_rel_path
+				file_rel_path,
+				**kwargs
 			)
 
 		except FileNotFoundError:

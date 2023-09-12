@@ -7,15 +7,16 @@
 # Last Modified Date:  11.11.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import sys, traceback
+import sys, traceback, contextlib
 from math import log2
 from bson import ObjectId
 from datetime import datetime
-from typing import overload
+from typing import overload, Generator
 from pymongo import WriteConcern
 
 from ampel.types import JDict
 from ampel.core.AmpelDB import AmpelDB
+from ampel.config.AmpelConfig import AmpelConfig
 from ampel.util.collections import has_nested_type
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogFlag import LogFlag
@@ -301,3 +302,20 @@ def convert_dollars(arg: JDict | list[JDict]) -> JDict | list[JDict]:
 			return [convert_dollars(el) for el in arg] # type: ignore[arg-type]
 
 	return arg
+
+
+@contextlib.contextmanager
+def get_logger(ac: AmpelConfig, log_profile: None | str) -> Generator[AmpelLogger, None, None]:
+
+	if log_profile:
+		logger = AmpelLogger.get_logger(
+			console=ac.get(
+				f'logging.{log_profile}.console',
+				dict, raise_exc=True
+			)
+		)
+	else:
+		logger = AmpelLogger.get_logger()
+
+	yield logger
+	logger.flush()

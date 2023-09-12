@@ -30,7 +30,7 @@ class T3DistributiveStager(T3ThreadedStager):
 	Note that no performance gain will be obtained if the processing is CPU limited.
 	"""
 
-	#: t3 units (AbsT3ReviewUnit) to execute
+	#: t3 units (AbsT3Unit) to execute
 	execute: UnitModel
 	nthread: int = 4
 
@@ -79,15 +79,20 @@ class T3DistributiveStager(T3ThreadedStager):
 
 					# potential T3Record to be included in the T3Document
 					if (t3_unit_result := async_res.get()):
-						if (d := self.handle_t3_result(t3_unit, t3_unit_result, t3s, generator.stocks, ts)):
+						if (d := self.handle_t3_result(
+							t3_unit, t3_unit_result, t3s, generator.stocks, ts,
+							log_extra={'thread': i} if self.log_extra else None
+						)):
 							if self.save_stock_ids:
 								d['stock'] = generator.stocks
 							yield d
 
-					self.flush(t3_unit, extra={'thread': i} if self.log_extra else None)
+				if self.stock_updr.update_journal:
+					self.stock_updr.flush()
 
 		except Exception as e:
-			self.flush(self.t3_units)
+			if self.stock_updr.update_journal:
+				self.stock_updr.flush()
 			self.event_hdlr.handle_error(e, self.logger)
 
 		return None

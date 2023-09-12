@@ -33,7 +33,7 @@ Fetch/generate session information that will be provided to T3 units via `T3Stor
 ## Execute
 
 Contains a list of directives.\
-A commonly used directive is `T3ReviewDirective` which allows to execute `AbsT3ReviewUnit` instances
+A commonly used directive is `T3ReviewDirective` which allows to execute `AbsT3Unit` instances
 
 ### T3ReviewDirective
 

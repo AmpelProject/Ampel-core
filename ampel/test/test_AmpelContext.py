@@ -2,14 +2,11 @@ import copy
 
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.dev.DevAmpelContext import DevAmpelContext
-from ampel.test.dummy import DummyStateT2Unit
-
+from ampel.test.DummyStateT2Unit import DummyStateT2Unit
+from ampel.config.alter.HashT2Config import HashT2Config
 
 def test_load_old_configids(mock_context: DevAmpelContext, ampel_logger):
-    """
-    Configuration hashes stored via hash_ingest_directive are loaded from the
-    database when a new DevAmpelContext is instantiated
-    """
+    """ This test unit might no longer be required or might need a rename """
     unit_config = {"foo": 37}
     mock_context.register_unit(DummyStateT2Unit)
     pre_register_context = DevAmpelContext(
@@ -17,20 +14,27 @@ def test_load_old_configids(mock_context: DevAmpelContext, ampel_logger):
         db=mock_context.db,
         loader=mock_context.loader,
     )
-    mock_context.hash_ingest_directive(
+
+    HashT2Config().alter(
+        mock_context,
         dict(
-            channel="TEST",
-            ingest=dict(
-                combine=[
-                    dict(
-                        unit="T1SimpleCombiner",
-                        state_t2=[dict(unit="DummyStateT2Unit", config=unit_config)],
+            directives=[
+                dict(
+                    channel="TEST",
+                    ingest=dict(
+                        combine=[
+                            dict(
+                                unit="T1SimpleCombiner",
+                                state_t2=[dict(unit="DummyStateT2Unit", config=unit_config)],
+                            )
+                        ]
                     )
-                ]
-            ),
+                )
+            ]
         ),
-        ampel_logger,
+        ampel_logger
     )
+
     post_register_context = DevAmpelContext(
         config=AmpelConfig(copy.deepcopy(pre_register_context.config.get())),
         db=mock_context.db,

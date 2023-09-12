@@ -24,7 +24,7 @@ class T3ProjectionDirective(AmpelBaseModel):
 	#: AbsT3Projector sub unit capable of discarding selected ampel buffer attributes/fields
 	project: None | UnitModel
 
-	#: t3 units (AbsT3ReviewUnit) to execute
+	#: t3 units (AbsT3Unit) to execute
 	execute: Sequence[UnitModel]
 
 	def __init__(self, **kwargs):

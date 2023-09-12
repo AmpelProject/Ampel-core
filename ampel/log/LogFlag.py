@@ -14,10 +14,10 @@ class LogFlag(IntFlag):
 	"""
 	Flag used for each log entry stored in the DB.
 	Value fits in a MongoDB int32.
-	bits 0-4: tier
-	bits 5-6: run type
-	bits 6-7: location (core system or base units)
-	bits 8-13: log level
+	bits 0-5: tier
+	bits 5-7: run type
+	bits 7-8: location (core system or base units)
+	bits 9-14: log level
 	"""
 
 	# Execution layer
@@ -25,19 +25,20 @@ class LogFlag(IntFlag):
 	T1                      = 2
 	T2                      = 4
 	T3                      = 8
+	T4                      = 16
 
 	# Run type
-	SCHEDULED_RUN           = 16
-	MANUAL_RUN              = 32
+	SCHEDULED_RUN           = 32
+	MANUAL_RUN              = 64
 
 	# Location
-	UNIT                    = 64
-	CORE                    = 128
+	UNIT                    = 128
+	CORE                    = 256
 
 	# Log level
-	DEBUG                   = 1<<8
-	VERBOSE                 = 1<<9
-	INFO                    = 1<<10
-	SHOUT                   = 1<<11 # SHOUT is for convenience only, saved as INFO into DB
-	WARNING                 = 1<<12
-	ERROR                   = 1<<13
+	DEBUG                   = 1<<9
+	VERBOSE                 = 1<<10
+	INFO                    = 1<<11
+	SHOUT                   = 1<<12 # SHOUT is for convenience only, saved as INFO into DB
+	WARNING                 = 1<<13
+	ERROR                   = 1<<14
