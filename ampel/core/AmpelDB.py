@@ -12,10 +12,11 @@ from typing import Any, Literal
 from functools import cached_property
 from collections import defaultdict  # type: ignore[attr-defined]
 from collections.abc import Sequence
-from pymongo import MongoClient, ReadPreference
+from pymongo import MongoClient
 from pymongo.database import Database
 from pymongo.collection import Collection
 from pymongo.errors import ConfigurationError, DuplicateKeyError, OperationFailure, CollectionInvalid
+from pymongo.read_preferences import SecondaryPreferred
 
 from ampel.types import ChannelId
 from ampel.mongo.utils import get_ids
@@ -58,6 +59,9 @@ class AmpelDB(AmpelUnit):
 	#: Route reads to secondaries of a replica set. This can increase
 	#: performance at the expense of consistency
 	read_from_secondary: bool = True
+	#: Ignore secondary if it is more than max_staleness seconds behind the
+	#: primary
+	max_staleness: int = 300
 
 
 	@classmethod
@@ -205,7 +209,7 @@ class AmpelDB(AmpelUnit):
 					raise
 		self.mongo_collections[col_name][mode] = db.get_collection(
 			col_name,
-			read_preference=ReadPreference.SECONDARY_PREFERRED if self.read_from_secondary else None
+			read_preference=SecondaryPreferred(max_staleness=self.max_staleness) if self.read_from_secondary else None
 		)
 
 		return self.mongo_collections[col_name][mode]
