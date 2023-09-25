@@ -17,14 +17,20 @@ collections:
       sparse: true
 - name: t1
   indexes:
-  - field: stock
+  - index:
+    - field: stock
+    - field: link
+    args:
+      unique: true
   - field: channel
   - field: code
     args:
       sparse: true
 - name: t2
   indexes:
-  - field: stock
+  - index:
+    - field: stock
+    - field: link
   - field: channel
   - field: code
   - field: meta.ts
