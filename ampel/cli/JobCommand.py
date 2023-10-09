@@ -35,6 +35,7 @@ from ampel.cli.MaybeIntAction import MaybeIntAction
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
 from ampel.model.job.JobModel import JobModel
 from ampel.model.job.InputArtifact import InputArtifact
+from ampel.model.job.OutputArtifact import OutputArtifact
 from ampel.model.job.TaskUnitModel import TaskUnitModel
 from ampel.model.job.TemplateUnitModel import TemplateUnitModel
 from ampel.util.pretty import out_stack, get_time_delta
@@ -537,6 +538,8 @@ class JobCommand(AbsCoreCommand):
 						process_queues.append(p)
 						result_queues.append(result_queue)
 						resource_queues.append(resource_queue)
+
+						self._check_outputs(job, job.task[i], item, logger)
 					
 					for i, (p, r1, r2) in enumerate(zip(process_queues, result_queues, resource_queues)):
 						p.join()
@@ -583,6 +586,8 @@ class JobCommand(AbsCoreCommand):
 						resources[name] = resource
 
 				logger.info(f'{taskd["unit"]} return value: {x}')
+
+				self._check_outputs(job, job.task[i], None, logger)
 
 		feedback = f"Job processed (db: {job.mongo.prefix}"
 		if len(run_ids) == 1:
@@ -693,7 +698,7 @@ class JobCommand(AbsCoreCommand):
 			)
 
 			if resolved_artifact.path.exists():
-				logger.info(f'Artifact {resolved_artifact.name} exists at {resolved_artifact.path}')
+				logger.info(f'Input artifact {resolved_artifact.name} exists at {resolved_artifact.path}')
 			else:
 				logger.info(
 					f'Fetching artifact {resolved_artifact.name} from '
@@ -714,6 +719,30 @@ class JobCommand(AbsCoreCommand):
 						os.unlink(tf.name)
 					except tarfile.ReadError:
 						os.rename(tf.name, resolved_artifact.path)
+
+
+	@staticmethod
+	def _check_outputs(
+		job: JobModel,
+		task: TaskUnitModel | TemplateUnitModel,
+		item: None | str | dict | list,
+		logger: AmpelLogger,
+	):
+		"""
+		Ensure that output artifacts exist
+		"""
+		for artifact in task.outputs.artifacts:
+
+			resolved_artifact = OutputArtifact(
+				**job.resolve_expressions(
+					ujson.loads(artifact.json()), task, item
+				)
+			)
+
+			if resolved_artifact.path.exists():
+				logger.info(f'Output artifact {resolved_artifact.name} exists at {resolved_artifact.path}')
+			else:
+				raise FileNotFoundError(f'Output artifact {resolved_artifact.name} does not exist at {resolved_artifact.path}')
 
 
 	@staticmethod

@@ -7,8 +7,10 @@
 # Last Modified Date:  13.08.2022
 # Last Modified By:    jvs
 
+from pathlib import Path
+
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 
 class OutputArtifact(AmpelBaseModel):
     name: str
-    path: str
+    path: Path

@@ -312,6 +312,53 @@ def test_input_artifacts(
 
     assert path.read_text("utf-8") == value
 
+@pytest.mark.parametrize("suffix", ["", "fail"])
+def test_output_artifacts(
+    testing_config,
+    mock_db,
+    vault: Path,
+    tmpdir,
+    suffix
+):
+
+    value = "flerpyherp"
+
+    path = tmpdir / "token"
+
+    schema = dump(
+        {
+            "name": "job",
+            "task": [
+                {
+                    "unit": "DummyOutputUnit",
+                    "config": {"value": value, "path": str(path) + suffix},
+                    "outputs": {
+                        "artifacts": [
+                            {"name": "token", "path": str(path)}
+                        ]
+                    },
+                }
+            ],
+        },
+        tmpdir,
+        "schema.yml",
+    )
+
+    result = None
+    with pytest.raises(FileNotFoundError) if suffix else nullcontext(): # type: ignore[attr-defined]
+        result = run(
+            [
+                "ampel",
+                "job",
+                "--config",
+                str(testing_config),
+                "--secrets",
+                str(vault),
+                "--schema",
+                str(schema),
+            ]
+        )
+    assert result is None
 
 def test_template_resolution(
     testing_config,
