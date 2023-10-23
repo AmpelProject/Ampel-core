@@ -8,6 +8,7 @@
 # Last Modified By:    jvs
 
 from contextlib import contextmanager
+import json
 import signal, traceback, yaml, os
 from ampel.core.Schedulable import Schedulable
 from argparse import ArgumentParser
@@ -24,9 +25,13 @@ from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 from ampel.model.ChannelModel import ChannelModel
 from ampel.model.UnitModel import UnitModel
 from ampel.util.freeze import recursive_freeze
+from ampel.core.EventHandler import EventHandler
+from ampel.struct.Resource import Resource
+
 
 def _handle_traceback(signal, frame):
     print(traceback.print_stack(frame))
+
 
 class ProcessCommand(AbsCoreCommand):
     """
@@ -72,6 +77,9 @@ class ProcessCommand(AbsCoreCommand):
         parser.req("name")
         parser.req("db", type=str)
 
+        parser.opt("resources-in")
+        parser.opt("resources-out")
+
         parser.opt("channel")
         parser.opt("alias")
         parser.opt("workflow", default=None, type=str)
@@ -81,11 +89,13 @@ class ProcessCommand(AbsCoreCommand):
         parser.opt("secrets", type=str)
 
         # Example
-        parser.example("process -config ampel_conf.yaml schema task_file.yaml -db processing -name taskytask")
+        parser.example(
+            "process -config ampel_conf.yaml schema task_file.yaml -db processing -name taskytask"
+        )
         return parser
 
-
-    def _get_context(self,
+    def _get_context(
+        self,
         args: dict[str, Any],
         unknown_args: Sequence[str],
         logger: AmpelLogger,
@@ -113,7 +123,7 @@ class ProcessCommand(AbsCoreCommand):
                     chan = ChannelModel(**c)
                     logger.info(f"Registering job channel '{chan.channel}'")
                     dict.__setitem__(config_dict["channel"], str(chan.channel), c)
-        
+
         # load custom aliases if provided
         if args["alias"]:
             with open(args["alias"]) as f:
@@ -127,9 +137,9 @@ class ProcessCommand(AbsCoreCommand):
                         if k not in config_dict["alias"]:
                             dict.__setitem__(config_dict["alias"], k, {})
                         dict.__setitem__(config_dict["alias"][k], kk, vv)
-        
+
         ctx.config._config = recursive_freeze(config_dict)
-        
+
         return ctx
 
     @contextmanager
@@ -139,7 +149,9 @@ class ProcessCommand(AbsCoreCommand):
             return
 
         task = Schedulable()
-        task.get_scheduler().every(30).seconds.do(AmpelMetricsRegistry.push, pushgateway, process_name, reset=True)
+        task.get_scheduler().every(30).seconds.do(
+            AmpelMetricsRegistry.push, pushgateway, process_name, reset=True
+        )
         with task.run_in_thread():
             yield
         try:
@@ -147,7 +159,8 @@ class ProcessCommand(AbsCoreCommand):
         except Exception as exc:
             logger.error("Failed to push metrics", exc_info=exc)
 
-    def run(self,
+    def run(
+        self,
         args: dict[str, Any],
         unknown_args: Sequence[str],
         sub_op: Optional[str] = None,
@@ -164,7 +177,9 @@ class ProcessCommand(AbsCoreCommand):
         with open(args["schema"], "r") as f:
             unit_model = UnitModel(**yaml.safe_load(f))
         # always raise exceptions
-        unit_model.override = (unit_model.override or {}) | {"raise_exc": not args["handle_exc"]}
+        unit_model.override = (unit_model.override or {}) | {
+            "raise_exc": not args["handle_exc"]
+        }
 
         ctx = self._get_context(
             args,
@@ -177,6 +192,12 @@ class ProcessCommand(AbsCoreCommand):
         else:
             process_name = args["name"]
 
+        if args["resources_in"]:
+            with open(args["resources_in"]) as f:
+                resources = {k: Resource(**v) for k, v in json.load(f).items()}
+        else:
+            resources = None
+
         proc = ctx.loader.new_context_unit(
             model=unit_model,
             context=ctx,
@@ -185,9 +206,22 @@ class ProcessCommand(AbsCoreCommand):
             base_log_flag=LogFlag.MANUAL_RUN,
             log_profile=args["log_profile"],
         )
+        event_hdlr = EventHandler(
+            proc.process_name,
+            ctx.get_database(),
+            job_sig=proc.job_sig,
+            raise_exc=proc.raise_exc,
+            resources=resources,
+        )
         with self.push_metrics(process_name, logger):
-            x = proc.run()
+            x = proc.run(event_hdlr=event_hdlr)
         logger.info(f"{unit_model.unit} return value: {x}")
+
+        if args["resources_out"]:
+            with open(args["resources_out"], "w") as f:
+                json.dump(
+                    {k: v.dict() for k, v in (event_hdlr.resources or {}).items()}, f
+                )
 
         dm = divmod(time() - start_time, 60)
         logger.info(
@@ -195,4 +229,3 @@ class ProcessCommand(AbsCoreCommand):
             % (round(dm[0]), round(dm[1]))
         )
         logger.flush()
-

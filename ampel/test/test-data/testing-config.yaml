@@ -619,6 +619,17 @@ unit:
     version: 0.8.0a1
     base:
       - AbsEventUnit
+  DummyResourceInputUnit:
+    fqn: ampel.test.dummy
+    version: 0.8.0a1
+    base:
+      - AbsEventUnit
+  DummyResourceT3Unit:
+    fqn: ampel.test.dummy
+    version: 0.8.0a1
+    base:
+      - AbsPlainT3Unit
+      - AbsEventUnit
   DemoReviewT3Unit:
     fqn: ampel.demo.DemoReviewT3Unit
     version: 0.8.2a2

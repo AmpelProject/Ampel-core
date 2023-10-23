@@ -23,6 +23,7 @@ from ampel.abstract.AbsStockT2Unit import AbsStockT2Unit
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.abstract.AbsStateT2Unit import AbsStateT2Unit
 from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
+from ampel.abstract.AbsT3PlainUnit import AbsT3PlainUnit
 
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
@@ -30,6 +31,8 @@ from ampel.view.T2DocView import T2DocView
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.abstract.AbsT0Muxer import AbsT0Muxer
 from ampel.model.ingest.CompilerOptions import CompilerOptions
+from ampel.struct.T3Store import T3Store
+from ampel.struct.Resource import Resource
 
 
 class Sleepy(AbsEventUnit):
@@ -133,10 +136,29 @@ class DummyInputUnit(AbsEventUnit):
         assert self.value == self.expected_value
 
 
+class DummyResourceInputUnit(DummyInputUnit):
+
+    # add an extra level of indirection via resources
+    def proceed(self, event_hdlr: EventHandler) -> Any:
+        assert event_hdlr.resources
+        assert event_hdlr.resources[self.value].value == self.expected_value
+
+
+class DummyResourceT3Unit(AbsT3PlainUnit):
+
+    name: str
+    value: str
+
+    def process(self, t3s: T3Store) -> UBson | UnitResult:
+        r = Resource(name=self.name, value=self.value)
+        t3s.add_resource(r)
+        return super().process(t3s)
+
+
 class DummyProcessorTemplate(AbsProcessorTemplate):
 
     value: str
     expected_value: str
 
     def get_model(self, config: dict[str, Any], logger: AmpelLogger) -> UnitModel:
-        return UnitModel(unit="DummyInputUnit", config=self.dict(exclude={'template'}))
+        return UnitModel(unit="DummyInputUnit", config=self.dict(exclude={"template"}))
