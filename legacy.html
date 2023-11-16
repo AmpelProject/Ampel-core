@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Porting contrib projects from v0.6 &#8212; ampel-core 0.8.8a3 documentation</title>
+    <title>Porting contrib projects from v0.6 &#8212; ampel-core 0.8.8a4 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
@@ -29,7 +29,7 @@
         <li class="right" >
           <a href="api.html" title="Ampel-core"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.8.8a3 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.8.8a4 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Porting contrib projects from v0.6</a></li> 
       </ul>
     </div>  
@@ -97,7 +97,7 @@ of your repository. See <a class="reference internal" href="contribute.html#cont
 <td><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.struct.JournalExtra</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ampel.base.dataclass.GlobalInfo</span></code></p></td>
-<td><p>None (<a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.abstract.AbsT3Unit.AbsT3Unit" title="(in ampel-interface v0.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsT3Unit.context</span></code></a> is populated by instances of <code class="xref py py-class docutils literal notranslate"><span class="pre">AbsT3RunContextAppender</span></code>)</p></td>
+<td><p>None (<code class="xref py py-class docutils literal notranslate"><span class="pre">AbsT3Unit.context</span></code> is populated by instances of <code class="xref py py-class docutils literal notranslate"><span class="pre">AbsT3RunContextAppender</span></code>)</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ampel.base.abstract.AbsAlertFilter</span></code></p></td>
 <td><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.abstract.AbsAlertFilter[PhotoAlert]</span></code></p></td>
@@ -277,7 +277,7 @@ also use templates, however, so can be quite compact:</p>
 <p>You no longer have to define an <code class="xref py py-meth docutils literal notranslate"><span class="pre">__init__()</span></code>; the default <code class="xref py py-meth docutils literal notranslate"><span class="pre">__init__()</span></code> will set <code class="docutils literal notranslate"><span class="pre">self.min_ndet</span></code> and raise an exception if required fields are not set or set with invalid values. If you need to do any custom setup, however, you can define a <code class="xref py py-meth docutils literal notranslate"><span class="pre">post_init()</span></code> that will be called within the base class <code class="xref py py-meth docutils literal notranslate"><span class="pre">__init__()</span></code>. A few other things to note:</p>
 <ul class="simple">
 <li><p>All instances of <code class="xref py py-class docutils literal notranslate"><span class="pre">AbsAlertFilter</span></code> have a <code class="docutils literal notranslate"><span class="pre">self.logger</span></code> property. You do not have to set one up yourself.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">AbsAlertFilter[PhotoAlert]</span></code> indicates that the <code class="xref py py-meth docutils literal notranslate"><span class="pre">apply()</span></code> method expects a <code class="xref py py-class docutils literal notranslate"><span class="pre">PhotAlert</span></code>. Instances of <code class="xref py py-class docutils literal notranslate"><span class="pre">PhotoAlert</span></code> have separate photopoints and upper limits. If you omit the parameter to <code class="xref py py-class docutils literal notranslate"><span class="pre">AbsAlertFilter</span></code> in your class definition, your <code class="xref py py-meth docutils literal notranslate"><span class="pre">apply()</span></code> method will receive the base class, <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.alert.AmpelAlert.AmpelAlert" title="(in ampel-interface v0.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelAlert</span></code></a>, instead. Instances of <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.alert.AmpelAlert.AmpelAlert" title="(in ampel-interface v0.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelAlert</span></code></a> only have one collection of datapoints.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">AbsAlertFilter[PhotoAlert]</span></code> indicates that the <code class="xref py py-meth docutils literal notranslate"><span class="pre">apply()</span></code> method expects a <code class="xref py py-class docutils literal notranslate"><span class="pre">PhotAlert</span></code>. Instances of <code class="xref py py-class docutils literal notranslate"><span class="pre">PhotoAlert</span></code> have separate photopoints and upper limits. If you omit the parameter to <code class="xref py py-class docutils literal notranslate"><span class="pre">AbsAlertFilter</span></code> in your class definition, your <code class="xref py py-meth docutils literal notranslate"><span class="pre">apply()</span></code> method will receive the base class, <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.alert.AmpelAlert.AmpelAlert" title="(in ampel-interface v0.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelAlert</span></code></a>, instead. Instances of <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.alert.AmpelAlert.AmpelAlert" title="(in ampel-interface v0.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelAlert</span></code></a> only have one collection of datapoints.</p></li>
 <li><p>The annotations are used to build a pydantic model that validates the configuration parameters defined for the instance in e.g. a channel definition. This means that you can use <a class="reference external" href="https://pydantic-docs.helpmanual.io/usage/schema/#field-customisation">Field()</a> to impose jsonschema-style constraints on the field value, for example requiring an integer to be positive, or a list to have a specified number of items.</p></li>
 <li><p>The <code class="docutils literal notranslate"><span class="pre">#:</span></code> comment marker indicates that the following is interface documentation, and should be included in autogenerated docs. Normal comments that start with just <code class="docutils literal notranslate"><span class="pre">#</span></code> are ignored.</p></li>
 <li><p>Field names should be lower camel-cased by convention.</p></li>
@@ -331,8 +331,8 @@ like this:</p>
 <p>There are now 3 different kinds of T2 unit. If your T2 does something other than a light curve analysis, it may be a better fit for one of the new ones:</p>
 <ul class="simple">
 <li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsLightCurveT2Unit</span></code> operates on entire light curves, and runs every time a new photopoint or upper limit is added to a transient. This is equivalent to the old <code class="xref py py-class docutils literal notranslate"><span class="pre">AbsT2Unit</span></code>, but can be configured to operate on all photopoints, or on detections only.</p></li>
-<li><p><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.abstract.AbsPointT2Unit.AbsPointT2Unit" title="(in ampel-interface v0.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsPointT2Unit</span></code></a> operates on single data points. It can be configured to run on a subset of photopoints, e.g. to run catalog matching on only the first detection.</p></li>
-<li><p><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.abstract.AbsStockT2Unit.AbsStockT2Unit" title="(in ampel-interface v0.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsStockT2Unit</span></code></a> operates on the stock (transient) record itself. This can be used to perform some action when the transient is added to a channel.</p></li>
+<li><p><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.abstract.AbsPointT2Unit.AbsPointT2Unit" title="(in ampel-interface v0.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsPointT2Unit</span></code></a> operates on single data points. It can be configured to run on a subset of photopoints, e.g. to run catalog matching on only the first detection.</p></li>
+<li><p><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.abstract.AbsStockT2Unit.AbsStockT2Unit" title="(in ampel-interface v0.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsStockT2Unit</span></code></a> operates on the stock (transient) record itself. This can be used to perform some action when the transient is added to a channel.</p></li>
 </ul>
 <p>There are also “tied” variants of these, such as <code class="xref py py-class docutils literal notranslate"><span class="pre">AbsTiedLightCurveT2Unit</span></code>, that can be used to build a directed acyclic graph of T2s. In other words, these T2s depend on the output of other T2s.</p>
 </section>
@@ -483,7 +483,7 @@ like this:</p>
         <li class="right" >
           <a href="api.html" title="Ampel-core"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.8.8a3 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.8.8a4 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Porting contrib projects from v0.6</a></li> 
       </ul>
     </div>
