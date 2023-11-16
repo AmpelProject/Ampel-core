@@ -130,7 +130,13 @@ class AmpelDB(AmpelUnit):
 		self.mongo_collections: dict[str, dict[str, Collection]] = {}
 		self.mongo_clients: dict[str, MongoClient] = {} # map role with client
 
-		if self.require_exists and not self._get_pymongo_db("data", role="w").list_collection_names():
+		if (
+			self.require_exists
+			and not all(
+				self._get_pymongo_db(db.name, role=db.role.w).list_collection_names()
+				for db in self.databases
+			)
+		):
 			raise UnknownDatabase(f"Database(s) with prefix {self.prefix} do not exist")
 
 
@@ -405,7 +411,8 @@ class AmpelDB(AmpelUnit):
 		force: bool = False
 	) -> None:
 
-		db = self._get_pymongo_db("data", role="w")
+		db_conf = self._get_db_config("stock")
+		db = self._get_pymongo_db(db_conf.name, role=db_conf.role.w)
 		if force:
 			col_names = db.list_collection_names()
 
@@ -446,7 +453,8 @@ class AmpelDB(AmpelUnit):
 
 	def delete_view(self, view_prefix: str, logger: 'None | AmpelLogger' = None) -> None:
 
-		db = self._get_pymongo_db("data", role="w")
+		db_conf = self._get_db_config("stock")
+		db = self._get_pymongo_db(db_conf.name, role=db_conf.role.w)
 		for el in ("stock", "t0", "t1", "t2", "t3"):
 			db.drop_collection(f'{view_prefix}_{el}')
 
