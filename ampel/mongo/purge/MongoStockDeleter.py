@@ -22,6 +22,12 @@ from ampel.types import ChannelId, StockId, Tag
 from ampel.util.collections import get_chunks
 
 
+class WriteConcernModel(AmpelBaseModel):
+    w: Literal["majority"] | int = 1
+    j: bool = True
+    wtimeout: int = 0
+
+
 class StockSelectionModel(AmpelBaseModel):
 
     #: Select by creation time
@@ -76,6 +82,8 @@ class MongoStockDeleter(AbsOpsUnit):
     delete: StockSelectionModel
     #: roll back each transaction before it can be committed
     dry_run: bool = True
+    #: write concern to use for transaction
+    write_concern: WriteConcernModel = WriteConcernModel(w=1, j=True, wtimeout=0)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -166,7 +174,7 @@ class MongoStockDeleter(AbsOpsUnit):
                     partial(
                         self._purge_chunk, stock_ids=[doc["stock"] for doc in docs]
                     ),
-                    write_concern=WriteConcern(w=1, j=True),
+                    write_concern=WriteConcern(**self.write_concern.dict()),
                 )
                 for k, v in deleted_in_chunk.items():
                     deleted[k] += v
