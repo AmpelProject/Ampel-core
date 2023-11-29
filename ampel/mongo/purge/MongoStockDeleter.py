@@ -7,6 +7,7 @@ from pymongo.client_session import ClientSession
 from pymongo.read_concern import ReadConcern
 from pymongo.read_preferences import ReadPreference
 from pymongo.write_concern import WriteConcern
+from pymongo.errors import OperationFailure
 
 from ampel.abstract.AbsOpsUnit import AbsOpsUnit
 from ampel.base.AmpelBaseModel import AmpelBaseModel
@@ -84,6 +85,8 @@ class MongoStockDeleter(AbsOpsUnit):
     dry_run: bool = True
     #: write concern to use for transaction
     write_concern: WriteConcernModel = WriteConcernModel(w=1, j=True, wtimeout=0)
+    causal_consistency: bool = True
+    retry: int = 0
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -91,7 +94,7 @@ class MongoStockDeleter(AbsOpsUnit):
             f"t{tier}": self.context.db.get_collection(f"t{tier}") for tier in range(3)
         }
 
-    def _purge_chunk(
+    def _purge_chunk_in_transaction(
         self, session: ClientSession, stock_ids: list[StockId]
     ) -> dict[str, int]:
 
@@ -122,6 +125,24 @@ class MongoStockDeleter(AbsOpsUnit):
         self.logger.debug("Commit")
 
         return deleted
+
+    def _purge_chunk(
+        self, session: ClientSession, stock_ids: list[StockId]
+    ) -> dict[str, int]:
+        for attempt in range(self.retry + 1):
+            try:
+                return session.with_transaction(
+                    partial(self._purge_chunk_in_transaction, stock_ids=stock_ids),
+                    write_concern=WriteConcern(**self.write_concern.dict()),
+                )
+            except OperationFailure as exc:
+                # operation was interrupted because the transaction exceeded the configured 'transactionLifetimeLimitSeconds'
+                if attempt == self.retry or exc.code != 290:
+                    raise
+                else:
+                    continue
+        # unreachable
+        raise NotImplementedError()
 
     def run(self, beacon: None | dict[str, Any] = None) -> None | dict[str, Any]:
 
@@ -154,7 +175,9 @@ class MongoStockDeleter(AbsOpsUnit):
 
         deleted = {k: 0 for k in self._collections}
 
-        with self._collections["stock"].database.client.start_session() as session:
+        with self._collections["stock"].database.client.start_session(
+            causal_consistency=self.causal_consistency
+        ) as session:
             deleted_stocks = 0
             for docs in get_chunks(
                 self._collections["stock"]
@@ -170,11 +193,8 @@ class MongoStockDeleter(AbsOpsUnit):
                 self.chunk_size,
             ):
                 self.logger.debug(f"Purging chunk")
-                deleted_in_chunk = session.with_transaction(
-                    partial(
-                        self._purge_chunk, stock_ids=[doc["stock"] for doc in docs]
-                    ),
-                    write_concern=WriteConcern(**self.write_concern.dict()),
+                deleted_in_chunk = self._purge_chunk(
+                    session, stock_ids=[doc["stock"] for doc in docs]
                 )
                 for k, v in deleted_in_chunk.items():
                     deleted[k] += v
