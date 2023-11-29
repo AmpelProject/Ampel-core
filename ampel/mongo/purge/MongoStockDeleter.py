@@ -190,7 +190,8 @@ class MongoStockDeleter(AbsOpsUnit):
                     stock_match,
                     {"stock": 1},
                     session=session,
-                ),
+                )
+                .sort("stock", 1),
                 self.chunk_size,
             ):
                 self.logger.debug(f"Purging chunk")
