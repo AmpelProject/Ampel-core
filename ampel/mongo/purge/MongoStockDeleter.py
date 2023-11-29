@@ -120,9 +120,10 @@ class MongoStockDeleter(AbsOpsUnit):
                 deleted[k] += v
 
         if self.dry_run:
+            self.logger.debug("Rollback")
             session.abort_transaction()
-
-        self.logger.debug("Commit")
+        else:
+            self.logger.debug("Commit")
 
         return deleted
 
