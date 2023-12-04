@@ -12,9 +12,10 @@ from typing import Any, Literal
 from ampel.mongo.utils import maybe_use_each
 from ampel.content.DataPoint import DataPoint
 from ampel.abstract.AbsDocIngester import AbsDocIngester
+from ampel.mongo.update.MongoTTLBase import MongoTTLBase
 
 
-class MongoT0Ingester(AbsDocIngester[DataPoint]):
+class MongoT0Ingester(AbsDocIngester[DataPoint], MongoTTLBase):
 	""" Inserts `DataPoint` into the t0 collection  """
 
 	#: If 1 or 2: raise DuplicateKeyError on attempts to upsert the same id with different bodies
@@ -52,6 +53,9 @@ class MongoT0Ingester(AbsDocIngester[DataPoint]):
 		if 'stock' in doc:
 			upd['$addToSet']['stock'] = doc['stock'] if isinstance(doc['stock'], (int, bytes, str)) \
 				else maybe_use_each(doc['stock'])
+
+		if expires := self.expire_at(doc):
+			upd['$max'] = expires
 
 		self.updates_buffer.add_t0_update(
 			UpdateOne(match, upd, upsert=True)
