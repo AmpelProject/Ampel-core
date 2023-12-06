@@ -70,7 +70,7 @@ class UnitLoader:
 		self.provenance = provenance
 		self.unit_defs: dict = config._config['unit']
 		self.aliases: list[dict] = [config._config['alias'][f"t{el}"] for el in (0, 3, 1, 2)]
-		self._dyn_register: None | dict[str, type[LogicalUnit]] = None # potentially updated by DevAmpelContext
+		self._dyn_register: None | dict[str, type[LogicalUnit] | type[ContextUnit]] = None # potentially updated by DevAmpelContext
 
 
 	@overload
