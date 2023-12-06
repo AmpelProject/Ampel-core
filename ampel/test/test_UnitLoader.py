@@ -217,3 +217,16 @@ def test_compiler_options_validation(mock_context: DevAmpelContext):
         UnitModel(unit="Dummy", config={"compiler_options": "DummyCompilerOptions"})
         with pytest.raises(TypeError):
             UnitModel(unit="Dummy", config={"compiler_options": "foo"})
+
+
+def test_result_adapter_trace(mock_context: DevAmpelContext):
+    from ampel.test.dummy import DummyUnitResultAdapter
+
+    mock_context.register_unit(DummyUnitResultAdapter)
+    model = UnitModel(unit="DummyUnitResultAdapter")
+    u1 = mock_context.loader.new_context_unit(model, mock_context, run_id=1)
+    u2 = mock_context.loader.new_context_unit(model, mock_context, run_id=2)
+    assert (
+        u1._get_trace_content() == u2._get_trace_content()
+    ), "trace content is identical for different run_id"
+    assert u1._trace_id == u2._trace_id, "trace id is identical for different run_id"

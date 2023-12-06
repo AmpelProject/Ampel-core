@@ -12,6 +12,7 @@ import time
 from collections.abc import Sequence
 from typing import Any
 from ampel.abstract.AbsProcessorTemplate import AbsProcessorTemplate
+from ampel.abstract.AbsUnitResultAdapter import AbsUnitResultAdapter
 from ampel.core.EventHandler import EventHandler
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.model.UnitModel import UnitModel
@@ -162,3 +163,8 @@ class DummyProcessorTemplate(AbsProcessorTemplate):
 
     def get_model(self, config: dict[str, Any], logger: AmpelLogger) -> UnitModel:
         return UnitModel(unit="DummyInputUnit", config=self.dict(exclude={"template"}))
+
+
+class DummyUnitResultAdapter(AbsUnitResultAdapter):
+    def handle(self, ur: UnitResult) -> UnitResult:
+        return ur
