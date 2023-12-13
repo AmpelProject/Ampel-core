@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, TypedDict
 from typing_extensions import Required
 from ampel.base.AmpelBaseModel import AmpelBaseModel
@@ -23,6 +23,6 @@ class MongoTTLBase(AmpelBaseModel):
     
     def get_expire_clause(self, now: float | int | None) -> dict[str, Any]:
         if self.ttl is not None and now is not None:
-            return {"_expire_at": datetime.fromtimestamp(now + self.ttl)}
+            return {"_expire_at": datetime.fromtimestamp(now + self.ttl, tz=timezone.utc)}
         else:
             return {}

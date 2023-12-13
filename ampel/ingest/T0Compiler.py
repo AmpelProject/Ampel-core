@@ -97,7 +97,7 @@ class T0Compiler(AbsCompiler):
 
 			ingester.ingest(dp)
 
-		# update ttl for any datapoints not used
+		# Retain datapoints that were not explicitly ingested
 		ingester.retain(self.retained.difference(self.register.keys()), now)
 
 		self.register.clear()
