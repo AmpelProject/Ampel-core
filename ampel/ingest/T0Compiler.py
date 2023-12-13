@@ -36,6 +36,8 @@ class T0Compiler(AbsCompiler):
 			]
 		] = {}
 
+		self.retained: set[DataPointId] = set()
+
 
 	# Override
 	def add(self, # type: ignore[override]
@@ -52,6 +54,10 @@ class T0Compiler(AbsCompiler):
 				r[dpid][1].add(channel)
 			else:
 				r[dpid] = dp, {channel}, trace_id, extra
+
+
+	def retain(self, dps: list[DataPoint]) -> None:
+		self.retained.update(dp['id'] for dp in dps)
 
 
 	# Override
@@ -91,4 +97,8 @@ class T0Compiler(AbsCompiler):
 
 			ingester.ingest(dp)
 
+		# update ttl for any datapoints not used
+		ingester.retain(self.retained.difference(self.register.keys()), now)
+
 		self.register.clear()
+		self.retained.clear()

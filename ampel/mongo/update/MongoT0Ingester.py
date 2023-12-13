@@ -8,11 +8,12 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from pymongo import UpdateOne
-from typing import Any, Literal
+from typing import Any, Iterable, Literal
 from ampel.mongo.utils import maybe_use_each
 from ampel.content.DataPoint import DataPoint
 from ampel.abstract.AbsDocIngester import AbsDocIngester
 from ampel.mongo.update.MongoTTLBase import MongoTTLBase
+from ampel.types import DataPointId
 
 
 class MongoT0Ingester(AbsDocIngester[DataPoint], MongoTTLBase):
@@ -22,6 +23,7 @@ class MongoT0Ingester(AbsDocIngester[DataPoint], MongoTTLBase):
 	#: 1: partial check is performed (compatible with potential muxer projection)
 	#: 2: strict check is performed
 	extended_match: Literal[0, 1, 2] = 0
+	update_ttl: bool = False
 
 	def ingest(self, doc: DataPoint) -> None:
 
@@ -60,3 +62,13 @@ class MongoT0Ingester(AbsDocIngester[DataPoint], MongoTTLBase):
 		self.updates_buffer.add_t0_update(
 			UpdateOne(match, upd, upsert=True)
 		)
+
+
+	def retain(self, dps: Iterable[DataPointId], now: int | float) -> None:
+		if self.update_ttl and self.ttl is not None:
+			self.updates_buffer.add_t0_update(
+				UpdateOne(
+					{'id': {'$in': list(dps)}},
+					{'$max': self.get_expire_clause(now)}
+				)
+			)

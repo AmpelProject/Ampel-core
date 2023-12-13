@@ -541,6 +541,9 @@ class ChainedIngestionHandler:
 						]:
 							dps_insert = (dps_insert + x) if dps_insert else x
 
+						# Retain datapoints that will not be explicitly inserted
+						self.t0_compiler.retain(dps_combine)
+
 					if dps_insert:
 
 						self.t0_compiler.add(dps_insert, ib.channel, self.shaper_trace_id, jm_extra)
