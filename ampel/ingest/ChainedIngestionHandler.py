@@ -235,7 +235,7 @@ class ChainedIngestionHandler:
 			return ib, ib
 
 		else:
-			ValueError("Unknown directive type")
+			raise TypeError("Unknown directive type")
 			
 
 	def _new_ingest_block(self,
