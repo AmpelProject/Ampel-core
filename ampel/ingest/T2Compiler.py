@@ -7,7 +7,8 @@
 # Last Modified Date:  21.11.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any
+import datetime
+from typing import Any, NamedTuple
 from ampel.types import ChannelId, UnitId, T2Link, StockId
 from ampel.content.T2Document import T2Document
 from ampel.content.MetaActivity import MetaActivity
@@ -22,19 +23,28 @@ class T2Compiler(AbsCompiler):
 	are merged into one single T2 document that references all corresponding channels.
 	"""
 
-	col: None | str = None
-	t2s: dict[
-		# key: (unit name, unit config, link, stock)
-		tuple[UnitId, None | int, T2Link, StockId],
-		tuple[
-			set[ChannelId], # channels (doc)
-			dict[
-				frozenset[tuple[str, Any]], # key: traceid
-				tuple[ActivityRegister, dict[str, Any]] # activity register, meta_extra
+	class UnitKey(NamedTuple):
+		unit: UnitId
+		config: None | int
+		link: T2Link
+		stock: StockId
+	
+	class DocInfo(NamedTuple):
+		channels: set[ChannelId]
+		ttl: None | datetime.timedelta
+		meta: dict[
+			frozenset[tuple[str, Any]], # key: traceid
+			tuple[
+				ActivityRegister,
+				dict[str, Any]
 			]
-		]
-	] = {}
+		]		
 
+	col: None | str = None
+
+	def __init__(self, **kwargs) -> None:
+		super().__init__(**kwargs)
+		self.t2s: dict[T2Compiler.UnitKey, T2Compiler.DocInfo] = {}
 
 	def add(self, # type: ignore[override]
 		unit: UnitId,
@@ -42,6 +52,7 @@ class T2Compiler(AbsCompiler):
 		stock: StockId,
 		link: T2Link,
 		channel: ChannelId,
+		ttl: None | datetime.timedelta,
 		traceid: dict[str, Any],
 		activity: None | MetaActivity | list[MetaActivity] = None,
 		meta_extra: None | dict[str, Any] = None
@@ -52,28 +63,31 @@ class T2Compiler(AbsCompiler):
 		"""
 
 		# Doc id
-		k = (unit, config, link, stock)
+		k = T2Compiler.UnitKey(unit, config, link, stock)
 		tid = frozenset(traceid.items())
 
 		# a: tuple({channels}, dict[traceid, (activity register, meta_extra)])
-		if a := self.t2s.get(k):
+		if (a := self.t2s.get(k)) is not None:
 
-			a[0].add(channel) # set of all channels
+			a.channels.add(channel) # set of all channels
 
 			# One meta record will be created for each unique trace id
 			# (the present compiler could be used by multiple handlers configured differently)
-			if tid in a[1]:
+			if tid in a.meta:
 
 				# (activity register, meta_extra)
-				b = a[1][tid]
+				b = a.meta[tid]
 
 				# update internal register
 				self.register_meta_info(b[0], b[1], channel, activity, meta_extra)
 
 			else:
-				a[1][tid] = self.new_meta_info(channel, activity, meta_extra)
+				a.meta[tid] = self.new_meta_info(channel, activity, meta_extra)
+
+			if ttl is not None and (a.ttl is None or ttl > a.ttl):
+				self.t2s[k] = T2Compiler.DocInfo(a.channels, ttl, a.meta)
 		else:
-			self.t2s[k] = {channel}, {tid: self.new_meta_info(channel, activity, meta_extra)}
+			self.t2s[k] = T2Compiler.DocInfo({channel}, ttl, {tid: self.new_meta_info(channel, activity, meta_extra)})
 
 
 	def commit(self, ingester: AbsDocIngester[T2Document], now: int | float, **kwargs) -> None:
@@ -81,18 +95,22 @@ class T2Compiler(AbsCompiler):
 		for k, v in self.t2s.items():
 
 			# Note: mongodb maintains key order
-			d: T2Document = {'unit': k[0], 'config': k[1], 'link': k[2]} # type: ignore[typeddict-item]
+			d: T2Document = {'unit': k.unit, 'config': k.config, 'link': k.link} # type: ignore[typeddict-item]
 
 			if self.col:
 				d['col'] = self.col
 
-			d['stock'] = k[3]
+			d['stock'] = k.stock
 
 			if self.origin:
 				d['origin'] = self.origin
 
-			d['channel'] = list(v[0])
-			d['meta'], tags = self.build_meta(v[1], now)
+			d['channel'] = list(v.channels)
+			d['meta'], tags = self.build_meta(v.meta, now)
+			if v.ttl is not None:
+				d['expiry'] = datetime.datetime.fromtimestamp(
+					now, tz=datetime.timezone.utc
+				) + v.ttl
 
 			if tags:
 				d['tag'] = tags

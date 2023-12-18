@@ -7,16 +7,17 @@
 # Last Modified Date:  14.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from pymongo import UpdateOne
-from typing import Any, Iterable, Literal
+from collections import defaultdict
+from datetime import datetime
+from pymongo import UpdateOne, UpdateMany
+from typing import Any, Literal
 from ampel.mongo.utils import maybe_use_each
 from ampel.content.DataPoint import DataPoint
 from ampel.abstract.AbsDocIngester import AbsDocIngester
-from ampel.mongo.update.MongoTTLBase import MongoTTLBase
 from ampel.types import DataPointId
 
 
-class MongoT0Ingester(AbsDocIngester[DataPoint], MongoTTLBase):
+class MongoT0Ingester(AbsDocIngester[DataPoint]):
 	""" Inserts `DataPoint` into the t0 collection  """
 
 	#: If 1 or 2: raise DuplicateKeyError on attempts to upsert the same id with different bodies
@@ -56,19 +57,21 @@ class MongoT0Ingester(AbsDocIngester[DataPoint], MongoTTLBase):
 			upd['$addToSet']['stock'] = doc['stock'] if isinstance(doc['stock'], (int, bytes, str)) \
 				else maybe_use_each(doc['stock'])
 
-		if expires := self.expire_at(doc):
-			upd['$max'] = expires
+		if 'expiry' in doc:
+			upd['$max'] = {'expiry': doc['expiry']}
 
 		self.updates_buffer.add_t0_update(
 			UpdateOne(match, upd, upsert=True)
 		)
 
-
-	def retain(self, dps: Iterable[DataPointId], now: int | float) -> None:
-		if self.update_ttl and self.ttl is not None:
+	def update_expiry(self, dps: dict[DataPointId, datetime]) -> None:
+		by_ttl: dict[datetime, list[DataPointId]] = defaultdict(list)
+		for k, v in dps.items():
+			by_ttl[v].append(k)
+		for expires, ids in by_ttl.items():
 			self.updates_buffer.add_t0_update(
-				UpdateOne(
-					{'id': {'$in': list(dps)}},
-					{'$max': self.get_expire_clause(now)}
+				UpdateMany(
+					{'id': {'$in': ids}},
+					{'$max': {'expiry': expires}}
 				)
 			)

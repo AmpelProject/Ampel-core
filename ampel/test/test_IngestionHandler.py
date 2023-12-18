@@ -1,8 +1,10 @@
 import contextlib, pytest
+from ampel.content.T2Document import T2Document
+from ampel.content.T1Document import T1Document
 import datetime
 
 from itertools import count
-from typing import Any
+from typing import Any, Sequence
 from collections import defaultdict
 from collections.abc import Generator
 from ampel.config.AmpelConfig import AmpelConfig
@@ -328,7 +330,7 @@ def test_t0_meta_append(
 
     datapoints[0]["meta"] = [meta_record]
     datapoints[0]["tag"] = tags
-    handler.t0_compiler.add(datapoints, "SOME_CHANNEL", trace_id=0)
+    handler.t0_compiler.add(datapoints, "SOME_CHANNEL", None, trace_id=0)
     handler.t0_compiler.commit(handler.t0_ingester, ts)
     handler.updates_buffer.push_updates(force=True)
 
@@ -397,18 +399,20 @@ def test_t0_ttl(
 
     ttl = datetime.timedelta(seconds=300)
     with unfreeze_config(mock_context) as config:
-        for tier in range(3):
-            config["mongo"]["ingest"][f"t{tier}"] = {
-                "unit": f"MongoT{tier}Ingester",
-                "config": {"ttl": ttl.total_seconds()},
-            }
-        config["mongo"]["ingest"]["t0"]["config"]["update_ttl"] = True
+        config["mongo"]["ingest"]["t0"] = {
+            "unit": "MongoT0Ingester",
+            "config": {"update_ttl": True},
+        }
+        config["channel"]["TEST_CHANNEL"]["purge"]["content"]["delay"] = {
+            "seconds": ttl.total_seconds()
+        }
+
         handler = get_handler(
             mock_context,
             [
                 IngestDirective(
                     channel="TEST_CHANNEL",
-                    ingest={
+                    ingest={ # type: ignore[arg-type]
                         "mux": {
                             "unit": "DummyHistoryMuxer",
                             "combine": [
@@ -424,31 +428,45 @@ def test_t0_ttl(
         )
 
     def ingest(datapoints: list[DataPoint]):
-        handler.ingest(datapoints, [(0, True)], stock_id="stockystock")
+        handler.ingest([dict(dp) for dp in datapoints], [(0, True)], stock_id="stockystock")
         handler.updates_buffer.push_updates(force=True)
 
-    def get_meta_time(dp: DataPoint) -> datetime.datetime:
+    def get_meta_time(dp: DataPoint | T1Document | T2Document) -> datetime.datetime:
         return datetime.datetime.fromtimestamp(
             dp["meta"][-1]["ts"], tz=datetime.timezone.utc
         )
 
-    def get_expire_time(dp: DataPoint):
+    def get_expire_time(dp: DataPoint | T1Document | T2Document):
         # NB: mongo datetimes are implicitly utc, so reattach tzinfo
-        return dp["_expire_at"].replace(tzinfo=datetime.timezone.utc)
+        return dp["expiry"].replace(tzinfo=datetime.timezone.utc)
 
     ingest(datapoints[:1])
     for tier in range(3):
         assert (
             collection := mock_context.db.get_collection(f"t{tier}")
         ).count_documents({}) == 1, f"t{tier} document inserted"
+        doc: None | DataPoint | T1Document | T2Document = collection.find_one()
+        assert doc is not None
         assert (
-            get_expire_time(doc := collection.find_one()) == get_meta_time(doc) + ttl
+            get_expire_time(doc) == get_meta_time(doc) + ttl
         ), f"ttl set on t{tier} document"
 
     # ingest remaining datapoints
     ingest(datapoints)
+    dp: None | DataPoint = mock_context.db.get_collection("t0").find_one({"id": 0})
+    assert dp is not None
     assert (
-        get_expire_time(dp := mock_context.db.get_collection("t0").find_one({"id": 0}))
+        get_expire_time(dp)
         > get_meta_time(dp) + ttl
-    ), "ttl updated"
+    ), f"ttl updated for dp {dp['id']}"
     assert len(dp["meta"]) == 1, "no extra meta entries added"
+
+    # and again, ensuring that all ttls get updated
+    ingest(datapoints)
+    for dp in mock_context.db.get_collection("t0").find():
+        assert dp is not None
+        assert (
+            get_expire_time(dp)
+            > get_meta_time(dp) + ttl
+        ), f"ttl updated for dp {dp['id']}"
+        assert len(dp["meta"]) == 1, "no extra meta entries added"

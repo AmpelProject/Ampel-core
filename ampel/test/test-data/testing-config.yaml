@@ -143,17 +143,18 @@ channel:
   TEST_CHANNEL:
     channel: TEST_CHANNEL
     version: 0
-    # purge:
-    #   content:
-    #     delay: 100
-    #     format: json
-    #     unify: true
-    #     compress: true
-    #   logs:
-    #     delay: 50
-    #     format: csv
-    #     compress: true
-    #     header: false
+    purge:
+      content:
+        delay:
+          days: 100
+        format: json
+        unify: true
+        compress: true
+      logs:
+        delay: 50
+        format: csv
+        compress: true
+        header: false
     active: true
     hash: null
     distrib: null

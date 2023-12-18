@@ -7,8 +7,27 @@
 # Last Modified Date:  18.06.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+from datetime import timedelta
 from typing import Literal
 from ampel.base.AmpelBaseModel import AmpelBaseModel
+
+
+class TimeDeltaModel(AmpelBaseModel):
+
+	days: int = 0
+	seconds: int = 0
+	microseconds: int = 0
+	milliseconds: int = 0
+	minutes: int = 0
+	hours: int = 0
+	weeks: int = 0
+
+	def timedelta(self) -> timedelta:
+		return timedelta(
+			days=self.days, seconds=self.seconds, microseconds=self.microseconds,
+			milliseconds=self.milliseconds, minutes=self.minutes,
+			hours=self.hours, weeks=self.weeks
+		)
 
 
 class PurgeContentModel(AmpelBaseModel):
@@ -26,7 +45,7 @@ class PurgeContentModel(AmpelBaseModel):
 	The purge of logs and content is done with two different, independant processes.
 	Feel free to implement your own UnifiedPurger and associated UnifiedPurgeModel if you need to.
 	"""
-	delay: int
+	delay: TimeDeltaModel = TimeDeltaModel()
 	format: Literal['bson', 'json']
 	unify: bool = False
 	compress: bool = True
