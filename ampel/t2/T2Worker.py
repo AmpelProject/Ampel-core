@@ -269,6 +269,7 @@ class T2Worker(AbsWorker[T2Document]):
 				logger, doc, None, exception=e, msg='An exception occured',
 				meta = self.gen_meta(stock_updr.run_id, t2_unit._trace_id, round(now - before_run, 3))
 			)
+			code = DocumentCode.EXCEPTION
 
 		# _id is an ObjectId, but declared as bytes in ampel-interface to avoid
 		# an explicit dependency on pymongo

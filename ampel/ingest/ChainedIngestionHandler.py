@@ -746,7 +746,8 @@ class ChainedIngestionHandler:
 					code = DocumentCode.OK
 					macts[0]['action'] |= MetaActionCode.SET_CODE
 
-				if excl := [el['id'] for el in dps if el['id'] not in t1_dps]:
+				t1_dps_set = set(t1_dps)
+				if excl := [el['id'] for el in dps if el['id'] not in t1_dps_set]:
 					macts[0]['action'] |= MetaActionCode.ADD_T1_EXCL
 					macts[0]['excl'] = excl
 
