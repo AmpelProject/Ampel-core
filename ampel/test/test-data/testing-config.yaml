@@ -608,11 +608,10 @@ unit:
     version: 0.8.0a1
     base:
       - AbsEventUnit
-  DummyResourceT3Unit:
+  DummyResourceOutputUnit:
     fqn: ampel.test.dummy
     version: 0.8.0a1
     base:
-      - AbsPlainT3Unit
       - AbsEventUnit
 process:
   t0: {}

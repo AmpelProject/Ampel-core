@@ -1,5 +1,4 @@
 import base64, json, sys, pytest, yaml
-from ampel.t3.T3PlainUnitExecutor import T3PlainUnitExecutor
 from pathlib import Path
 from typing import Optional
 from unittest.mock import MagicMock
@@ -89,22 +88,10 @@ def test_resource_passing(
 
     writer = dump(
         {
-            "unit": "T3Processor",
+            "unit": "DummyResourceOutputUnit",
             "config": {
-                "execute": [
-                    {
-                        "unit": "T3PlainUnitExecutor",
-                        "config": {
-                            "target": {
-                                "unit": "DummyResourceT3Unit",
-                                "config": {
-                                    "name": key,
-                                    "value": value,
-                                },
-                            }
-                        },
-                    }
-                ]
+                "name": key,
+                "value": value,
             },
         },
         tmpdir,
