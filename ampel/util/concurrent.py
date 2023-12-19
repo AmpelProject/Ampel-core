@@ -196,6 +196,8 @@ class _Process:
                 await tx.drain()
 
             async with parent_r.open() as rx:
+                exitcode: int | BaseException
+                payload: bytes | BaseException
                 try:
                     exitcode, payload = await asyncio.gather(
                         proc.wait(), rx.read(), return_exceptions=True
