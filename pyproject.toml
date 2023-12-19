@@ -45,7 +45,7 @@ ampel = 'ampel.cli.main:main'
 
 [tool.poetry.dependencies]
 ampel-interface = {version = "^0.9.1a1"}
-python = ">=3.10,<3.12"
+python = "^3.10"
 pymongo = "^4.0"
 pydantic = "^1.9.0"
 sjcl = "^0.2.1"
