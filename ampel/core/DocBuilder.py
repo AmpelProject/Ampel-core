@@ -22,6 +22,7 @@ from ampel.content.T4Document import T4Document
 from ampel.content.MetaRecord import MetaRecord
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.enum.MetaActionCode import MetaActionCode
+from ampel.model.UnitModel import UnitModel
 from ampel.util.tag import merge_tags
 from ampel.util.hash import build_unsafe_dict_id
 
@@ -50,7 +51,25 @@ class DocBuilder(ContextUnit):
 
 	def __init__(self, **kwargs) -> None:
 		super().__init__(**kwargs)
-		self.adapters: dict[str, AbsUnitResultAdapter] = {}
+		self.adapters: dict[int, AbsUnitResultAdapter] = {}
+
+
+	def get_adapter_instance(self, model: UnitModel, event_hdlr: EventHandler) -> AbsUnitResultAdapter:
+		config_id = build_unsafe_dict_id(model.dict())
+
+		if (
+			config_id not in self.adapters or
+			self.adapters[config_id].run_id != event_hdlr.get_run_id()
+		):
+			unit_instance = self.context.loader.new_context_unit(
+				model = model,
+				context = self.context,
+				run_id = event_hdlr.get_run_id(),
+				sub_type = AbsUnitResultAdapter,
+			)
+			self.adapters[config_id] = unit_instance
+
+		return self.adapters[config_id]
 
 	
 	def craft_doc(self,
@@ -115,13 +134,8 @@ class DocBuilder(ContextUnit):
 
 			if res.body:
 
-				if res.adapter:
-					if res.adapter not in self.adapters:
-						self.adapters[res.adapter] = getattr(
-							import_module(f"ampel.core.adapter.{res.adapter}"),
-							res.adapter
-						)(context=self.context, run_id=event_hdlr.get_run_id())
-					res = self.adapters[res.adapter].handle(res)
+				if res.adapter_model:
+					res = self.get_adapter_instance(res.adapter_model, event_hdlr).handle(res)
 
 				d['body'] = res.body
 				actact |= MetaActionCode.ADD_BODY

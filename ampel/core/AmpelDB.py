@@ -12,10 +12,11 @@ from typing import Any, Literal
 from functools import cached_property
 from collections import defaultdict  # type: ignore[attr-defined]
 from collections.abc import Sequence
-from pymongo import MongoClient, ReadPreference
+from pymongo import MongoClient
 from pymongo.database import Database
 from pymongo.collection import Collection
 from pymongo.errors import ConfigurationError, DuplicateKeyError, OperationFailure, CollectionInvalid
+from pymongo.read_preferences import SecondaryPreferred
 
 from ampel.types import ChannelId
 from ampel.mongo.utils import get_ids
@@ -58,6 +59,9 @@ class AmpelDB(AmpelUnit):
 	#: Route reads to secondaries of a replica set. This can increase
 	#: performance at the expense of consistency
 	read_from_secondary: bool = True
+	#: Ignore secondary if it is more than max_staleness seconds behind the
+	#: primary
+	max_staleness: int = 300
 
 
 	@classmethod
@@ -126,7 +130,13 @@ class AmpelDB(AmpelUnit):
 		self.mongo_collections: dict[str, dict[str, Collection]] = {}
 		self.mongo_clients: dict[str, MongoClient] = {} # map role with client
 
-		if self.require_exists and not self._get_pymongo_db("data", role="w").list_collection_names():
+		if (
+			self.require_exists
+			and not all(
+				self._get_pymongo_db(db.name, role=db.role.w).list_collection_names()
+				for db in self.databases
+			)
+		):
 			raise UnknownDatabase(f"Database(s) with prefix {self.prefix} do not exist")
 
 
@@ -205,7 +215,7 @@ class AmpelDB(AmpelUnit):
 					raise
 		self.mongo_collections[col_name][mode] = db.get_collection(
 			col_name,
-			read_preference=ReadPreference.SECONDARY_PREFERRED if self.read_from_secondary else None
+			read_preference=SecondaryPreferred(max_staleness=self.max_staleness) if self.read_from_secondary else None
 		)
 
 		return self.mongo_collections[col_name][mode]
@@ -342,11 +352,11 @@ class AmpelDB(AmpelUnit):
 
 		try:
 			idx_params = index_data.dict(exclude_unset=True)
-			logger.info(f"  Creating index: {idx_params}")
+			logger.info(f"  Creating index for {col.database.name}.{col.name}: {idx_params}")
 			col.create_index(idx_params['index'], **idx_params.get('args', {}))
 		except Exception as e:
 			logger.error(
-				f"Index creation failed for '{col.name}' (args: {idx_params})",
+				f"Index creation failed for '{col.database.name}.{col.name}': (args: {idx_params})",
 				exc_info=e
 			)
 
@@ -401,7 +411,8 @@ class AmpelDB(AmpelUnit):
 		force: bool = False
 	) -> None:
 
-		db = self._get_pymongo_db("data", role="w")
+		db_conf = self._get_db_config("stock")
+		db = self._get_pymongo_db(db_conf.name, role=db_conf.role.w)
 		if force:
 			col_names = db.list_collection_names()
 
@@ -442,7 +453,8 @@ class AmpelDB(AmpelUnit):
 
 	def delete_view(self, view_prefix: str, logger: 'None | AmpelLogger' = None) -> None:
 
-		db = self._get_pymongo_db("data", role="w")
+		db_conf = self._get_db_config("stock")
+		db = self._get_pymongo_db(db_conf.name, role=db_conf.role.w)
 		for el in ("stock", "t0", "t1", "t2", "t3"):
 			db.drop_collection(f'{view_prefix}_{el}')
 

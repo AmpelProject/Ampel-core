@@ -29,6 +29,7 @@ from ampel.view.T2DocView import T2DocView
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.abstract.AbsT0Muxer import AbsT0Muxer
 from ampel.model.ingest.CompilerOptions import CompilerOptions
+from ampel.struct.Resource import Resource
 
 
 class Sleepy(AbsEventUnit):
@@ -130,6 +131,23 @@ class DummyInputUnit(AbsEventUnit):
 
     def proceed(self, event_hdlr: EventHandler) -> Any:
         assert self.value == self.expected_value
+
+
+class DummyResourceInputUnit(DummyInputUnit):
+
+    # add an extra level of indirection via resources
+    def proceed(self, event_hdlr: EventHandler) -> Any:
+        assert event_hdlr.resources
+        assert event_hdlr.resources[self.value].value == self.expected_value
+
+
+class DummyResourceOutputUnit(AbsEventUnit):
+
+    name: str
+    value: str
+
+    def proceed(self, event_hdlr: EventHandler) -> Any:
+        event_hdlr.add_resource(Resource(name=self.name, value=self.value))
 
 
 class DummyProcessorTemplate(AbsConfigMorpher):

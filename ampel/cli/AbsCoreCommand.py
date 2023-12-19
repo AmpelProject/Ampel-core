@@ -7,6 +7,7 @@
 # Last Modified Date:  11.01.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+import json
 import re, os
 from typing import Any, TypeVar, Literal
 from collections.abc import Sequence, Iterator
@@ -61,7 +62,10 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 			for var, value in os.environ.items():
 				if var.startswith(env_var_prefix):
 					k = var[len(env_var_prefix):]
-					v = _maybe_int(value)
+					try:
+						v = json.loads(value)
+					except json.JSONDecodeError:
+						v = value
 					logger.info(f"Setting config parameter '{k}' from environment")
 					set_by_path(ampel_conf._config, k, v)
 

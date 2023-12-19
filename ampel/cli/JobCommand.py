@@ -563,8 +563,8 @@ class JobCommand(AbsCoreCommand):
 		jtasks: list[dict[str, Any]] = []
 		for i, model in enumerate(job.task):
 			if isinstance(model.template, Sequence):
-				taskd = apply_templates(ctx, model.template, model.dict(), logger)
-				del taskd['template']
+				taskd = apply_templates(ctx, model.template, model.dict(exclude_unset=True), logger)
+				taskd.pop('template', None)
 				if debug:
 					self.print_task(taskd, logger)
 			elif (

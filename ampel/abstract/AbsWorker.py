@@ -7,14 +7,17 @@
 # Last Modified Date:  03.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import gc, signal
+import gc, signal, sys
 import random
 from math import ceil
 from time import time, sleep
-from typing import ClassVar, Any, TypeVar, Generic, Literal
+from typing import ClassVar, Any, TypeVar, Generic, Literal, Sequence, Generator
 from ampel.base.AmpelBaseModel import AmpelBaseModel
+from contextlib import contextmanager
+from threading import Event
 
 from pymongo.write_concern import WriteConcern
+from pymongo.read_concern import ReadConcern
 
 from ampel.types import OneOrMany, JDict, UBson, Tag
 from ampel.base.decorator import abstractmethod
@@ -36,7 +39,7 @@ from ampel.abstract.AbsUnitResultAdapter import AbsUnitResultAdapter
 from ampel.model.UnitModel import UnitModel
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
 from ampel.mongo.utils import maybe_use_each
-from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry, Histogram, Counter
+from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry, Histogram, TimingCounter, Summary
 from ampel.util.tag import merge_tags
 
 T = TypeVar("T", T1Document, T2Document)
@@ -49,6 +52,26 @@ class BackoffConfig(AmpelBaseModel):
 	max_tries: None | int = None
 	max_time: None | float = 60.
 
+stat_time = AmpelMetricsRegistry.summary(
+    "time",
+    "Processing time",
+    unit="microseconds",
+    subsystem="worker",
+    labelnames=("tier", "phase", "unit"),
+)
+
+@contextmanager
+def stop_on_signal(signals: Sequence[signal.Signals], logger: AmpelLogger) -> Generator[Event, None, None]:
+	stop_token = Event()
+	def handle_signal(signum: int, frame):
+		logger.log(LogFlag.SHOUT, f"caught {signal.Signals(signum).name}")
+		stop_token.set()
+	prev_handlers = {sig: signal.signal(sig, handle_signal) for sig in signals}
+	try:
+		yield stop_token
+	finally:
+		for sig, handler in prev_handlers.items():
+			signal.signal(sig, handler)
 
 class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 	"""
@@ -104,6 +127,9 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 	#: significant extra latency for replicated mongo clusters.
 	wait_for_durable_write: bool = True
 
+	#: read only commmitted updates
+	durable_read: bool = False
+
 	#: minimum number of stock document updates to commit at once
 	updates_buffer_size: int = 500
 
@@ -140,21 +166,18 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 			# updates being lost if the primary goes down before the write can
 			# be replicated, but if this happens the doc can simply be rerun.
 			self.col = self.col.with_options(write_concern=WriteConcern(w=1, j=False))
+		if self.durable_read:
+			self.col = self.col.with_options(read_concern=ReadConcern(level="majority"))
 
 		if self.send_beacon:
 			self.create_beacon()
-
-		self._run = True
-		self._doc_counter = 0
-		signal.signal(signal.SIGTERM, self.sig_exit)
-		signal.signal(signal.SIGINT, self.sig_exit)
 
 		# _instances stores unit instances so that they can be re-used in run()
 		# Key: set(unit name + config), value: unit instance
 		self._instances: JDict = {}
 
-		self._adapters: dict[str, AbsUnitResultAdapter] = {}
-
+		self._current_run_id: None | int = None
+		self._adapters: dict[int, AbsUnitResultAdapter] = {}
 
 
 	@abstractmethod
@@ -172,13 +195,13 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		return None
 
 
-	def find_one_and_update(self, query: dict, update: dict) -> None | Any:
+	def find_one_and_update(self, query: dict, update: dict, stop_token: Event) -> None | T:
 		"""
 		Get next eligible document, with timeout
 		"""
 		t0 = time()
 		attempts = 0
-		while self._run:
+		while not stop_token.is_set():
 			doc = self.col.find_one_and_update(
 				query | {'$expr': {'$not': {'$lte': [ceil(time()), {'$last': '$meta.retry_after'}]}}},
 				update
@@ -193,7 +216,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 			delay = min(backoff.factor*(backoff.base**attempts), backoff.max_value)
 			if backoff.jitter:
 				delay = random.uniform(0, delay)
-			sleep(delay)
+			stop_token.wait(delay)
 			attempts += 1
 		
 		return None
@@ -223,41 +246,54 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		)
 
 		# Loop variables
-		self._doc_counter = 0
+		doc_counter = 0
 		update = {'$set': {'code': DocumentCode.RUNNING}}
 		garbage_collect = self.garbage_collect
 		doc_limit = self.doc_limit
 
-		# Process docs until next() returns None (breaks condition below)
-		self._run = True
-		while self._run:
+		with stop_on_signal(
+			[signal.SIGINT, signal.SIGTERM, signal.SIGQUIT, signal.SIGHUP],
+			logger
+		) as stop_token:
+			try:
+				self._current_run_id = run_id
+				# Process docs until next() returns None (breaks condition below)
+				while not stop_token.is_set():
 
-			# get t1/t2 document (code is usually NEW or NEW_PRIO), excluding
-			# docs with retry times in the future
-			doc = self.find_one_and_update(self.query, update)
+					# get t1/t2 document (code is usually NEW or NEW_PRIO), excluding
+					# docs with retry times in the future
+					with stat_time.time() as timer:
+						doc = self.find_one_and_update(self.query, update, stop_token)
+						timer.labels(self.tier, "find_one_and_update", doc["unit"] if doc else None)
 
-			# No match
-			if doc is None:
-				break
-			elif logger.verbose > 1:
-				logger.debug(f'T{self.tier} doc to process', extra={'doc': doc})
+					# No match
+					if doc is None:
+						if not stop_token.is_set():
+							logger.log(LogFlag.SHOUT, "No more docs to process")
+						break
+					elif logger.verbose > 1:
+						logger.debug(f'T{self.tier} doc to process', extra={'doc': doc})
 
-			self.process_doc(doc, stock_updr, logger)
+					with stat_time.labels(self.tier, "process_doc", doc["unit"]).time():
+						self.process_doc(doc, stock_updr, logger)
+					doc_counter += 1
 
-			# Check possibly defined doc_limit
-			if doc_limit and self._doc_counter >= doc_limit:
-				break
+					# Check possibly defined doc_limit
+					if doc_limit and doc_counter >= doc_limit:
+						break
 
-			if garbage_collect:
-				gc.collect()
+					if garbage_collect:
+						gc.collect()
+			finally:
+				stock_updr.flush()
+				event_hdlr.add_extra(docs=doc_counter)
 
-		stock_updr.flush()
-		event_hdlr.add_extra(docs=self._doc_counter)
+				logger.flush()
+				self._instances.clear()
+				self._adapters.clear()
+				self._current_run_id = None
 
-		logger.flush()
-		self._instances.clear()
-
-		return self._doc_counter
+		return doc_counter
 
 
 	def _processing_error(self,
@@ -382,12 +418,6 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 		return d
 
-
-	def sig_exit(self, signum: int, frame) -> None:
-		""" Executed when SIGTERM/SIGINT is caught. Stops doc processing in run() """
-		self._run = False
-
-
 	def create_beacon(self) -> None:
 		""" Creates a beacon document if it does not exist yet """
 
@@ -439,9 +469,25 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		return self._instances[k]
 
 
-def register_stats(tier: int) -> tuple[Histogram, Counter]:
+	def get_adapter_instance(self, model: UnitModel) -> AbsUnitResultAdapter:
+		assert self._current_run_id is not None
+		config_id = build_unsafe_dict_id(model.dict())
 
-	hist = AmpelMetricsRegistry.histogram(
+		if config_id not in self._adapters:
+			unit_instance = self._loader.new_context_unit(
+				model = model,
+				context = self.context,
+				run_id = self._current_run_id,
+				sub_type = AbsUnitResultAdapter,
+			)
+			self._adapters[config_id] = unit_instance
+
+		return self._adapters[config_id]
+
+
+def register_stats(tier: int) -> tuple[Histogram, TimingCounter, Summary]:
+
+	latency = AmpelMetricsRegistry.histogram(
 		'latency',
 		f'Delay between T{tier} doc creation and processing',
 		subsystem=f't{tier}',
@@ -449,11 +495,19 @@ def register_stats(tier: int) -> tuple[Histogram, Counter]:
 		labelnames=('unit', ),
 	)
 
-	counter = AmpelMetricsRegistry.counter(
+	docs = AmpelMetricsRegistry.counter(
 		'docs_processed',
 		f'Number of T{tier} documents processed',
 		subsystem=f't{tier}',
-		labelnames=('unit', )
+		labelnames=('unit', 'code',)
 	)
 
-	return hist, counter
+	processing_time = AmpelMetricsRegistry.summary(
+		'processing_time',
+		f'Time spent processing of T{tier} documents processed',
+		subsystem=f't{tier}',
+		unit='microseconds',
+		labelnames=('unit', 'phase')
+	)
+
+	return latency, docs, processing_time

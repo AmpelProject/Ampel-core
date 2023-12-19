@@ -13,8 +13,9 @@ from multiprocessing.pool import ThreadPool
 from pymongo.errors import BulkWriteError
 from pymongo.collection import Collection
 from pymongo import UpdateOne, InsertOne, UpdateMany
-from typing import Any, Literal, Union, Mapping
-from collections.abc import Callable, Iterable
+from typing import Any, Generator, Literal, Union, Mapping
+from collections.abc import Callable, Iterable, Iterator
+from contextlib import contextmanager
 
 from ampel.core.Schedulable import Schedulable
 from ampel.log.utils import report_exception, report_error, convert_dollars
@@ -87,15 +88,17 @@ class DBUpdatesBuffer(Schedulable):
 		run_id: int | list[int],
 		logger: AmpelLogger,
 		error_callback: None | Callable[[], None] = None,
+		acknowledge_callback: None | Callable[[Iterator[Any]], None] = None,
 		catch_signals: bool = True,
 		log_doc_ids: None | Iterable[int] = None,
-		push_interval: None | float = 3.,
+		push_interval: None | int = 3,
 		max_size: None | int = None,
 		threads: None | int = None,
 		raise_exc: bool = False
 	):
 		"""
 		:param error_callback: callback method to be called on errors
+		:param acknowledge_callback: method to call to acknowledge processing of a message bunch
 		:param catch_signals: see Schedulable docstring
 		:param log_doc_ids: logs inserted/updated document IDs for the given collections.
 		Collection integer identifiers are: 't0' -> 0, 't1' -> 1, 't2' -> 2, 'stock' -> 3.
@@ -117,6 +120,7 @@ class DBUpdatesBuffer(Schedulable):
 		Schedulable.__init__(self, catch_signals=catch_signals)
 		self._new_buffer()
 		self.error_callback = error_callback
+		self.acknowledge_callback = acknowledge_callback
 
 		self._cols: dict[AmpelMainCol, Collection] = {
 			col_name: ampel_db.get_collection(col_name)
@@ -138,16 +142,14 @@ class DBUpdatesBuffer(Schedulable):
 		self._block_autopush = False
 		self._last_update = time()
 
+		self.push_interval = push_interval
 		if push_interval:
-			self.push_interval = push_interval
 			self.get_scheduler() \
 				.every(push_interval) \
 				.seconds \
 				.do(self.request_autopush)
 
 			self._job = self.get_scheduler().jobs[0]
-		else:
-			self.push_interval = inf
 
 		self.thread_pool = ThreadPool(threads) if threads else None
 
@@ -161,6 +163,7 @@ class DBUpdatesBuffer(Schedulable):
 		self.db_ops: dict[AmpelMainCol, list[DBOp]] = {
 			't2': [], 't0': [], 'stock': [], 't1': []
 		}
+		self._messages_to_ack: set[Any] = set()
 
 
 	def stop(self) -> None:
@@ -171,6 +174,15 @@ class DBUpdatesBuffer(Schedulable):
 		if self.thread_pool:
 			self.thread_pool.close()
 			self.thread_pool.join()
+
+
+	def acknowledge_on_push(self, message: Any) -> None:
+		"""
+		Add a message to be passed to acknowledge_callback when the current
+		buffer has been pushed
+		"""
+		if self.acknowledge_callback:
+			self._messages_to_ack.add(message)
 
 
 	def add_updates(self, updates: dict[AmpelMainCol, list[DBOp]]) -> None:
@@ -207,10 +219,23 @@ class DBUpdatesBuffer(Schedulable):
 		self.db_ops['stock'].append(update)
 
 
+	@contextmanager
+	def group_updates(self) -> Generator:
+		"""
+		Ensure that updates issued in this context are grouped together
+		"""
+		block_autopush = self._block_autopush
+		self._block_autopush = True
+		try:
+			yield
+		finally:
+			self._block_autopush = block_autopush
+
+
 	def request_autopush(self) -> None:
 
 		t = time()
-		if t - self._last_update > self.push_interval:
+		if self.push_interval is None or t - self._last_update > self.push_interval:
 			if self._block_autopush:
 				self._autopush_asap = True
 			else:
@@ -254,6 +279,7 @@ class DBUpdatesBuffer(Schedulable):
 
 		# Reference instance buffer locally before creating a new one
 		db_ops = self.db_ops
+		messages = self._messages_to_ack
 		self._new_buffer()
 
 		for col_name in db_ops.keys():
@@ -264,6 +290,14 @@ class DBUpdatesBuffer(Schedulable):
 					)
 				else:
 					self.call_bulk_write(col_name, db_ops[col_name])
+
+		if self.acknowledge_callback and messages:
+			try:
+				self.acknowledge_callback(iter(messages))
+			except Exception as exc:
+				if self.raise_exc:
+					raise
+				report_exception(self._ampel_db, self.logger, exc=exc)
 
 
 	def call_bulk_write(self, col_name: AmpelMainCol, db_ops: list, *, extra: None | dict = None) -> None:

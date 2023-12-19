@@ -603,15 +603,16 @@ unit:
     version: 0.8.0a1
     base:
       - AbsEventUnit
-  DemoT3Unit:
-    fqn: ampel.demo.DemoT3Unit
-    version: 0.8.2a2
+  DummyResourceInputUnit:
+    fqn: ampel.test.dummy
+    version: 0.8.0a1
     base:
-    - DemoT3Unit
-    - AbsT3Unit
-    - LogicalUnit
-    distrib: ampel-core
-    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-cor
+      - AbsEventUnit
+  DummyResourceOutputUnit:
+    fqn: ampel.test.dummy
+    version: 0.8.0a1
+    base:
+      - AbsEventUnit
 process:
   t0: {}
   t1: {}

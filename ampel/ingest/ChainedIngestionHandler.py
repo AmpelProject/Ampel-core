@@ -484,155 +484,154 @@ class ChainedIngestionHandler:
 		:param jm_extra: extra info to be added to journal or meta enties. Ex: {'alert_id': 123}
 		"""
 
-		self.updates_buffer._block_autopush = True
-		ingest_start = time()
+		with self.updates_buffer.group_updates():
+			ingest_start = time()
 
-		# process *modifies* dict instances loaded by fastavro
-		dps: list[DataPoint] = self.shaper.process(alert_dps, stock_id)
+			# process *modifies* dict instances loaded by fastavro
+			dps: list[DataPoint] = self.shaper.process(alert_dps, stock_id)
 
-		if not dps: # Not sure if this can happen
-			return
+			if not dps: # Not sure if this can happen
+				return
 
-		add_other_tag: None | MetaActivity = {'action': MetaActionCode.ADD_OTHER_TAG, 'tag': tag} if tag else None
+			add_other_tag: None | MetaActivity = {'action': MetaActionCode.ADD_OTHER_TAG, 'tag': tag} if tag else None
 
-		# Set of chans (last parameter) is used for logging
-		mux_cache: dict[AbsT0Muxer, tuple[None | list[DataPoint], None | list[DataPoint], set[ChannelId]]] = {}
-		t1_comb_cache: T1CombineCache = {}
-		t1_comp_cache: T1ComputeCache = {}
+			# Set of chans (last parameter) is used for logging
+			mux_cache: dict[AbsT0Muxer, tuple[None | list[DataPoint], None | list[DataPoint], set[ChannelId]]] = {}
+			t1_comb_cache: T1CombineCache = {}
+			t1_comp_cache: T1ComputeCache = {}
 
-		# ingestion blocks
-		ibs = self.iblocks
+			# ingestion blocks
+			ibs = self.iblocks
 
-		for i, fres in filter_results:
+			for i, fres in filter_results:
 
-			# Add alert and shaper version info to stock journal entry
-			jentry: dict[str, Any] = {
-				'action': JournalActionCode.STOCK_ADD_CHANNEL | JournalActionCode.STOCK_BUMP_UPD,
-				'traceid': self.base_trace_id | {'shaper': self.shaper_trace_id}
-			}
+				# Add alert and shaper version info to stock journal entry
+				jentry: dict[str, Any] = {
+					'action': JournalActionCode.STOCK_ADD_CHANNEL | JournalActionCode.STOCK_BUMP_UPD,
+					'traceid': self.base_trace_id | {'shaper': self.shaper_trace_id}
+				}
 
-			if jm_extra:
-				jentry = jm_extra | jentry
+				if jm_extra:
+					jentry = jm_extra | jentry
 
-			if i > 0: # Known stock (for the current channel)
-				ib = ibs[i][0]
-			else: # New stock
-				ib = ibs[-i][1]
+				if i > 0: # Known stock (for the current channel)
+					ib = ibs[i][0]
+				else: # New stock
+					ib = ibs[-i][1]
 
-			# Muxer requested
-			if mux := ib.mux:
+				# Muxer requested
+				if mux := ib.mux:
 
-				# Add muxer version info to stock journal entry
-				jentry['traceid']['muxer'] = mux.trace_id
+					# Add muxer version info to stock journal entry
+					jentry['traceid']['muxer'] = mux.trace_id
 
-				# Potentially load previous results from cache
-				if mux.unit in mux_cache:
-					dps_insert, dps_combine, s = mux_cache[mux.unit]
-					s.add(ib.channel)
-				else:
-					dps_insert, dps_combine = mux.unit.process(dps, stock_id)
-					mux_cache[mux.unit] = dps_insert, dps_combine, {ib.channel}
+					# Potentially load previous results from cache
+					if mux.unit in mux_cache:
+						dps_insert, dps_combine, s = mux_cache[mux.unit]
+						s.add(ib.channel)
+					else:
+						dps_insert, dps_combine = mux.unit.process(dps, stock_id)
+						mux_cache[mux.unit] = dps_insert, dps_combine, {ib.channel}
 
-				if dps_combine:
+					if dps_combine:
 
-					if x := [
-						dp for dp in dps_combine
-						if 'channel' in dp and ib.channel not in dp['channel']
-					]:
-						dps_insert = (dps_insert + x) if dps_insert else x
+						if x := [
+							dp for dp in dps_combine
+							if 'channel' in dp and ib.channel not in dp['channel']
+						]:
+							dps_insert = (dps_insert + x) if dps_insert else x
 
-				if dps_insert:
+					if dps_insert:
 
-					self.t0_compiler.add(dps_insert, ib.channel, self.shaper_trace_id, jm_extra)
+						self.t0_compiler.add(dps_insert, ib.channel, self.shaper_trace_id, jm_extra)
 
-					# TODO: make this addition optional (a stock with a million dps would create pblms)
-					jentry['upsert'] = [el['id'] for el in dps_insert]
-					jentry['action'] |= JournalActionCode.T0_ADD_CHANNEL
+						# TODO: make this addition optional (a stock with a million dps would create pblms)
+						jentry['upsert'] = [el['id'] for el in dps_insert]
+						jentry['action'] |= JournalActionCode.T0_ADD_CHANNEL
 
-					if mux.point_t2:
-						jentry['action'] |= JournalActionCode.T2_ADD_CHANNEL
-						self.ingest_point_t2s(
-							dps_insert, fres, stock_id, ib.channel, mux.point_t2, add_other_tag,
-							jm_extra if self.include_extra_meta > 1 else None
+						if mux.point_t2:
+							jentry['action'] |= JournalActionCode.T2_ADD_CHANNEL
+							self.ingest_point_t2s(
+								dps_insert, fres, stock_id, ib.channel, mux.point_t2, add_other_tag,
+								jm_extra if self.include_extra_meta > 1 else None
+							)
+
+					# Muxed T1 and associated T2 ingestions
+					if dps_combine and mux.combine:
+						self.ingest_t12(
+							dps_combine, fres, stock_id, jentry, mux.combine,
+							t1_comb_cache, t1_comp_cache, add_other_tag,
+							jm_extra if self.include_extra_meta else None
 						)
 
-				# Muxed T1 and associated T2 ingestions
-				if dps_combine and mux.combine:
+				else:
+					self.t0_compiler.add(dps, ib.channel, self.shaper_trace_id)
+
+				# Non-muxed T1 and associated T2 ingestions
+				if ib.combine:
 					self.ingest_t12(
-						dps_combine, fres, stock_id, jentry, mux.combine,
-						t1_comb_cache, t1_comp_cache, add_other_tag,
-						jm_extra if self.include_extra_meta else None
+						dps, fres, stock_id, jentry, ib.combine, t1_comb_cache, t1_comp_cache,
+						add_other_tag, meta_extra = jm_extra if self.include_extra_meta else None
+					)
+					
+				# Non-muxed point T2s
+				if ib.point_t2:
+					self.ingest_point_t2s(
+						dps, fres, stock_id, ib.channel, ib.point_t2, add_other_tag,
+						jm_extra if self.include_extra_meta > 1 else None
 					)
 
-			else:
-				self.t0_compiler.add(dps, ib.channel, self.shaper_trace_id)
+				# Stock T2s
+				if ib.stock_t2:
+					for t2b in ib.stock_t2:
+						self.stock_t2_compiler.add(
+							t2b.unit, t2b.config, stock_id, stock_id,
+							ib.channel, self.base_trace_id, add_other_tag,
+							jm_extra if self.include_extra_meta else None
+						)
 
-			# Non-muxed T1 and associated T2 ingestions
-			if ib.combine:
-				self.ingest_t12(
-					dps, fres, stock_id, jentry, ib.combine, t1_comb_cache, t1_comp_cache,
-					add_other_tag, meta_extra = jm_extra if self.include_extra_meta else None
-				)
-				
-			# Non-muxed point T2s
-			if ib.point_t2:
-				self.ingest_point_t2s(
-					dps, fres, stock_id, ib.channel, ib.point_t2, add_other_tag,
-					jm_extra if self.include_extra_meta > 1 else None
-				)
+				# Flush potential unit logs
+				###########################
 
-			# Stock T2s
-			if ib.stock_t2:
-				for t2b in ib.stock_t2:
-					self.stock_t2_compiler.add(
-						t2b.unit, t2b.config, stock_id, stock_id,
-						ib.channel, self.base_trace_id, add_other_tag,
-						jm_extra if self.include_extra_meta else None
+				logger = self.logger
+				for muxer, (_, _, chans) in mux_cache.items():
+					if muxer._buf_hdlr.buffer: # type: ignore[attr-defined]
+						muxer._buf_hdlr.forward( # type: ignore[attr-defined]
+							logger, stock=stock_id, channel=list(chans), extra = jm_extra
+						)
+
+				for (t1_unit, _), (_, chans) in t1_comb_cache.items():
+					if t1_unit._buf_hdlr.buffer: # type: ignore[union-attr]
+						t1_unit._buf_hdlr.forward( # type: ignore[union-attr]
+							logger, stock=stock_id, channel=list(chans), extra = jm_extra
+						)
+
+				if not self.stock_compiler.register:
+					self.stock_compiler.add(
+						stock_id, ib.channel, journal = jentry, # type: ignore[arg-type]
+						tag = add_other_tag['tag'] if add_other_tag else None # type: ignore[arg-type]
 					)
 
-			# Flush potential unit logs
-			###########################
+			# Commit
+			########
+			now = int(time()) if self.int_time else time()
 
-			logger = self.logger
-			for muxer, (_, _, chans) in mux_cache.items():
-				if muxer._buf_hdlr.buffer: # type: ignore[attr-defined]
-					muxer._buf_hdlr.forward( # type: ignore[attr-defined]
-						logger, stock=stock_id, channel=list(chans), extra = jm_extra
-					)
+			self.t0_compiler.commit(self.t0_ingester, now)
 
-			for (t1_unit, _), (_, chans) in t1_comb_cache.items():
-				if t1_unit._buf_hdlr.buffer: # type: ignore[union-attr]
-					t1_unit._buf_hdlr.forward( # type: ignore[union-attr]
-						logger, stock=stock_id, channel=list(chans), extra = jm_extra
-					)
+			if self.t1_compiler.t1s:
+				self.t1_compiler.commit(self.t1_ingester, now)
 
-			if not self.stock_compiler.register:
-				self.stock_compiler.add(
-					stock_id, ib.channel, journal = jentry, # type: ignore[arg-type]
-					tag = add_other_tag['tag'] if add_other_tag else None # type: ignore[arg-type]
-				)
+			if self.stock_t2_compiler.t2s:
+				self.stock_t2_compiler.commit(self.t2_ingester, now)
 
-		# Commit
-		########
-		now = int(time()) if self.int_time else time()
+			if self.point_t2_compiler.t2s:
+				self.point_t2_compiler.commit(self.t2_ingester, now)
 
-		self.t0_compiler.commit(self.t0_ingester, now)
+			if self.state_t2_compiler.t2s:
+				self.state_t2_compiler.commit(self.t2_ingester, now)
 
-		if self.t1_compiler.t1s:
-			self.t1_compiler.commit(self.t1_ingester, now)
-
-		if self.stock_t2_compiler.t2s:
-			self.stock_t2_compiler.commit(self.t2_ingester, now)
-
-		if self.point_t2_compiler.t2s:
-			self.point_t2_compiler.commit(self.t2_ingester, now)
-
-		if self.state_t2_compiler.t2s:
-			self.state_t2_compiler.commit(self.t2_ingester, now)
-
-		self.stock_compiler.commit(self.stock_ingester, now, body=stock_body)
-		self.ingest_stats.append(time() - ingest_start)
-		self.updates_buffer._block_autopush = False
+			self.stock_compiler.commit(self.stock_ingester, now, body=stock_body)
+			self.ingest_stats.append(time() - ingest_start)
 
 
 	def ingest_point_t2s(self,
@@ -747,7 +746,8 @@ class ChainedIngestionHandler:
 					code = DocumentCode.OK
 					macts[0]['action'] |= MetaActionCode.SET_CODE
 
-				if excl := [el['id'] for el in dps if el['id'] not in t1_dps]:
+				t1_dps_set = set(t1_dps)
+				if excl := [el['id'] for el in dps if el['id'] not in t1_dps_set]:
 					macts[0]['action'] |= MetaActionCode.ADD_T1_EXCL
 					macts[0]['excl'] = excl
 

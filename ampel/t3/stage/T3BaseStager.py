@@ -56,7 +56,6 @@ class T3BaseStager(AbsT3Stager, DocBuilder, abstract=True):
 	def __init__(self, **kwargs) -> None:
 
 		super().__init__(**kwargs)
-		self.adapters: dict[str, AbsUnitResultAdapter] = {}
 		self.stock_updr = MongoStockUpdater(
 			ampel_db = self.context.db,
 			tier = 3,

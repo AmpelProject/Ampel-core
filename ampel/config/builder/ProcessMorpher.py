@@ -273,7 +273,7 @@ class ProcessMorpher:
 					conf |= override
 
 				if fqn := out_config['unit'][t2_unit].get('fqn'):
-					T2Unit = getattr(import_module(fqn), fqn.split('.')[-1])
+					T2Unit = getattr(import_module(fqn), t2_unit)
 					conf = T2Unit.validate(conf) # dictify ?
 				else:
 					self.logger.warn(

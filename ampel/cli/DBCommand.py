@@ -31,6 +31,7 @@ hlp = {
 	'debug': 'debug',
 	'force': 'Delete potententially existing view before view creation',
 	'view': 'Create or discard collection views',
+	'index': 'Create or recreate collection indexes',
 }
 
 class DBCommand(AbsCoreCommand):
@@ -38,7 +39,7 @@ class DBCommand(AbsCoreCommand):
 
 	@staticmethod
 	def get_sub_ops() -> list[str]:
-		return ['import', 'export', 'delete', 'view']
+		return ['import', 'export', 'delete', 'view', 'index']
 
 
 	# Mandatory implementation
@@ -79,8 +80,10 @@ class DBCommand(AbsCoreCommand):
 
 		# Optional
 		builder.opt('secrets')
+		builder.opt('one-db', default=False, action='store_true')
 		builder.opt('debug', action='store_true')
-		builder.opt('force', 'view', action='store_true')
+		builder.opt('force', 'view|index', action='store_true')
+		builder.opt('col', 'index', action='append')
 
 		builder.example('import', '-in /path/to/file')
 		builder.example('export', '-out /path/to/file')
@@ -102,7 +105,7 @@ class DBCommand(AbsCoreCommand):
 		if sub_op == 'delete':  # cosmetic mainly
 			AmpelDB.create_collection = (lambda x: None) # type: ignore
 
-		ctx: AmpelContext = self.get_context(args, unknown_args)
+		ctx: AmpelContext = self.get_context(args, unknown_args, one_db=args['one_db'], require_existing_db=sub_op != 'index')
 		db = ctx.db
 
 		logger = AmpelLogger.from_profile(
@@ -115,6 +118,14 @@ class DBCommand(AbsCoreCommand):
 			logger.info(f'Deleting databases with prefix {ctx.db.prefix}')
 			ctx.db.drop_all_databases()
 			logger.info('Done')
+
+		elif sub_op == 'index':
+
+			for col_name, col_model in ctx.db.col_config.items():
+				if args['col'] and not col_name in args['col']:
+					continue
+				col = ctx.db.get_collection(col_name)
+				ctx.db.set_col_index(col, col_model, logger, force_overwrite=args['force'])
 
 		elif sub_op == 'view':
 

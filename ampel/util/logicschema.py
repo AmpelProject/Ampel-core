@@ -186,10 +186,10 @@ def reduce_to_set(
 		raise ValueError("Unsupported arg type: %s" % type(arg))
 
 	if "any_of" in v:
-		s = set()
+		s: set[T] = set()
 		for el in v['any_of']:
 			if isinstance(el, in_type):
-				s.add(el)
+				s.add(el) # type: ignore[arg-type]
 			elif isinstance(el, dict):
 				for ell in next(iter(el.values())):
 					s.add(ell)

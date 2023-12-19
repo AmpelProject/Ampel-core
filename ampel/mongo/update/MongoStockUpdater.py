@@ -12,7 +12,7 @@ from bson import ObjectId
 from pymongo.errors import BulkWriteError
 from pymongo.operations import UpdateMany, UpdateOne
 from typing import Any, Literal, get_args
-from collections.abc import Sequence
+from collections.abc import Sequence, Mapping
 
 from ampel.core.AmpelDB import AmpelDB
 from ampel.types import ChannelId, Tag, StockId
@@ -225,13 +225,15 @@ class MongoStockUpdater:
 				self.flush()
 
 
-	def _merge_updates(self, op: UpdateOne, d: dict) -> None:
+	def _merge_updates(self, op: UpdateOne, d: Mapping[str, Any] | Sequence[Mapping[str, Any]]) -> None:
 		"""
 		modifies provided UpdateOne structure
 		:raises: ValueError in case update structures are not conform ex: {'$addToSet': {'name': {'a': 1}}}
 		"""
 
 		opd = op._doc
+		assert isinstance(d, Mapping)
+		assert isinstance(opd, dict)
 
 		if '$max' in d:
 			if '$max' in opd:

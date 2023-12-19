@@ -41,7 +41,7 @@ hlp = {
 	"unit": "Unit id/name",
 	"limit": "Limit number of returned documents",
 	"unit-config": "Unit config (integer number). Use string 'null' to match null",
-	"code": "T2 code (0: COMPLETED, -1: NEW)",
+	"code": "T2 code, given either as a name or integer (COMPLETED: 0, NEW: -1)",
 	"link": "T2 document link (hex)",
 	"stock": "Stock(s) associated with t2 doc (OR matched if multi-valued)",
 	'id-mapper': 'Convert stock ids using the provided id mapper (ex: ZTFIdMapper)',
@@ -121,7 +121,10 @@ class T2Command(AbsCoreCommand):
 			p = f"ampel t2 {el} -config ampel_conf.yaml "
 			a = " -out /path/to/file" if el == "save" else ""
 			builder.example(el, '-unit T2SNCosmo -db AmpelTest', prepend=p, append=a)
-			builder.example(el, '-channel MY_CHANNEL -code -1', prepend=p, append=a)
+			if el.endswith("reset"):
+				builder.example(el, '-channel MY_CHANNEL -code T2_MISSING_DEPENDENCY TOO_MANY_TRIALS RUNNING', prepend=p, append=a)
+			else:
+				builder.example(el, '-channel MY_CHANNEL -code -1', prepend=p, append=a)
 			builder.example(el, '-stock 122621027 122620210 -unit DemoTiedLightCurveT2Unit', prepend=p, append=a)
 
 		builder.example(
