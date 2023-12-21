@@ -142,12 +142,14 @@ def write_metrics(metrics: Collection[Metric], histogram_file: str, counter_file
                 continue
 
             for sample in metric.samples:
-                # prometheus_client 0.4+ adds extra fields
-                name, labels, value = sample[:3]
                 key = mmap_dict.mmap_key(
-                    metric.name, name, list(labels.keys()), list(labels.values()), metric.documentation,
+                    metric.name, sample.name, list(sample.labels.keys()), list(sample.labels.values()), metric.documentation,
                 )
-                sink.write_value(key, value)
+                # prometheus_client 0.18.0 adds timestamps, but only for MultiProcessValues
+                try:
+                    sink.write_value(key, sample.value, sample.timestamp or 0.0) # type: ignore[call-arg]
+                except TypeError:
+                    sink.write_value(key, sample.value) # type: ignore[call-arg]
     finally:
         histograms.close()
         counters.close()
