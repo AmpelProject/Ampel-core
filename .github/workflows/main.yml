@@ -19,13 +19,13 @@ jobs:
 
     services:
       mongo:
-        image: mongo:6
+        image: mongo:7
         ports:
           - 27017:27017
 
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v4
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: '3.10'
     - name: Install dependencies (with all extras)
@@ -40,8 +40,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v4
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: '3.10'
     - name: Install dependencies (with all extras)
@@ -59,13 +59,13 @@ jobs:
     outputs:
       should_publish: ${{ steps.check.outputs.result }} 
     steps:
-    - uses: actions/setup-node@v3
+    - uses: actions/setup-node@v4
       with:
         node-version: 14
     - run: npm install toml@3.0.0
     - name: Ensure tag for version bump
       id: check
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
       with:
         script: |
           const toml = require('toml')
@@ -137,8 +137,8 @@ jobs:
     if: ${{ fromJSON(needs.check_version.outputs.should_publish) }}
     
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v4
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: '3.10'
     - name: Install poetry
