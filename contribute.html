@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="./">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>Contribute &#8212; ampel-core 0.9.1a0 documentation</title>
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/sphinx_highlight.js"></script>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css?v=d59dc883" />
+    <script src="_static/documentation_options.js?v=1a5dcacc"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Running the automated tests" href="testing.html" />
@@ -39,7 +39,7 @@
           <div class="body" role="main">
             
   <section id="contribute">
-<span id="contributing"></span><h1>Contribute<a class="headerlink" href="#contribute" title="Permalink to this heading">¶</a></h1>
+<span id="contributing"></span><h1>Contribute<a class="headerlink" href="#contribute" title="Link to this heading">¶</a></h1>
 <p>To adapt Ampel to your needs by contributing a plugin that provides any combination of the following components:</p>
 <ol class="arabic simple">
 <li><p>A <em>channel</em>, or set of configurations for existing T0 (filter), T2 (compute), and T3 (react) modules.</p></li>
@@ -50,7 +50,7 @@
 <li><p>Resource definitions for use in T0/T2/T3 modules</p></li>
 </ol>
 <section id="repository-layout">
-<h2>Repository layout<a class="headerlink" href="#repository-layout" title="Permalink to this heading">¶</a></h2>
+<h2>Repository layout<a class="headerlink" href="#repository-layout" title="Link to this heading">¶</a></h2>
 <p>Each Ampel plugin is kept in a separate <code class="docutils literal notranslate"><span class="pre">git</span></code> repository. These should be named after the institution or working group providing the plugin, e.g. <code class="docutils literal notranslate"><span class="pre">ampel-contrib-hu</span></code> for HU-Berlin, or <code class="docutils literal notranslate"><span class="pre">ampel-contrib-ztfbh</span></code> for the ZTFbh working group. Implementation files should follow a similar naming scheme, e.g. the HU T0 module <code class="docutils literal notranslate"><span class="pre">DecentFilter</span></code> is defined in <code class="docutils literal notranslate"><span class="pre">ampel/contrib/hu/t0/DecentFilter.py</span></code>.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
@@ -76,9 +76,9 @@
 <p>The <code class="docutils literal notranslate"><span class="pre">name</span></code> line provides the name of the plugin. This should match the name of the <code class="docutils literal notranslate"><span class="pre">git</span></code> repo. The <code class="docutils literal notranslate"><span class="pre">version</span></code> line lists the version, and should be incremented appropriately when changes are made to the plugin. The <code class="docutils literal notranslate"><span class="pre">packages</span></code> line specifieds the sub-packages that this plugin provides, and is generated automatically by <code class="xref py py-meth docutils literal notranslate"><span class="pre">find_namespace_packages()</span></code>. The <code class="docutils literal notranslate"><span class="pre">package_data</span></code> line instructs <code class="xref py py-mod docutils literal notranslate"><span class="pre">setuptools</span></code> to install any YAML or JSON files it finds in the <code class="docutils literal notranslate"><span class="pre">conf</span></code> directory of your repository. More on that in <a class="reference internal" href="#contribute-configuration"><span class="std std-ref">Configuration</span></a>.</p>
 </section>
 <section id="configuration">
-<span id="contribute-configuration"></span><h2>Configuration<a class="headerlink" href="#configuration" title="Permalink to this heading">¶</a></h2>
+<span id="contribute-configuration"></span><h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading">¶</a></h2>
 <section id="defining-channels-and-registering-units">
-<span id="contribute-configuration-channels"></span><h3>Defining channels and registering units<a class="headerlink" href="#defining-channels-and-registering-units" title="Permalink to this heading">¶</a></h3>
+<span id="contribute-configuration-channels"></span><h3>Defining channels and registering units<a class="headerlink" href="#defining-channels-and-registering-units" title="Link to this heading">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">conf/ampel-contrib-PROJECTNAME</span></code> should contain at least a top-level configuration file named ampel.yaml, containining at least the definitions of your channels and any custom units
 you may have. For example:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">channel</span><span class="p">:</span>
@@ -108,7 +108,7 @@ in the example above can be replaced with a file conf/ampel-contrib-PROJECTNAME/
 </div>
 </section>
 <section id="validation">
-<span id="contribute-configuration-validation"></span><h3>Validation<a class="headerlink" href="#validation" title="Permalink to this heading">¶</a></h3>
+<span id="contribute-configuration-validation"></span><h3>Validation<a class="headerlink" href="#validation" title="Link to this heading">¶</a></h3>
 <p>You should use the command <code class="code docutils literal notranslate"><span class="pre">ampel-config</span> <span class="pre">build</span></code> to build (and validate) an Ampel configuration file from all installed Ampel subprojects, including yours. The following examples use the <a class="reference external" href="https://github.com/AmpelProject/Ampel-contrib-sample/tree/03950a37dc4dc74c610df72887bd417239cd58aa">ampel-contrib-sample</a> template project.</p>
 <p>You can use <code class="code docutils literal notranslate"><span class="pre">ampel-config</span> <span class="pre">build</span></code> along with <a class="reference external" href="https://mikefarah.gitbook.io/yq/">yq</a> to verify that your unit is registered:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">&gt; ampel-config build | yq .unit.base.DecentFilterCopy</span>
@@ -158,7 +158,7 @@ that are not registered or can’t be imported, or if your unit configurations a
 </section>
 </section>
 <section id="add-your-own-t2">
-<h2>Add your own T2<a class="headerlink" href="#add-your-own-t2" title="Permalink to this heading">¶</a></h2>
+<h2>Add your own T2<a class="headerlink" href="#add-your-own-t2" title="Link to this heading">¶</a></h2>
 <p>T2 modules perform science-level operations on the <code class="xref py py-class docutils literal notranslate"><span class="pre">stocks</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">datapoints</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">compounds</span></code> that are created as datapoints are added in the T0 stage. An example would be to make a template fit to the light curve of the transient or to look for more information on the transient in a set of atronomical catalogs.</p>
 <p>The first ingredient is the T2 module itself, defining a subclass of <code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.abstract.AbsT2Unit.AbsT2Unit</span></code>. This class has two mandatory methods: <code class="docutils literal notranslate"><span class="pre">run</span></code> and <code class="docutils literal notranslate"><span class="pre">_run_</span></code>. The first is just a wrapper around the second, so <code class="docutils literal notranslate"><span class="pre">_run_</span></code> is where the magic happens. This method requires two arguments:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">_run_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">light_curve</span><span class="p">,</span> <span class="n">run_config</span><span class="p">):</span>
@@ -194,64 +194,64 @@ that are not registered or can’t be imported, or if your unit configurations a
 <p>to the <code class="docutils literal notranslate"><span class="pre">t2Compute</span></code> list of our channel configuration (the <code class="docutils literal notranslate"><span class="pre">channels.json</span></code> configuration file).</p>
 </section>
 <section id="configure-t3-scheduled-output">
-<h2>Configure T3 (scheduled output)<a class="headerlink" href="#configure-t3-scheduled-output" title="Permalink to this heading">¶</a></h2>
+<h2>Configure T3 (scheduled output)<a class="headerlink" href="#configure-t3-scheduled-output" title="Link to this heading">¶</a></h2>
 <p>The simplest way to configure scheduled summary output for your channel is to
 add a source-&gt;t3Supervise to your channel config, e.g.:</p>
-<div class="highlight-json notranslate"><div class="highlight"><pre><span></span>{
-  &quot;channel&quot;: &quot;EXAMPLE&quot;,
-  &quot;sources&quot;: [
-    {
-      ...
-      &quot;t3Supervise&quot;: [
-        {
-          &quot;task&quot;: &quot;ExampleSummary&quot;,
-          &quot;schedule&quot;: &quot;every().day.at(&#39;15:00&#39;)&quot;,
-          &quot;transients&quot;: {
-            &quot;select&quot;: {
-              &quot;created&quot;: {
-                &quot;after&quot;: {
-                  &quot;use&quot;: &quot;$timeDelta&quot;,
-                  &quot;arguments&quot;: {&quot;days&quot;: -40}
-                }
-              },
-              &quot;modified&quot;: {
-                &quot;after&quot;: {
-                  &quot;use&quot;: &quot;$timeLastRun&quot;,
-                  &quot;event&quot;: &quot;ExampleSummary&quot;
-                }
-              }
-              &quot;scienceRecords&quot;: {
-                &quot;unitId&quot;: &quot;SNCOSMO&quot;,
-                &quot;match&quot;: {
-                  &quot;fit_acceptable&quot;: true,
-                  &quot;sncosmo_info.success&quot;: true,
-                  &quot;fit_results.z&quot;: {&quot;$gt&quot;: 0},
-                  &quot;fit_results.x1&quot;: {&quot;$lt&quot;: 10}
-                }
-              }
-            },
-            &quot;state&quot;: &quot;$latest&quot;,
-            &quot;content&quot;: {
-              &quot;docs&quot;: [&quot;TRANSIENT&quot;, &quot;COMPOUND&quot;, &quot;T2RECORD&quot;, &quot;PHOTOPOINT&quot;],
-              &quot;t2SubSelection&quot;: [&quot;SNCOSMO&quot;, &quot;CATALOGMATCH&quot;]
-            }
-          },
-          &quot;unitId&quot;: &quot;SlackSummaryPublisher&quot;,
-          &quot;runConfig&quot;: {
-            &quot;quiet&quot;: true,
-            &quot;slackToken&quot;: &quot;SECRETSLACKTOKEN&quot;,
-            &quot;slackChannel&quot;: &quot;#ampel-live&quot;,
-            &quot;fullPhotometry&quot;: true
-          }
-        }
-      ]
-    }
-  }
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;channel&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;EXAMPLE&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;sources&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="err">...</span>
+<span class="w">      </span><span class="nt">&quot;t3Supervise&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">&quot;task&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ExampleSummary&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">&quot;schedule&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;every().day.at(&#39;15:00&#39;)&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">&quot;transients&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;select&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">              </span><span class="nt">&quot;created&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;after&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                  </span><span class="nt">&quot;use&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;$timeDelta&quot;</span><span class="p">,</span>
+<span class="w">                  </span><span class="nt">&quot;arguments&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;days&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">-40</span><span class="p">}</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">              </span><span class="p">},</span>
+<span class="w">              </span><span class="nt">&quot;modified&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;after&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                  </span><span class="nt">&quot;use&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;$timeLastRun&quot;</span><span class="p">,</span>
+<span class="w">                  </span><span class="nt">&quot;event&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ExampleSummary&quot;</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">              </span><span class="p">}</span>
+<span class="w">              </span><span class="nt">&quot;scienceRecords&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;unitId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SNCOSMO&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;match&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                  </span><span class="nt">&quot;fit_acceptable&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">                  </span><span class="nt">&quot;sncosmo_info.success&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">                  </span><span class="nt">&quot;fit_results.z&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;$gt&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">},</span>
+<span class="w">                  </span><span class="nt">&quot;fit_results.x1&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;$lt&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">}</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">              </span><span class="p">}</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="nt">&quot;state&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;$latest&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">              </span><span class="nt">&quot;docs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;TRANSIENT&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;COMPOUND&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;T2RECORD&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;PHOTOPOINT&quot;</span><span class="p">],</span>
+<span class="w">              </span><span class="nt">&quot;t2SubSelection&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;SNCOSMO&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;CATALOGMATCH&quot;</span><span class="p">]</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">          </span><span class="p">},</span>
+<span class="w">          </span><span class="nt">&quot;unitId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SlackSummaryPublisher&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">&quot;runConfig&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;quiet&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;slackToken&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SECRETSLACKTOKEN&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;slackChannel&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;#ampel-live&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;fullPhotometry&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">          </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">      </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
 </pre></div>
 </div>
 </section>
 <section id="dependencies">
-<h2>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this heading">¶</a></h2>
+<h2>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading">¶</a></h2>
 <p>Ideally, your plugin should depend only on Python 3.6 and Ampel-base. Several other common packages are already included in the Ampel distribution. You can safely rely on:</p>
 <ul class="simple">
 <li><p>numpy</p></li>
@@ -262,11 +262,11 @@ add a source-&gt;t3Supervise to your channel config, e.g.:</p>
 <p>Further dependencies can be added on a case-by-case basis, provided that they are packaged with <cite>conda</cite> and do not conflict with the existing Ampel distribution. Heavy-weight, unpackaged, and conflicting dependencies can be supported through plugins that live in separate containers. The mechanism for this has not be completely defined yet.</p>
 </section>
 <section id="testing">
-<h2>Testing<a class="headerlink" href="#testing" title="Permalink to this heading">¶</a></h2>
+<h2>Testing<a class="headerlink" href="#testing" title="Link to this heading">¶</a></h2>
 <p>Write tests. Make sure they test things. Make sure they pass. See <a class="reference internal" href="testing.html#testing"><span class="std std-ref">Running the automated tests</span></a>.</p>
 </section>
 <section id="getting-your-plugin-into-the-main-ampel-instance-at-desy">
-<h2>Getting your plugin into the main Ampel instance at DESY<a class="headerlink" href="#getting-your-plugin-into-the-main-ampel-instance-at-desy" title="Permalink to this heading">¶</a></h2>
+<h2>Getting your plugin into the main Ampel instance at DESY<a class="headerlink" href="#getting-your-plugin-into-the-main-ampel-instance-at-desy" title="Link to this heading">¶</a></h2>
 <p>There are two ways to do this:</p>
 <ol class="arabic simple">
 <li><p>Make one of the Ampel operators (&#64;vbrinnel or &#64;jvansanten) a co-owner of your project. We will then take care of integrating your plugin into the build.</p></li>
@@ -326,8 +326,8 @@ add a source-&gt;t3Supervise to your channel config, e.g.:</p>
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2018-2021, Ampel Project.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.0.1.
+    &#169; Copyright 2018-2021, Ampel Project.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
     </div>
   </body>
 </html>

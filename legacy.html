@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="./">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>Porting contrib projects from v0.6 &#8212; ampel-core 0.9.1a0 documentation</title>
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/sphinx_highlight.js"></script>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css?v=d59dc883" />
+    <script src="_static/documentation_options.js?v=1a5dcacc"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Contribute" href="contribute.html" />
@@ -39,24 +39,24 @@
           <div class="body" role="main">
             
   <section id="porting-contrib-projects-from-v0-6">
-<span id="legacy-porting-guide"></span><h1>Porting contrib projects from v0.6<a class="headerlink" href="#porting-contrib-projects-from-v0-6" title="Permalink to this heading">¶</a></h1>
+<span id="legacy-porting-guide"></span><h1>Porting contrib projects from v0.6<a class="headerlink" href="#porting-contrib-projects-from-v0-6" title="Link to this heading">¶</a></h1>
 <p>Ampel v0.7 introduced a major internal restructuring to apply lessons learned
 from operating v0.6 during the first 1.5 years of ZTF. Here is a summary of the
 changes you need to make to adapt your project from v0.6 to v0.7. An example
 project using the current config system can be found in
 <a class="reference external" href="https://github.com/AmpelProject/Ampel-contrib-sample/tree/03950a37dc4dc74c610df72887bd417239cd58aa">Ampel-contrib-sample</a>.</p>
 <section id="environment">
-<h2>Environment<a class="headerlink" href="#environment" title="Permalink to this heading">¶</a></h2>
+<h2>Environment<a class="headerlink" href="#environment" title="Link to this heading">¶</a></h2>
 <p>See <a class="reference internal" href="installing.html#installing-environment"><span class="std std-ref">Environment</span></a>.</p>
 </section>
 <section id="defining-channels-and-registering-units">
-<span id="legacy-config-files"></span><h2>Defining channels and registering units<a class="headerlink" href="#defining-channels-and-registering-units" title="Permalink to this heading">¶</a></h2>
+<span id="legacy-config-files"></span><h2>Defining channels and registering units<a class="headerlink" href="#defining-channels-and-registering-units" title="Link to this heading">¶</a></h2>
 <p>All the channel/T3 configuration and unit registration that used to be
 scattered in json files and entrypoints section of setup.py now lives in <a class="reference external" href="https://en.wikipedia.org/wiki/YAML">YAML</a>
 files in a directory <code class="docutils literal notranslate"><span class="pre">conf/ampel-contrib-PROJECTNAME</span></code> (where <code class="docutils literal notranslate"><span class="pre">PROJECTNAME</span></code> is the name of your project, e.g. <code class="docutils literal notranslate"><span class="pre">ZTFbh</span></code> for <code class="docutils literal notranslate"><span class="pre">ampel-contrib-ZTFbh</span></code>) at the top level
 of your repository. See <a class="reference internal" href="contribute.html#contribute-configuration-channels"><span class="std std-ref">Defining channels and registering units</span></a> for details of the configuration layout, and <a class="reference internal" href="contribute.html#contribute-configuration-validation"><span class="std std-ref">Validation</span></a> for how to check your configuration for correctness.</p>
 <section id="terminology-changes-and-renamed-classes">
-<h3>Terminology changes and renamed classes<a class="headerlink" href="#terminology-changes-and-renamed-classes" title="Permalink to this heading">¶</a></h3>
+<h3>Terminology changes and renamed classes<a class="headerlink" href="#terminology-changes-and-renamed-classes" title="Link to this heading">¶</a></h3>
 <ul class="simple">
 <li><p>T3Job and T3Task are no more. Everything is just a Process now.</p></li>
 <li><p>Many classes have been renamed to more accurately reflect their meaning. A partial list is below. Note that the names refer to the class with the same name as the module, e.g. <code class="docutils literal notranslate"><span class="pre">ampel.view.LightCurve</span></code> means <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">ampel.view.LightCurve</span> <span class="pre">import</span> <span class="pre">LightCurve</span></code></p></li>
@@ -114,7 +114,7 @@ of your repository. See <a class="reference internal" href="contribute.html#cont
 </ul>
 </section>
 <section id="channel-definitions">
-<h3>Channel definitions<a class="headerlink" href="#channel-definitions" title="Permalink to this heading">¶</a></h3>
+<h3>Channel definitions<a class="headerlink" href="#channel-definitions" title="Link to this heading">¶</a></h3>
 <p>The easiest way to define a channel is with a YAML file, e.g. conf/ampel-contrib-PROJECTNAME/channel/EXAMPLE_BRIGHT_N_STABLE.yaml. The content is similar to the JSON-based channel definitions in v0.6, but simplified. A few notable differences:</p>
 <ul class="simple">
 <li><p><em>templates</em> define common configurations that don’t need to be repeated in every channel definition, and replace much of the boilerplate found in v0.6 channel definitions. See <code class="xref py py-class docutils literal notranslate"><span class="pre">ZTFLegacyChannelTemplate</span></code>.</p></li>
@@ -122,69 +122,69 @@ of your repository. See <a class="reference internal" href="contribute.html#cont
 <li><p>T3 process definitions embedded in the channel definition can also use templates. See <code class="xref py py-class docutils literal notranslate"><span class="pre">ZTFPeriodicSummaryT3</span></code>.</p></li>
 </ul>
 <p>A slightly truncated example:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>channel: EXAMPLE_BRIGHT_N_STABLE
-contact: ampel@desy.de
-active: true
-# Auto-complete mode: how to treat photopoints be treated once a transient has
-# been accepted.
-# - false: apply filter to all photopoints
-# - true or &quot;live&quot;: bypass filter once a transient has been accepted once
-auto_complete: live
-# Channel template: basic settings for which alert stream to listen to, how to
-# build light curves from alert packets, etc.
-template: ztf_uw_public
-# T0: which photopoints should be accepted to build light curves for each
-#     transient?
-t0_filter:
-  unit: DecentFilterCopy
-  config:
-    min_ndet: 2
-    min_tspan: 0
-    max_tspan: 5
-    ...
-# T2: how should the collected photopoints and light curves be augmented?
-t2_compute:
-  - unit: T2SNCosmo
-    config:
-      model: salt2
-      upper_limits: false
-  # config can be omitted if the unit has defaults
-  - unit: T2ExamplePolyFit
-  - unit: T2CatalogMatch
-    # A named configuration, defined in alias/t2. Names that start with &quot;%&quot; are
-    # global, other names are local to the project
-    config: &#39;%T2CatalogMatch_general&#39;
-# T3: what should I do with the collected data?
-t3_supervise:
-  # A minimal T3: select all data for transients modified since last run
-  # the optional parameters `name`, `load`, `filter`, and `complement` are set
-  # to sensible defaults.
-  - template: ztf_periodic_summary
-    schedule: every().day.at(&#39;15:00&#39;)
-    run:
-      unit: DemoT3Unit
-  # More settings: load only transient and T2 records for transients modified
-  # since last run where `sncosmo` color parameter is &gt; 1
-  - name: set_all_the_things
-    template: ztf_periodic_summary
-    schedule: every(4).hours
-    load:
-      - TRANSIENT
-      - T2RECORD
-    filter:
-      t2:
-        unit: T2SNCosmo
-        match:
-          fit_results.c:
-            $gt: 1
-    run:
-      unit: DemoT3Unit
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">channel</span><span class="p">:</span> <span class="n">EXAMPLE_BRIGHT_N_STABLE</span>
+<span class="n">contact</span><span class="p">:</span> <span class="n">ampel</span><span class="nd">@desy</span><span class="o">.</span><span class="n">de</span>
+<span class="n">active</span><span class="p">:</span> <span class="n">true</span>
+<span class="c1"># Auto-complete mode: how to treat photopoints be treated once a transient has</span>
+<span class="c1"># been accepted.</span>
+<span class="c1"># - false: apply filter to all photopoints</span>
+<span class="c1"># - true or &quot;live&quot;: bypass filter once a transient has been accepted once</span>
+<span class="n">auto_complete</span><span class="p">:</span> <span class="n">live</span>
+<span class="c1"># Channel template: basic settings for which alert stream to listen to, how to</span>
+<span class="c1"># build light curves from alert packets, etc.</span>
+<span class="n">template</span><span class="p">:</span> <span class="n">ztf_uw_public</span>
+<span class="c1"># T0: which photopoints should be accepted to build light curves for each</span>
+<span class="c1">#     transient?</span>
+<span class="n">t0_filter</span><span class="p">:</span>
+  <span class="n">unit</span><span class="p">:</span> <span class="n">DecentFilterCopy</span>
+  <span class="n">config</span><span class="p">:</span>
+    <span class="n">min_ndet</span><span class="p">:</span> <span class="mi">2</span>
+    <span class="n">min_tspan</span><span class="p">:</span> <span class="mi">0</span>
+    <span class="n">max_tspan</span><span class="p">:</span> <span class="mi">5</span>
+    <span class="o">...</span>
+<span class="c1"># T2: how should the collected photopoints and light curves be augmented?</span>
+<span class="n">t2_compute</span><span class="p">:</span>
+  <span class="o">-</span> <span class="n">unit</span><span class="p">:</span> <span class="n">T2SNCosmo</span>
+    <span class="n">config</span><span class="p">:</span>
+      <span class="n">model</span><span class="p">:</span> <span class="n">salt2</span>
+      <span class="n">upper_limits</span><span class="p">:</span> <span class="n">false</span>
+  <span class="c1"># config can be omitted if the unit has defaults</span>
+  <span class="o">-</span> <span class="n">unit</span><span class="p">:</span> <span class="n">T2ExamplePolyFit</span>
+  <span class="o">-</span> <span class="n">unit</span><span class="p">:</span> <span class="n">T2CatalogMatch</span>
+    <span class="c1"># A named configuration, defined in alias/t2. Names that start with &quot;%&quot; are</span>
+    <span class="c1"># global, other names are local to the project</span>
+    <span class="n">config</span><span class="p">:</span> <span class="s1">&#39;%T2CatalogMatch_general&#39;</span>
+<span class="c1"># T3: what should I do with the collected data?</span>
+<span class="n">t3_supervise</span><span class="p">:</span>
+  <span class="c1"># A minimal T3: select all data for transients modified since last run</span>
+  <span class="c1"># the optional parameters `name`, `load`, `filter`, and `complement` are set</span>
+  <span class="c1"># to sensible defaults.</span>
+  <span class="o">-</span> <span class="n">template</span><span class="p">:</span> <span class="n">ztf_periodic_summary</span>
+    <span class="n">schedule</span><span class="p">:</span> <span class="n">every</span><span class="p">()</span><span class="o">.</span><span class="n">day</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="s1">&#39;15:00&#39;</span><span class="p">)</span>
+    <span class="n">run</span><span class="p">:</span>
+      <span class="n">unit</span><span class="p">:</span> <span class="n">DemoT3Unit</span>
+  <span class="c1"># More settings: load only transient and T2 records for transients modified</span>
+  <span class="c1"># since last run where `sncosmo` color parameter is &gt; 1</span>
+  <span class="o">-</span> <span class="n">name</span><span class="p">:</span> <span class="n">set_all_the_things</span>
+    <span class="n">template</span><span class="p">:</span> <span class="n">ztf_periodic_summary</span>
+    <span class="n">schedule</span><span class="p">:</span> <span class="n">every</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">hours</span>
+    <span class="n">load</span><span class="p">:</span>
+      <span class="o">-</span> <span class="n">TRANSIENT</span>
+      <span class="o">-</span> <span class="n">T2RECORD</span>
+    <span class="nb">filter</span><span class="p">:</span>
+      <span class="n">t2</span><span class="p">:</span>
+        <span class="n">unit</span><span class="p">:</span> <span class="n">T2SNCosmo</span>
+        <span class="n">match</span><span class="p">:</span>
+          <span class="n">fit_results</span><span class="o">.</span><span class="n">c</span><span class="p">:</span>
+            <span class="err">$</span><span class="n">gt</span><span class="p">:</span> <span class="mi">1</span>
+    <span class="n">run</span><span class="p">:</span>
+      <span class="n">unit</span><span class="p">:</span> <span class="n">DemoT3Unit</span>
 </pre></div>
 </div>
 <p>Some operations that were previously embedded in T3 units, like filtering <code class="xref py py-class docutils literal notranslate"><span class="pre">TransientView</span></code> in <code class="xref py py-meth docutils literal notranslate"><span class="pre">AbsT3Unit.add</span></code>, now have their own dedicated stages. This makes it possible to reuse these stages without writing new code.</p>
 </section>
 <section id="standalone-t3-processes">
-<h3>Standalone T3 processes<a class="headerlink" href="#standalone-t3-processes" title="Permalink to this heading">¶</a></h3>
+<h3>Standalone T3 processes<a class="headerlink" href="#standalone-t3-processes" title="Link to this heading">¶</a></h3>
 <p>Just like in v0.6, T3 processes embedded in a channel definition implicitly
 select only transients associated with that channel. To consume transients from
 multiple channels, you have to define a standalone T3 process. These definitions
@@ -222,9 +222,9 @@ also use templates, however, so can be quite compact:</p>
 </section>
 </section>
 <section id="t0-units">
-<h2>T0 units<a class="headerlink" href="#t0-units" title="Permalink to this heading">¶</a></h2>
+<h2>T0 units<a class="headerlink" href="#t0-units" title="Link to this heading">¶</a></h2>
 <section id="t0-unit-configuration">
-<span id="legacy-t0-configuration"></span><h3>T0 unit configuration<a class="headerlink" href="#t0-unit-configuration" title="Permalink to this heading">¶</a></h3>
+<span id="legacy-t0-configuration"></span><h3>T0 unit configuration<a class="headerlink" href="#t0-unit-configuration" title="Link to this heading">¶</a></h3>
 <p>T0 units need to be <a class="reference internal" href="contribute.html#contribute-configuration-channels"><span class="std std-ref">registered in your project’s config</span></a>.</p>
 <p>All units in v0.7 use type annotations and <code class="docutils literal notranslate"><span class="pre">pydantic</span></code> to define and validate their configuration. This means that if you previously used a nested <code class="xref py py-class docutils literal notranslate"><span class="pre">RunConfig</span></code> class to define a configuration, you can move its fields up to the parent class, and access them as attributes from instances. In other words, the following v0.6 filter defintion:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pydantic</span> <span class="kn">import</span> <span class="n">BaseModel</span>
@@ -308,7 +308,7 @@ like this:</p>
 <p><code class="xref py py-class docutils literal notranslate"><span class="pre">ExtCatsUnit</span></code> is the equivalent for <a class="reference external" href="https://github.com/MatteoGiomi/extcats">extcats</a>.</p>
 </section>
 <section id="filtering">
-<h3>Filtering<a class="headerlink" href="#filtering" title="Permalink to this heading">¶</a></h3>
+<h3>Filtering<a class="headerlink" href="#filtering" title="Link to this heading">¶</a></h3>
 <p><code class="xref py py-class docutils literal notranslate"><span class="pre">PhotoAlert</span></code> is mostly a drop-in replacement for the v0.6 <code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelAlert</span></code>. There are important differences, however:</p>
 <ul class="simple">
 <li><p><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_values()</span></code> uses native field names instead of the internal aliases from v0.6. Use <code class="docutils literal notranslate"><span class="pre">jd</span></code> instead of <code class="docutils literal notranslate"><span class="pre">obs_date</span></code>, <code class="docutils literal notranslate"><span class="pre">magpsf</span></code> instead of <code class="docutils literal notranslate"><span class="pre">mag</span></code>, etc.</p></li>
@@ -323,10 +323,10 @@ like this:</p>
 </section>
 </section>
 <section id="t2-units">
-<h2>T2 units<a class="headerlink" href="#t2-units" title="Permalink to this heading">¶</a></h2>
+<h2>T2 units<a class="headerlink" href="#t2-units" title="Link to this heading">¶</a></h2>
 <p>T2 units need to be <a class="reference internal" href="contribute.html#contribute-configuration-channels"><span class="std std-ref">registered in your project’s config</span></a>.</p>
 <section id="new-base-classes">
-<h3>New base classes<a class="headerlink" href="#new-base-classes" title="Permalink to this heading">¶</a></h3>
+<h3>New base classes<a class="headerlink" href="#new-base-classes" title="Link to this heading">¶</a></h3>
 <p>There are now 3 different kinds of T2 unit. If your T2 does something other than a light curve analysis, it may be a better fit for one of the new ones:</p>
 <ul class="simple">
 <li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsLightCurveT2Unit</span></code> operates on entire light curves, and runs every time a new photopoint or upper limit is added to a transient. This is equivalent to the old <code class="xref py py-class docutils literal notranslate"><span class="pre">AbsT2Unit</span></code>, but can be configured to operate on all photopoints, or on detections only.</p></li>
@@ -336,11 +336,11 @@ like this:</p>
 <p>There are also “tied” variants of these, such as <code class="xref py py-class docutils literal notranslate"><span class="pre">AbsTiedLightCurveT2Unit</span></code>, that can be used to build a directed acyclic graph of T2s. In other words, these T2s depend on the output of other T2s.</p>
 </section>
 <section id="t2-unit-configuration">
-<h3>T2 unit configuration<a class="headerlink" href="#t2-unit-configuration" title="Permalink to this heading">¶</a></h3>
+<h3>T2 unit configuration<a class="headerlink" href="#t2-unit-configuration" title="Link to this heading">¶</a></h3>
 <p>Like T0 units, T2 units declare their configurations using annotations. See <a class="reference internal" href="#legacy-t0-configuration"><span class="std std-ref">T0 unit configuration</span></a>.</p>
 </section>
 <section id="run">
-<h3><code class="xref py py-meth docutils literal notranslate"><span class="pre">run()</span></code><a class="headerlink" href="#run" title="Permalink to this heading">¶</a></h3>
+<h3><code class="xref py py-meth docutils literal notranslate"><span class="pre">run()</span></code><a class="headerlink" href="#run" title="Link to this heading">¶</a></h3>
 <p>T2 units now have a single configuration, so the <code class="xref py py-meth docutils literal notranslate"><span class="pre">run()</span></code> method no longer takes a <code class="docutils literal notranslate"><span class="pre">run_config</span></code> argument. If your <code class="xref py py-meth docutils literal notranslate"><span class="pre">run()</span></code> method previously looked like this [contrived] example:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">light_curve</span><span class="p">,</span> <span class="n">run_config</span><span class="p">):</span>
     <span class="n">count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">light_curve</span><span class="o">.</span><span class="n">get_values</span><span class="p">(</span><span class="s2">&quot;jd&quot;</span><span class="p">,</span> <span class="n">upper_limits</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
@@ -361,10 +361,10 @@ like this:</p>
 </section>
 </section>
 <section id="t3-units">
-<h2>T3 units<a class="headerlink" href="#t3-units" title="Permalink to this heading">¶</a></h2>
+<h2>T3 units<a class="headerlink" href="#t3-units" title="Link to this heading">¶</a></h2>
 <p>T2 units need to be <a class="reference internal" href="contribute.html#contribute-configuration-channels"><span class="std std-ref">registered in your project’s config</span></a>.</p>
 <section id="t3-unit-configuration">
-<h3>T3 unit configuration<a class="headerlink" href="#t3-unit-configuration" title="Permalink to this heading">¶</a></h3>
+<h3>T3 unit configuration<a class="headerlink" href="#t3-unit-configuration" title="Link to this heading">¶</a></h3>
 <p>See <a class="reference internal" href="#legacy-t0-configuration"><span class="std std-ref">T0 unit configuration</span></a>.</p>
 <p>If your T3 authenticates with an external service like Slack or DropBox using a secret token, you should <em>not</em> check this token into your repository. Slack in particular scans all commits to public GitHub repositories and revokes any of its tokens it finds there. Instead, you can use the special <code class="xref py py-class docutils literal notranslate"><span class="pre">Secret</span></code> type hint to indicate that the value should be looked up in a separate secret store. For example, if you previously had:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pydantic</span> <span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">BaseConfig</span>
@@ -401,7 +401,7 @@ like this:</p>
 <p>Again, all type annotations in method signatures (and the associated imports) are optional, but encouraged. The default value of <code class="docutils literal notranslate"><span class="pre">slack_token</span></code> tells Ampel to look up the value under the name “my-slack-token” in its secret store. Your T3 instance will be configured with an object whose <code class="xref py py-meth docutils literal notranslate"><span class="pre">get()</span></code> method returns the value (of the type indicated in <code class="docutils literal notranslate"><span class="pre">[]</span></code>, or <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a> if unspecified). This mechanism allows you to specify which token you want by default as a symbolic name rather than a value. The trailing comment instructs <a class="reference external" href="https://mypy.readthedocs.io/en/stable/">mypy</a> to not complain about the assignment.</p>
 </section>
 <section id="add">
-<h3><code class="xref py py-meth docutils literal notranslate"><span class="pre">add()</span></code><a class="headerlink" href="#add" title="Permalink to this heading">¶</a></h3>
+<h3><code class="xref py py-meth docutils literal notranslate"><span class="pre">add()</span></code><a class="headerlink" href="#add" title="Link to this heading">¶</a></h3>
 <ul>
 <li><p>return a <code class="docutils literal notranslate"><span class="pre">Dict[StockId,JournalExtra]</span></code> instead of a list of <code class="docutils literal notranslate"><span class="pre">JournalUpdate</span></code>. For example, if you were previously doing something like this:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">jupdates</span> <span class="o">=</span> <span class="p">[]</span>
@@ -487,8 +487,8 @@ like this:</p>
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2018-2021, Ampel Project.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.0.1.
+    &#169; Copyright 2018-2021, Ampel Project.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
     </div>
   </body>
 </html>
