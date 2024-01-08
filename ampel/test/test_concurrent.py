@@ -174,8 +174,8 @@ async def test_multiprocess_metrics(prometheus_multiproc_dir):
         if sample
     }
     read_mmap = lambda fname: {
-        k: v
-        for k, v, p in mmap_dict.MmapedDict.read_all_values_from_file(
+        item[0]: item[1]
+        for item in mmap_dict.MmapedDict.read_all_values_from_file(
             prometheus_multiproc_dir / fname
         )
     }
