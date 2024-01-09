@@ -28,8 +28,6 @@ class LoaderDirective(AliasableModel):
 	#: Source collection
 	col: Literal["stock", "t0", "t1", "t2"]
 
-	model: None | type # TypedDict
-
 	#: Mongo match expression to include in the query
 	query_complement: None | dict[str, Any]
 
@@ -39,16 +37,6 @@ class LoaderDirective(AliasableModel):
 	#: whether an emtpy find() result should discard entirely the associated stock for further processing
 	excluding_query: bool = False
 
-	def __init__(self, **kwargs):
-		super().__init__(**kwargs)
-		if not self.model and self.col in models:
-			self.model = models[self.col]
-		elif self.model and not hasattr(self.model, "__annotations__"):
-			raise ValueError("TypedDict expected for parameter 'model'")
-
-	def dict(self, **kwargs):
-		# do not emit model if it was equivalent to the default
-		rep = super().dict(**kwargs)
-		if self.model == models[self.col]:
-			del rep["model"]
-		return rep
+	@property
+	def model(self) -> type:
+		return models[self.col]
