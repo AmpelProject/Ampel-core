@@ -13,6 +13,7 @@ from pydantic import model_validator
 
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.base.AuxUnitRegister import AuxUnitRegister
+from ampel.model.UnitModel import UnitModel
 
 
 class AuxAliasableModel(AmpelBaseModel):
@@ -24,7 +25,7 @@ class AuxAliasableModel(AmpelBaseModel):
 	def resolve_alias(cls: Type["AuxAliasableModel"], value: Any) -> dict[str, Any]:
 		if isinstance(value, str):
 			if value in AuxUnitRegister._defs:
-				return AuxUnitRegister.get_aux_class(value).validate({}).model_dump()
+				return AuxUnitRegister.new_unit(model=UnitModel(unit=value), sub_type=cls).model_dump()
 			else:
 				raise ValueError(f"{cls.__name__} '{value}' not registered")
 		return value

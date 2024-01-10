@@ -7,7 +7,10 @@
 # Last Modified Date:  Unspecified
 # Last Modified By:    jvs
 
-from typing import Any, ClassVar, TYPE_CHECKING
+from typing import Any, ClassVar, Type, TYPE_CHECKING
+
+from pydantic import model_validator
+
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 
 if TYPE_CHECKING:
@@ -22,12 +25,12 @@ class AliasableModel(AmpelBaseModel):
 
 	_config: ClassVar['None | AmpelConfig'] = None
 
-	@classmethod
-	def validate(cls, value: Any) -> "AliasableModel":
+	@model_validator(mode="before")
+	def resolve_alias(cls: Type["AliasableModel"], value: Any) -> dict[str, Any]:
 		if cls._config and isinstance(value, str):
 			d = cls._config.get(f"alias.t3.%{value}", dict)
 			if d:
 				value = d
 			else:
 				raise ValueError(f"{cls.__name__} alias '{value}' not found in Ampel config")
-		return super().validate(value)
+		return value
