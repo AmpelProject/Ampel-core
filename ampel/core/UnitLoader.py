@@ -399,18 +399,19 @@ class UnitLoader:
 		""" Enable validation for UnitModel instances """
 		from ampel.abstract.AbsProcessController import AbsProcessController
 
-		def validating_init(slf, **kwargs):
-			super(UnitModel, slf).__init__(**kwargs)
-			Unit = self.get_class_by_name(slf.unit)
+		@staticmethod # type: ignore[misc]
+		def validate_unit(value: UnitModel) -> UnitModel:
+			Unit = self.get_class_by_name(value.unit)
 			if issubclass(Unit, AmpelUnit) and not issubclass(Unit, AbsProcessController):
-				Unit.validate(self.get_init_config(slf.config, slf.override))
-		legit_init = UnitModel.__init__
-		UnitModel.__init__ = validating_init # type: ignore
+				Unit.validate(self.get_init_config(value.config, value.override))
+			return value
+
+		UnitModel.post_validate_hook = validate_unit
 		AliasableModel._config = self.config
 		try:
 			yield
 		finally:
-			UnitModel.__init__ = legit_init # type: ignore
+			UnitModel.post_validate_hook = None
 			AliasableModel._config = None
 
 
