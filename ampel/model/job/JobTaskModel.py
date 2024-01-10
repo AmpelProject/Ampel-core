@@ -8,10 +8,10 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any, Literal
-from pydantic import BaseModel, BaseConfig, Extra
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 
 
-class JobTaskModel(BaseModel):
+class JobTaskModel(AmpelBaseModel):
 	"""
 	A note about templates definitions:
 	1) str | list[str]: templates are applied prior to job run
@@ -25,12 +25,6 @@ class JobTaskModel(BaseModel):
 	(just after resolve_run_time_aliases) as the hashing of unit configurations
 	must occur after the inclusion of run-time information.
 	"""
-
-	class Config(BaseConfig):
-		arbitrary_types_allowed = True
-		underscore_attrs_are_private = True
-		validate_all = True
-		extra = Extra.allow
 
 	title: None | str
 	template: None | str | list[str] | dict[Literal['pre', 'live'], None | str | list[str]]
