@@ -2,6 +2,8 @@ from contextlib import nullcontext
 import io, pytest, yaml, subprocess, tempfile, os
 from pathlib import Path
 
+from pydantic import ValidationError
+
 from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.base.BadConfig import BadConfig
 from ampel.config.builder.ConfigChecker import ConfigChecker
@@ -116,7 +118,7 @@ def test_transform_config(doc, tmpdir):
 
 
 @pytest.mark.parametrize(
-    "patch,result", [({}, None), ({"channel.LONG_CHANNEL.purge": {}}, TypeError)]
+    "patch,result", [({}, None), ({"channel.LONG_CHANNEL.purge": {}}, ValidationError)]
 )
 def test_validate_config(testing_config, tmpdir, patch, result):
     """Validate validates config"""
