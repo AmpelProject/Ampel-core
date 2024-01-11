@@ -12,7 +12,7 @@ from importlib import import_module
 from pathlib import Path
 from hashlib import blake2b
 from contextlib import contextmanager
-from typing import Any, TypeVar, overload, get_args, get_origin
+from typing import Any, TypeVar, overload, get_origin
 from collections.abc import Iterator, Mapping
 from copy import deepcopy
 
@@ -357,7 +357,9 @@ class UnitLoader:
 				else:
 					# missing required field; will be caught in validation later
 					continue
-				ValueType = args[0] if (args := get_args(annotation)) else object
+				ValueType = args[0] if (args := annotation.get_model_args()) else object
+				if args:
+					assert ValueType is not object
 				if not self.vault:
 					raise ValueError("No vault configured")
 				if not self.vault.resolve_secret(v, ValueType):
