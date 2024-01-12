@@ -18,7 +18,7 @@ from ampel.abstract.AbsApplicable import AbsApplicable
 
 
 # mypy: disable-error-code = empty-body
-class AbsLogicOperatorFilter(Generic[T], AbsApplicable, abstract=True):
+class AbsLogicOperatorFilter(AbsApplicable, Generic[T], abstract=True):
 
 	filters: FilterCriterion | FlatAnyOf[FilterCriterion] | AllOf[FilterCriterion]
 
