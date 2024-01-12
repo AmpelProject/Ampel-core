@@ -304,7 +304,7 @@ async def test_event_query(test_client, mocker):
     m = mocker.patch("ampel.run.server.context.db")
     find = m.get_collection().find
     await test_client.get(
-        "/events", params={"after": 7200, "process": "InfantSNSummary"}
+        "/events", params={"after": 'PT2H', "process": "InfantSNSummary"}
     )
     assert isinstance(query := find.call_args.args[0], dict)
     assert isinstance(andlist := query["$and"], list)
