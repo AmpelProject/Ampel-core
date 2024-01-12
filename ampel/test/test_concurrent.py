@@ -113,7 +113,7 @@ async def test_kill():
 
 @pytest.mark.asyncio
 async def test_multilaunch():
-    launch = lambda: _Process(target=echo, args=(42,)).launch()
+    launch = lambda: asyncio.create_task(_Process(target=echo, args=(42,)).launch())
     count = 0
     num_tasks = 5
     pending = {launch() for _ in range(num_tasks)}
