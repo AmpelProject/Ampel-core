@@ -19,7 +19,7 @@ from ampel.secret.NamedSecret import NamedSecret
 
 class AmpelExceptionPublisher(AbsOpsUnit):
 
-    slack_token: NamedSecret[str] = NamedSecret(label="slack/operator")
+    slack_token: NamedSecret[str] = NamedSecret[str](label="slack/operator")
     user: str = f"ampel@{socket.gethostname()}"
     channel: str = "ampel-troubles"
     dry_run: bool = False
