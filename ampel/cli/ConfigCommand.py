@@ -308,6 +308,7 @@ class ConfigCommand(AbsCoreCommand):
 				subprocess.check_output(['jq'] + jq_args, input=input_json.encode()),
 				object_hook=self._from_strict_json,
 			)
+			args['file'].close()
 
 			with StringIO() as output_yaml:
 				yaml.dump(config, output_yaml, sort_keys=False)
@@ -322,6 +323,10 @@ class ConfigCommand(AbsCoreCommand):
 				except UnsupportedOperation:
 					...
 				args['out'].write(output_yaml.read())
+				args['out'].close()
 
 		elif sub_op == 'validate':
-			self._validate(args['file'], args['secrets'])
+			try:
+				self._validate(args['file'], args['secrets'])
+			finally:
+				args['file'].close()

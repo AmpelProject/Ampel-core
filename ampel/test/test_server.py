@@ -130,7 +130,8 @@ async def test_reload(
     section,
     proc,
 ):
-    config = yaml.safe_load(testing_config.open())
+    with testing_config.open() as f:
+        config = yaml.safe_load(f)
     config["process"][section][proc["name"]] = proc
     with open(tmp_path / "config.yml", "w") as f:
         yaml.dump(config, f)

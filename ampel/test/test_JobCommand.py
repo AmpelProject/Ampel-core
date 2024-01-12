@@ -29,9 +29,10 @@ def run(args: list[str]) -> None | int | str:
         return se.code
 
 
-def dump(payload, tmpdir, name) -> Path:
+def dump(payload, tmpdir, name: str) -> Path:
     f = Path(tmpdir) / name
-    yaml.dump(payload, f.open("w"))
+    with f.open("w") as fd:
+        yaml.dump(payload, fd)
     return f
 
 

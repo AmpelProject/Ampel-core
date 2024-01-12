@@ -93,6 +93,7 @@ class ConfigChecker(BaseConfigChecker):
 
 		finally:
 			# Restore print
+			sys.stdout.close()
 			sys.stdout = sys.__stdout__
 
 		return False
