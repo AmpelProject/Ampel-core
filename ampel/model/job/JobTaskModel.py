@@ -26,6 +26,11 @@ class JobTaskModel(AmpelBaseModel):
 	must occur after the inclusion of run-time information.
 	"""
 
+	# allow arbitrary content for templates
+	model_config = {
+		"extra": "allow"
+	}
+
 	title: None | str
 	template: None | str | list[str] | dict[Literal['pre', 'live'], None | str | list[str]]
 	unit: None | str # allow none as unit shall be set by template
