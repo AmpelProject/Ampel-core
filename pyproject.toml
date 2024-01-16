@@ -93,8 +93,15 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
+addopts = "--showlocals -r a"
 filterwarnings = [
-    "error"
+    "error",
+    "default:Pydantic serializer warnings:UserWarning",
+    "default:There is no current event loop:DeprecationWarning",
+    # warning deep in fastapi
+    "ignore:.*general_plain_validator_function.*:DeprecationWarning",
+    # asyncio.Server seems to leave dangling sockets. ignore them.
+    "ignore:unclosed:ResourceWarning",
 ]
 
 [tool.mypy]
