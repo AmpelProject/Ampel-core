@@ -103,6 +103,8 @@ filterwarnings = [
     "ignore:.*general_plain_validator_function.*:DeprecationWarning",
     # asyncio.Server seems to leave dangling sockets. ignore them.
     "ignore:unclosed:ResourceWarning",
+    "ignore:pkg_resources is deprecated:DeprecationWarning",
+    "ignore:Deprecated call to `pkg_resources:DeprecationWarning",
 ]
 
 [tool.mypy]
