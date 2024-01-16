@@ -257,9 +257,9 @@ async def test_config_reload(
             assert response.status_code == 500
         else:
             response.raise_for_status()
-            assert await remove.called_once()
+            remove.assert_called_once()
             assert len(remove.call_args[0][0]) == 0
-            assert await add.called_once()
+            add.assert_called_once()
             assert len(add.call_args[0][0]) == (
                 1 if config["process"]["t3"]["sleepy"].get("active", True) else 0
             )
