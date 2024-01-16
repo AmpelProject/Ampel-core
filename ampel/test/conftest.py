@@ -45,8 +45,8 @@ def pytest_addoption(parser):
 
 @pytest.fixture(scope="session")
 def mongod(pytestconfig):
-    if "MONGO_PORT" in environ:
-        yield "mongodb://localhost:{}".format(environ["MONGO_PORT"])
+    if port := environ.get("MONGO_PORT"):
+        yield "mongodb://localhost:{}".format(port)
         return
 
     if not pytestconfig.getoption("--integration"):
