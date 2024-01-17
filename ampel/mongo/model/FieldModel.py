@@ -7,6 +7,8 @@
 # Last Modified Date:  13.04.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+from pydantic import model_serializer
+
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 
 class FieldModel(AmpelBaseModel):
@@ -14,7 +16,8 @@ class FieldModel(AmpelBaseModel):
 	field: str
 	direction: int = 1
 
-	def dict(self, **kwargs):
+	@model_serializer
+	def to_tuple(self) -> tuple[str, int]:
 		return (self.field, self.direction)
 
 	def get_id(self) -> str:
