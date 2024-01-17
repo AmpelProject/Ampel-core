@@ -52,9 +52,127 @@
 <dd><p>Base class for units requiring a reference to an AmpelContext instance</p>
 </dd></dl>
 
+<dl class="py class">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.abstract.AbsEventUnit.</span></span><span class="sig-name descname"><span class="pre">AbsEventUnit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/abstract/AbsEventUnit.html#AbsEventUnit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit" title="Link to this definition">¶</a></dt>
+<dd><p>Base class for units orchestrating an ampel event.
+Ampel processes (from the ampel config) are the most common events.
+They define specifications of an event using a standardized model/schema:
+which subclass of this abstract class is to be run by a given controller
+at (a) given time(s) using a specific configuration.</p>
+<p>An ampel event must be registered and traceable and thus generates:
+- a new run-id
+- a new event document (in the event collection)
+- possibly Log entries (less is better)
+- new trace ids if not registered previously</p>
+<p>Subclassses of this class typically modify tier documents
+whereby the changes originate from results of logical unit(s)
+instantiated by this class.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit.process_name">
+<span class="sig-name descname"><span class="pre">process_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">Annotated</span></code><span class="pre">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a><span class="pre">]</span></em><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.process_name" title="Link to this definition">¶</a></dt>
+<dd><p>name of the associated process</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit.job_sig">
+<span class="sig-name descname"><span class="pre">job_sig</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a><span class="pre">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a><span class="pre">]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.job_sig" title="Link to this definition">¶</a></dt>
+<dd><p>hash of potentially underlying job schema</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit.channel">
+<span class="sig-name descname"><span class="pre">channel</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a><span class="pre">[</span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a><span class="pre">[</span><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a><span class="pre">[</span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a><span class="pre">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a><span class="pre">,</span> <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a><span class="pre">]],</span> <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a><span class="pre">,</span> <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a><span class="pre">]]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.channel" title="Link to this definition">¶</a></dt>
+<dd><p>channels associated with the process</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit.raise_exc">
+<span class="sig-name descname"><span class="pre">raise_exc</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.raise_exc" title="Link to this definition">¶</a></dt>
+<dd><p>raise exceptions instead of catching and logging
+if True, troubles collection will not be populated if an exception occurs</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit.log_profile">
+<span class="sig-name descname"><span class="pre">log_profile</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'default'</span></em><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.log_profile" title="Link to this definition">¶</a></dt>
+<dd><p>logging configuration to use, from the logging section of the Ampel config</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit.base_log_flag">
+<span class="sig-name descname"><span class="pre">base_log_flag</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">LogFlag</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">32</span></em><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.base_log_flag" title="Link to this definition">¶</a></dt>
+<dd><p>flag to apply to all log records created</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit.db_handler_kwargs">
+<span class="sig-name descname"><span class="pre">db_handler_kwargs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a><span class="pre">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a><span class="pre">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a><span class="pre">,</span> <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a><span class="pre">]]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.db_handler_kwargs" title="Link to this definition">¶</a></dt>
+<dd><p>optional additional kwargs to pass to <code class="xref py py-class docutils literal notranslate"><span class="pre">DBLoggingHandler</span></code></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit.provenance">
+<span class="sig-name descname"><span class="pre">provenance</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.provenance" title="Link to this definition">¶</a></dt>
+<dd><p>Some subclasses allow for non-serializable input parameter out of convenience (jupyter notebooks).
+For example, an AlertSupplier instance can be passed as argument of an AlertConsumer.
+Unless a custom serialization is implemented, this disables the hashing of input parameters
+and thus the generation of “trace ids”.
+Set provenance to False to ignore trace ids generation error which will be raised otherwise.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit.prepare">
+<span class="sig-name descname"><span class="pre">prepare</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_hdlr</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/abstract/AbsEventUnit.html#AbsEventUnit.prepare"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.prepare" title="Link to this definition">¶</a></dt>
+<dd><p>Gives units the opportunity to cancel the subsequent call to the proceed() method
+by returning EventCode.PRE_CHECK_EXIT (which avoids ‘burning’ a run id)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">EventCode</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit.new">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">new</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">templates</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/abstract/AbsEventUnit.html#AbsEventUnit.new"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.new" title="Link to this definition">¶</a></dt>
+<dd><p>To use with jupyter when templating is wished for</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Self</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 <section id="processor-units">
 <h2>Processor units<a class="headerlink" href="#processor-units" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="ampel.t3.T3Processor.T3Processor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.t3.T3Processor.</span></span><span class="sig-name descname"><span class="pre">T3Processor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/t3/T3Processor.html#T3Processor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.t3.T3Processor.T3Processor" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ampel.abstract.AbsEventUnit.AbsEventUnit" title="ampel.abstract.AbsEventUnit.AbsEventUnit"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsEventUnit</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.t3.T3Processor.T3Processor.channel">
+<span class="sig-name descname"><span class="pre">channel</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a><span class="pre">[</span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a><span class="pre">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a><span class="pre">,</span> <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a><span class="pre">]]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#ampel.t3.T3Processor.T3Processor.channel" title="Link to this definition">¶</a></dt>
+<dd><p>channels associated with the process</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.t3.T3Processor.T3Processor.supply">
+<span class="sig-name descname"><span class="pre">supply</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">Annotated</span></code><span class="pre">[</span><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.model.UnitModel.UnitModel" title="(in ampel-interface v0.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">UnitModel</span></code></a><span class="pre">]</span></em><a class="headerlink" href="#ampel.t3.T3Processor.T3Processor.supply" title="Link to this definition">¶</a></dt>
+<dd><p>Unit must be a subclass of AbsT3Supplier</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.t3.T3Processor.T3Processor.stage">
+<span class="sig-name descname"><span class="pre">stage</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">Annotated</span></code><span class="pre">[</span><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.model.UnitModel.UnitModel" title="(in ampel-interface v0.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">UnitModel</span></code></a><span class="pre">]</span></em><a class="headerlink" href="#ampel.t3.T3Processor.T3Processor.stage" title="Link to this definition">¶</a></dt>
+<dd><p>Unit must be a subclass of AbsT3Stager</p>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 <section id="t3-machinery">
 <h2>T3 machinery<a class="headerlink" href="#t3-machinery" title="Link to this heading">¶</a></h2>
@@ -146,7 +264,7 @@ single process invocation. This ID is unique and monotonicaly increasing.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">AmpelDB</span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelDB</span></code></span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -160,6 +278,135 @@ single process invocation. This ID is unique and monotonicaly increasing.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>False if process was deactivated, True if not found</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ampel.core.UnitLoader.UnitLoader">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.core.UnitLoader.</span></span><span class="sig-name descname"><span class="pre">UnitLoader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">db</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provenance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vault</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/core/UnitLoader.html#UnitLoader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.UnitLoader.UnitLoader" title="Link to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="ampel.core.UnitLoader.UnitLoader.new_logical_unit">
+<span class="sig-name descname"><span class="pre">new_logical_unit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sub_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/core/UnitLoader.html#UnitLoader.new_logical_unit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.UnitLoader.UnitLoader.new_logical_unit" title="Link to this definition">¶</a></dt>
+<dd><p>Logical units require logger and resource as init parameters, additionaly to the potentialy
+defined custom parameters which will be provided as a union of the model config
+and the kwargs provided to this method (the latter having prevalance)
+:raises: ValueError is the unit defined in the model is unknown</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypeVar" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code></a>(<code class="docutils literal notranslate"><span class="pre">LT</span></code>, bound= <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.base.LogicalUnit.LogicalUnit" title="(in ampel-interface v0.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">LogicalUnit</span></code></a>), <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.base.LogicalUnit.LogicalUnit" title="(in ampel-interface v0.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">LogicalUnit</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.core.UnitLoader.UnitLoader.new_safe_logical_unit">
+<span class="sig-name descname"><span class="pre">new_safe_logical_unit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">um</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_chan</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/core/UnitLoader.html#UnitLoader.new_safe_logical_unit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.UnitLoader.UnitLoader.new_safe_logical_unit" title="Link to this definition">¶</a></dt>
+<dd><p>Returns a logical unit with dedicated logger containing no db handler</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypeVar" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code></a>(<code class="docutils literal notranslate"><span class="pre">LT</span></code>, bound= <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.base.LogicalUnit.LogicalUnit" title="(in ampel-interface v0.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">LogicalUnit</span></code></a>)</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.core.UnitLoader.UnitLoader.new_context_unit">
+<span class="sig-name descname"><span class="pre">new_context_unit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sub_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/core/UnitLoader.html#UnitLoader.new_context_unit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.UnitLoader.UnitLoader.new_context_unit" title="Link to this definition">¶</a></dt>
+<dd><p>Context units require an AmpelContext instance as init parameters, additionaly to
+potentialy defined dedicated custom parameters.
+:raises: ValueError is the unit defined in the model is unknown</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypeVar" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code></a>(<code class="docutils literal notranslate"><span class="pre">CT</span></code>, bound= <a class="reference internal" href="#ampel.core.ContextUnit.ContextUnit" title="ampel.core.ContextUnit.ContextUnit"><code class="xref py py-class docutils literal notranslate"><span class="pre">ContextUnit</span></code></a>), <a class="reference internal" href="#ampel.core.ContextUnit.ContextUnit" title="ampel.core.ContextUnit.ContextUnit"><code class="xref py py-class docutils literal notranslate"><span class="pre">ContextUnit</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.core.UnitLoader.UnitLoader.new">
+<span class="sig-name descname"><span class="pre">new</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/core/UnitLoader.html#UnitLoader.new"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.UnitLoader.UnitLoader.new" title="Link to this definition">¶</a></dt>
+<dd><p>Instantiate new object based on provided model and kwargs.
+:param ‘unit_type’: performs isinstance check and raise error on mismatch. Enables mypy/other static checks.
+:rtype: <span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelUnit</span></code>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypeVar" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code></a>(<code class="docutils literal notranslate"><span class="pre">T</span></code>, bound= <code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelUnit</span></code>)]</span>
+:returns: unit instance, trace id (0 if not computable)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.core.UnitLoader.UnitLoader.get_class_by_name">
+<span class="sig-name descname"><span class="pre">get_class_by_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/core/UnitLoader.html#UnitLoader.get_class_by_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.UnitLoader.UnitLoader.get_class_by_name" title="Link to this definition">¶</a></dt>
+<dd><p>Matches the parameter ‘name’ with the unit definitions defined in the ampel_config.
+This allows to retrieve the corresponding fully qualified name of the class and to load it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>unit_type</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypeVar" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code></a>(<code class="docutils literal notranslate"><span class="pre">T</span></code>, bound= <code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelUnit</span></code>)]]</span>) – <ul class="simple">
+<li><p>LogicalUnit or any sublcass of LogicalUnit</p></li>
+<li><p>ContextUnit or any sublcass of ContextUnit</p></li>
+<li><p>If None (auxiliary class), returned object will have type[Any]</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p>ValueError if unit cannot be found or loaded or if parent class is unrecognized</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypeVar" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code></a>(<code class="docutils literal notranslate"><span class="pre">T</span></code>, bound= <code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelUnit</span></code>), <code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelUnit</span></code>]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.core.UnitLoader.UnitLoader.get_init_config">
+<span class="sig-name descname"><span class="pre">get_init_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">override</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unfreeze</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/core/UnitLoader.html#UnitLoader.get_init_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.UnitLoader.UnitLoader.get_init_config" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ValueError if config alias is not found</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.core.UnitLoader.UnitLoader.resolve_aliases">
+<span class="sig-name descname"><span class="pre">resolve_aliases</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/core/UnitLoader.html#UnitLoader.resolve_aliases"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.UnitLoader.UnitLoader.resolve_aliases" title="Link to this definition">¶</a></dt>
+<dd><p>Recursively resolve aliases from config</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.core.UnitLoader.UnitLoader.resolve_secrets">
+<span class="sig-name descname"><span class="pre">resolve_secrets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">unit_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/core/UnitLoader.html#UnitLoader.resolve_secrets"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.UnitLoader.UnitLoader.resolve_secrets" title="Link to this definition">¶</a></dt>
+<dd><p>Add a resolved Secret instance to init_kwargs for every Secret field of
+unit_type.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.core.UnitLoader.UnitLoader.get_resources">
+<span class="sig-name descname"><span class="pre">get_resources</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/core/UnitLoader.html#UnitLoader.get_resources"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.UnitLoader.UnitLoader.get_resources" title="Link to this definition">¶</a></dt>
+<dd><p>Resources are defined using the static variable ‘require’ in ampel units
+-&gt; example: catsHTM.default</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.core.UnitLoader.UnitLoader.validate_unit_models">
+<span class="sig-name descname"><span class="pre">validate_unit_models</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/core/UnitLoader.html#UnitLoader.validate_unit_models"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.UnitLoader.UnitLoader.validate_unit_models" title="Link to this definition">¶</a></dt>
+<dd><p>Enable validation for UnitModel instances</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a>]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -242,6 +489,77 @@ mapping of field names to [<cite>FieldInfo</cite>][pydantic.fields.FieldInfo].</
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="ampel.model.time.TimeConstraintModel.TimeConstraintModel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.model.time.TimeConstraintModel.</span></span><span class="sig-name descname"><span class="pre">TimeConstraintModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/time/TimeConstraintModel.html#TimeConstraintModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.time.TimeConstraintModel.TimeConstraintModel" title="Link to this definition">¶</a></dt>
+<dd><p>Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">TimeConstraintModel</span><span class="p">(</span>
+    <span class="o">**</span><span class="p">{</span>
+        <span class="s2">&quot;after&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;match_type&quot;</span><span class="p">:</span> <span class="s2">&quot;time_delta&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;days&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;before&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;match_type&quot;</span><span class="p">:</span> <span class="s2">&quot;time_string&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;dateTimeStr&quot;</span><span class="p">:</span> <span class="s2">&quot;21/11/06 16:30&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;dateTimeFormat&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%d</span><span class="s2">/%m/%y %H:%M&quot;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">TimeConstraintModel</span><span class="p">(</span>
+    <span class="o">**</span><span class="p">{</span>
+        <span class="s2">&quot;after&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;match_type&quot;</span><span class="p">:</span> <span class="s2">&quot;time_last_run&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;val_test&quot;</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;before&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;match_type&quot;</span><span class="p">:</span> <span class="s2">&quot;unix_time&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="mi">1531306299</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.time.TimeConstraintModel.TimeConstraintModel.before">
+<span class="sig-name descname"><span class="pre">before</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a><span class="pre">[</span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a><span class="pre">[</span><a class="reference internal" href="#ampel.model.time.TimeDeltaModel.TimeDeltaModel" title="ampel.model.time.TimeDeltaModel.TimeDeltaModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeDeltaModel</span></code></a><span class="pre">,</span> <a class="reference internal" href="#ampel.model.time.TimeLastRunModel.TimeLastRunModel" title="ampel.model.time.TimeLastRunModel.TimeLastRunModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeLastRunModel</span></code></a><span class="pre">,</span> <a class="reference internal" href="#ampel.model.time.TimeStringModel.TimeStringModel" title="ampel.model.time.TimeStringModel.TimeStringModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeStringModel</span></code></a><span class="pre">,</span> <a class="reference internal" href="#ampel.model.time.UnixTimeModel.UnixTimeModel" title="ampel.model.time.UnixTimeModel.UnixTimeModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">UnixTimeModel</span></code></a><span class="pre">]]</span></em><a class="headerlink" href="#ampel.model.time.TimeConstraintModel.TimeConstraintModel.before" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.time.TimeConstraintModel.TimeConstraintModel.after">
+<span class="sig-name descname"><span class="pre">after</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a><span class="pre">[</span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a><span class="pre">[</span><a class="reference internal" href="#ampel.model.time.TimeDeltaModel.TimeDeltaModel" title="ampel.model.time.TimeDeltaModel.TimeDeltaModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeDeltaModel</span></code></a><span class="pre">,</span> <a class="reference internal" href="#ampel.model.time.TimeLastRunModel.TimeLastRunModel" title="ampel.model.time.TimeLastRunModel.TimeLastRunModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeLastRunModel</span></code></a><span class="pre">,</span> <a class="reference internal" href="#ampel.model.time.TimeStringModel.TimeStringModel" title="ampel.model.time.TimeStringModel.TimeStringModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeStringModel</span></code></a><span class="pre">,</span> <a class="reference internal" href="#ampel.model.time.UnixTimeModel.UnixTimeModel" title="ampel.model.time.UnixTimeModel.UnixTimeModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">UnixTimeModel</span></code></a><span class="pre">]]</span></em><a class="headerlink" href="#ampel.model.time.TimeConstraintModel.TimeConstraintModel.after" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.model.time.TimeConstraintModel.TimeConstraintModel.get_query_model">
+<span class="sig-name descname"><span class="pre">get_query_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/time/TimeConstraintModel.html#TimeConstraintModel.get_query_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.time.TimeConstraintModel.TimeConstraintModel.get_query_model" title="Link to this definition">¶</a></dt>
+<dd><p>Call this method with db=&lt;instance of AmpelDB&gt;
+if your time constraint is based on TimeLastRunModel</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">QueryTimeModel</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.time.TimeConstraintModel.TimeConstraintModel.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[ConfigDict]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'arbitrary_types_allowed':</span> <span class="pre">True,</span> <span class="pre">'extra':</span> <span class="pre">'forbid',</span> <span class="pre">'populate_by_name':</span> <span class="pre">True,</span> <span class="pre">'validate_default':</span> <span class="pre">True}</span></em><a class="headerlink" href="#ampel.model.time.TimeConstraintModel.TimeConstraintModel.model_config" title="Link to this definition">¶</a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.time.TimeConstraintModel.TimeConstraintModel.model_fields">
+<span class="sig-name descname"><span class="pre">model_fields</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[dict[str,</span> <span class="pre">FieldInfo]]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'after':</span> <span class="pre">FieldInfo(annotation=Union[NoneType,</span> <span class="pre">TimeDeltaModel,</span> <span class="pre">TimeLastRunModel,</span> <span class="pre">TimeStringModel,</span> <span class="pre">UnixTimeModel],</span> <span class="pre">required=False),</span> <span class="pre">'before':</span> <span class="pre">FieldInfo(annotation=Union[NoneType,</span> <span class="pre">TimeDeltaModel,</span> <span class="pre">TimeLastRunModel,</span> <span class="pre">TimeStringModel,</span> <span class="pre">UnixTimeModel],</span> <span class="pre">required=False)}</span></em><a class="headerlink" href="#ampel.model.time.TimeConstraintModel.TimeConstraintModel.model_fields" title="Link to this definition">¶</a></dt>
+<dd><p>Metadata about the fields defined on the model,
+mapping of field names to [<cite>FieldInfo</cite>][pydantic.fields.FieldInfo].</p>
+<p>This replaces <cite>Model.__fields__</cite> from Pydantic V1.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="ampel.model.time.TimeDeltaModel.TimeDeltaModel">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.model.time.TimeDeltaModel.</span></span><span class="sig-name descname"><span class="pre">TimeDeltaModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/time/TimeDeltaModel.html#TimeDeltaModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.time.TimeDeltaModel.TimeDeltaModel" title="Link to this definition">¶</a></dt>
 <dd><dl class="py attribute">
@@ -303,6 +621,55 @@ mapping of field names to [<cite>FieldInfo</cite>][pydantic.fields.FieldInfo].</
 <dl class="py attribute">
 <dt class="sig sig-object py" id="ampel.model.time.TimeDeltaModel.TimeDeltaModel.model_fields">
 <span class="sig-name descname"><span class="pre">model_fields</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[dict[str,</span> <span class="pre">FieldInfo]]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'days':</span> <span class="pre">FieldInfo(annotation=int,</span> <span class="pre">required=False,</span> <span class="pre">default=0),</span> <span class="pre">'hours':</span> <span class="pre">FieldInfo(annotation=int,</span> <span class="pre">required=False,</span> <span class="pre">default=0),</span> <span class="pre">'match_type':</span> <span class="pre">FieldInfo(annotation=Literal['time_delta'],</span> <span class="pre">required=True),</span> <span class="pre">'microseconds':</span> <span class="pre">FieldInfo(annotation=int,</span> <span class="pre">required=False,</span> <span class="pre">default=0),</span> <span class="pre">'milliseconds':</span> <span class="pre">FieldInfo(annotation=int,</span> <span class="pre">required=False,</span> <span class="pre">default=0),</span> <span class="pre">'minutes':</span> <span class="pre">FieldInfo(annotation=int,</span> <span class="pre">required=False,</span> <span class="pre">default=0),</span> <span class="pre">'seconds':</span> <span class="pre">FieldInfo(annotation=int,</span> <span class="pre">required=False,</span> <span class="pre">default=0),</span> <span class="pre">'weeks':</span> <span class="pre">FieldInfo(annotation=int,</span> <span class="pre">required=False,</span> <span class="pre">default=0)}</span></em><a class="headerlink" href="#ampel.model.time.TimeDeltaModel.TimeDeltaModel.model_fields" title="Link to this definition">¶</a></dt>
+<dd><p>Metadata about the fields defined on the model,
+mapping of field names to [<cite>FieldInfo</cite>][pydantic.fields.FieldInfo].</p>
+<p>This replaces <cite>Model.__fields__</cite> from Pydantic V1.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ampel.model.time.TimeLastRunModel.TimeLastRunModel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.model.time.TimeLastRunModel.</span></span><span class="sig-name descname"><span class="pre">TimeLastRunModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/time/TimeLastRunModel.html#TimeLastRunModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.time.TimeLastRunModel.TimeLastRunModel" title="Link to this definition">¶</a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.time.TimeLastRunModel.TimeLastRunModel.match_type">
+<span class="sig-name descname"><span class="pre">match_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code></a><span class="pre">[</span><code class="docutils literal notranslate"><span class="pre">'time_last_run'</span></code><span class="pre">]</span></em><a class="headerlink" href="#ampel.model.time.TimeLastRunModel.TimeLastRunModel.match_type" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.time.TimeLastRunModel.TimeLastRunModel.process_name">
+<span class="sig-name descname"><span class="pre">process_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></em><a class="headerlink" href="#ampel.model.time.TimeLastRunModel.TimeLastRunModel.process_name" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.time.TimeLastRunModel.TimeLastRunModel.fallback">
+<span class="sig-name descname"><span class="pre">fallback</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a><span class="pre">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a><span class="pre">]</span></em><a class="headerlink" href="#ampel.model.time.TimeLastRunModel.TimeLastRunModel.fallback" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.time.TimeLastRunModel.TimeLastRunModel.require_success">
+<span class="sig-name descname"><span class="pre">require_success</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></em><a class="headerlink" href="#ampel.model.time.TimeLastRunModel.TimeLastRunModel.require_success" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.model.time.TimeLastRunModel.TimeLastRunModel.get_timestamp">
+<span class="sig-name descname"><span class="pre">get_timestamp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/time/TimeLastRunModel.html#TimeLastRunModel.get_timestamp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.time.TimeLastRunModel.TimeLastRunModel.get_timestamp" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.time.TimeLastRunModel.TimeLastRunModel.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[ConfigDict]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'arbitrary_types_allowed':</span> <span class="pre">True,</span> <span class="pre">'extra':</span> <span class="pre">'forbid',</span> <span class="pre">'populate_by_name':</span> <span class="pre">True,</span> <span class="pre">'validate_default':</span> <span class="pre">True}</span></em><a class="headerlink" href="#ampel.model.time.TimeLastRunModel.TimeLastRunModel.model_config" title="Link to this definition">¶</a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.time.TimeLastRunModel.TimeLastRunModel.model_fields">
+<span class="sig-name descname"><span class="pre">model_fields</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[dict[str,</span> <span class="pre">FieldInfo]]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'fallback':</span> <span class="pre">FieldInfo(annotation=Union[NoneType,</span> <span class="pre">dict],</span> <span class="pre">required=False,</span> <span class="pre">default={'days':</span> <span class="pre">-1}),</span> <span class="pre">'match_type':</span> <span class="pre">FieldInfo(annotation=Literal['time_last_run'],</span> <span class="pre">required=True),</span> <span class="pre">'process_name':</span> <span class="pre">FieldInfo(annotation=str,</span> <span class="pre">required=True),</span> <span class="pre">'require_success':</span> <span class="pre">FieldInfo(annotation=bool,</span> <span class="pre">required=False,</span> <span class="pre">default=True)}</span></em><a class="headerlink" href="#ampel.model.time.TimeLastRunModel.TimeLastRunModel.model_fields" title="Link to this definition">¶</a></dt>
 <dd><p>Metadata about the fields defined on the model,
 mapping of field names to [<cite>FieldInfo</cite>][pydantic.fields.FieldInfo].</p>
 <p>This replaces <cite>Model.__fields__</cite> from Pydantic V1.</p>
