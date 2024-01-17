@@ -15,8 +15,7 @@ on:
 
 jobs:
   ci:
-    uses: AmpelProject/Ampel-interface/.github/workflows/ci.yml@master
+    uses: AmpelProject/Ampel-interface/.github/workflows/ci.yml@ci-py12-v1
     secrets: inherit
     with:
       mongo: true
-      python-version: "3.10"
