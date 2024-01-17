@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ampel-core"
-version = "0.10.0a0"
+version = "0.10.0a1"
 description = "Alice in Modular Provenance-Enabled Land"
 authors = ["Valery Brinnel"]
 maintainers = ["Jakob van Santen <jakob.van.santen@desy.de>"]
@@ -44,7 +44,7 @@ ampel = 'ampel.cli.main:main'
 'event_Show_events_information' = 'ampel.cli.EventCommand'
 
 [tool.poetry.dependencies]
-ampel-interface = {version = ">=0.10.0a0,<0.11"}
+ampel-interface = {version = ">=0.10.0a1,<0.11"}
 python = "^3.10"
 pymongo = "^4.0"
 sjcl = "^0.2.1"

@@ -89,6 +89,21 @@ def test_resolve_secret_in_union(secret_context: DevAmpelContext, ampel_logger):
     assert unit.maybe_secret.get() is not None
 
 
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
+def test_resolve_secret_untyped_default(secret_context: DevAmpelContext, ampel_logger):
+    """UnitLoader can resolve secret where default is missing a type parameter"""
+
+    class Modelo(LogicalUnit):
+        maybe_secret: NamedSecret[str] = NamedSecret(label="str")
+    secret_context.register_unit(Modelo)
+
+    unit = secret_context.loader.new(
+        UnitModel(unit="Modelo"), logger=ampel_logger, unit_type=Modelo
+    )
+    assert unit.maybe_secret is not None
+    assert unit.maybe_secret.get() is not None
+
+
 def test_resolve_secret_from_superclass(
     secrets: DictSecretProvider, dev_context: DevAmpelContext, monkeypatch, ampel_logger
 ):
