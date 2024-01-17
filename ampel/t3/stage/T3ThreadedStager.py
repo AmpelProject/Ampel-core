@@ -7,19 +7,19 @@
 # Last Modified Date:  14.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from time import time
+from collections.abc import Generator, Iterable
 from itertools import islice
 from multiprocessing import JoinableQueue
-from multiprocessing.pool import ThreadPool, AsyncResult
-from collections.abc import Generator, Iterable
+from multiprocessing.pool import AsyncResult, ThreadPool
+from time import time
 
 from ampel.abstract.AbsT3Unit import AbsT3Unit
-from ampel.view.SnapView import SnapView
-from ampel.struct.T3Store import T3Store
 from ampel.content.T3Document import T3Document
 from ampel.struct.AmpelBuffer import AmpelBuffer
+from ampel.struct.T3Store import T3Store
 from ampel.t3.stage.T3BaseStager import T3BaseStager
 from ampel.t3.stage.ThreadedViewGenerator import ThreadedViewGenerator
+from ampel.view.SnapView import SnapView
 
 
 class T3ThreadedStager(T3BaseStager, abstract=True):

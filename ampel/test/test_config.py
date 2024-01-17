@@ -1,7 +1,12 @@
+import io
+import os
+import subprocess
+import tempfile
 from contextlib import nullcontext
-import io, pytest, yaml, subprocess, tempfile, os
 from pathlib import Path
 
+import pytest
+import yaml
 from pydantic import ValidationError
 
 from ampel.abstract.AbsEventUnit import AbsEventUnit
@@ -9,9 +14,8 @@ from ampel.base.BadConfig import BadConfig
 from ampel.config.builder.ConfigChecker import ConfigChecker
 from ampel.config.builder.ConfigValidator import ConfigValidator
 from ampel.core.UnitLoader import UnitLoader
-from ampel.util.mappings import set_by_path
-
 from ampel.test.test_JobCommand import run
+from ampel.util.mappings import set_by_path
 
 
 def test_build_config():

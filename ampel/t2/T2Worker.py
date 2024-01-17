@@ -8,41 +8,40 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import random
+from collections.abc import Sequence
 from math import ceil
 from time import time
-from bson import ObjectId
-from importlib import import_module
-from typing import Union, Any, ClassVar, Literal
-from collections.abc import Sequence
+from typing import Any, ClassVar, Literal, Union
 
-from ampel.types import T, OneOrMany, UBson, ubson
-from ampel.struct.UnitResult import UnitResult
-from ampel.enum.DocumentCode import DocumentCode
-from ampel.enum.MetaActionCode import MetaActionCode
-from ampel.enum.JournalActionCode import JournalActionCode
-from ampel.content.StockDocument import StockDocument
-from ampel.content.DataPoint import DataPoint
-from ampel.content.T1Document import T1Document
-from ampel.content.T2Document import T2Document
-from ampel.base.BadConfig import BadConfig
-from ampel.log import AmpelLogger
-from ampel.log.utils import convert_dollars
-from ampel.log.utils import report_exception, report_error
-from ampel.abstract.AbsStockT2Unit import AbsStockT2Unit
+from bson import ObjectId
+
+from ampel.abstract.AbsCustomStateT2Unit import AbsCustomStateT2Unit
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.abstract.AbsStateT2Unit import AbsStateT2Unit
-from ampel.abstract.AbsCustomStateT2Unit import AbsCustomStateT2Unit
-from ampel.abstract.AbsTiedT2Unit import AbsTiedT2Unit
+from ampel.abstract.AbsStockT2Unit import AbsStockT2Unit
+from ampel.abstract.AbsTiedCustomStateT2Unit import AbsTiedCustomStateT2Unit, U
 from ampel.abstract.AbsTiedPointT2Unit import AbsTiedPointT2Unit
 from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.abstract.AbsTiedStockT2Unit import AbsTiedStockT2Unit
-from ampel.abstract.AbsTiedCustomStateT2Unit import AbsTiedCustomStateT2Unit, U
+from ampel.abstract.AbsTiedT2Unit import AbsTiedT2Unit
 from ampel.abstract.AbsWorker import AbsWorker, register_stats
 from ampel.base.AmpelBaseModel import AmpelBaseModel
-from ampel.model.UnitModel import UnitModel
+from ampel.base.BadConfig import BadConfig
+from ampel.content.DataPoint import DataPoint
+from ampel.content.StockDocument import StockDocument
+from ampel.content.T1Document import T1Document
+from ampel.content.T2Document import T2Document
+from ampel.enum.DocumentCode import DocumentCode
+from ampel.enum.JournalActionCode import JournalActionCode
+from ampel.enum.MetaActionCode import MetaActionCode
+from ampel.log import AmpelLogger
+from ampel.log.utils import convert_dollars, report_error, report_exception
 from ampel.model.StateT2Dependency import StateT2Dependency
-from ampel.mongo.utils import maybe_match_array
+from ampel.model.UnitModel import UnitModel
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
+from ampel.mongo.utils import maybe_match_array
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import OneOrMany, T, UBson, ubson
 from ampel.view.T2DocView import T2DocView
 
 AbsT2 = Union[

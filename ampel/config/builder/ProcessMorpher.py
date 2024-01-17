@@ -8,10 +8,12 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import json
-from typing import Any
-from typing_extensions import Self
 from importlib import import_module
-from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
+from typing import Any
+
+from typing_extensions import Self
+
+from ampel.log.AmpelLogger import VERBOSE, AmpelLogger
 from ampel.model.ProcessModel import ProcessModel
 from ampel.util.recursion import walk_and_process_dict
 

@@ -7,12 +7,14 @@
 # Last Modified Date:  10.09.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from itertools import islice
-from collections.abc import Sequence as sequence, Iterable as iterable, Sized as sized
-from typing import Any
 from collections.abc import Generator, Iterable
+from collections.abc import Iterable as iterable
+from collections.abc import Sequence as sequence
+from collections.abc import Sized as sized
+from itertools import islice
+from typing import Any
 
-from ampel.types import strict_iterable, StrictIterable, T
+from ampel.types import StrictIterable, T, strict_iterable
 
 
 def ampel_iter(arg: Any) -> Any:

@@ -8,9 +8,11 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from collections.abc import Sequence
+
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.mongo.model.IndexModel import IndexModel
 from ampel.mongo.model.ShortIndexModel import ShortIndexModel
-from ampel.base.AmpelBaseModel import AmpelBaseModel
+
 
 class AmpelColModel(AmpelBaseModel):
 	name: str

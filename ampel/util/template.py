@@ -7,19 +7,20 @@
 # Last Modified Date: 04.04.2023
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Type, Any, Literal
-from importlib import import_module
-from functools import cache
 from collections.abc import Sequence
-from ampel.types import JDict
-from ampel.abstract.AbsTiedT2Unit import AbsTiedT2Unit
+from functools import cache
+from importlib import import_module
+from typing import Any, Type
+
 from ampel.abstract.AbsConfigMorpher import AbsConfigMorpher
 from ampel.abstract.AbsConfigUpdater import AbsConfigUpdater
+from ampel.abstract.AbsTiedT2Unit import AbsTiedT2Unit
+from ampel.config.builder.FirstPassConfig import FirstPassConfig
 from ampel.core.AmpelContext import AmpelContext
 from ampel.log.AmpelLogger import AmpelLogger
-from ampel.model.UnitModel import UnitModel
 from ampel.model.ingest.T2Compute import T2Compute
-from ampel.config.builder.FirstPassConfig import FirstPassConfig
+from ampel.model.UnitModel import UnitModel
+from ampel.types import JDict
 from ampel.util.collections import ampel_iter
 
 

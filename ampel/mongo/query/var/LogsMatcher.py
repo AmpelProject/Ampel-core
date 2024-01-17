@@ -8,17 +8,19 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import collections.abc
-from typing import Any, get_args
 from collections.abc import Sequence
 from datetime import datetime
+from typing import Any, get_args
+
 from bson.objectid import ObjectId
-from ampel.types import ChannelId, StockId
+
 from ampel.abstract.AbsIdMapper import AbsIdMapper
-from ampel.util.collections import check_seq_inner_type
-from ampel.mongo.schema import apply_schema
-from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
+from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.OneOf import OneOf
+from ampel.mongo.schema import apply_schema
+from ampel.types import ChannelId, StockId
+from ampel.util.collections import check_seq_inner_type
 
 
 class LogsMatcher:

@@ -7,12 +7,14 @@
 # Last Modified Date:  23.05.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import hashlib, json
+import hashlib
+import json
 from typing import Any
-from ampel.util.hash import build_unsafe_dict_id
-from ampel.util.mappings import dictify
+
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 from ampel.log import VERBOSE
+from ampel.util.hash import build_unsafe_dict_id
+from ampel.util.mappings import dictify
 
 
 class T02ConfigCollector(AbsDictConfigCollector):

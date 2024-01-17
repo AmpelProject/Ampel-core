@@ -8,10 +8,11 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Literal
-from ampel.types import ChannelId
-from ampel.model.ingest.IngestBody import IngestBody
-from ampel.model.ingest.FilterModel import FilterModel
+
 from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.model.ingest.FilterModel import FilterModel
+from ampel.model.ingest.IngestBody import IngestBody
+from ampel.types import ChannelId
 
 
 class DualIngestDirective(AmpelBaseModel):

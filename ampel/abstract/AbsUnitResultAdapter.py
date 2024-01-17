@@ -9,8 +9,8 @@
 
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
-from ampel.struct.UnitResult import UnitResult
 from ampel.core.ContextUnit import ContextUnit
+from ampel.struct.UnitResult import UnitResult
 from ampel.types import Traceless
 
 

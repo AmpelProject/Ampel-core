@@ -1,11 +1,11 @@
 from typing import Any
 
-from ampel.abstract.AbsOpsUnit import AbsOpsUnit
-from ampel.model.UnitModel import UnitModel
 from ampel.abstract.AbsEventUnit import AbsEventUnit
+from ampel.abstract.AbsOpsUnit import AbsOpsUnit
 from ampel.core.EventHandler import EventHandler
-from ampel.log import AmpelLogger, LogFlag, SHOUT
+from ampel.log import SHOUT, AmpelLogger, LogFlag
 from ampel.log.utils import report_exception
+from ampel.model.UnitModel import UnitModel
 
 
 class OpsProcessor(AbsEventUnit):

@@ -7,12 +7,13 @@
 # Last Modified Date:  15.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from time import time
 from random import randint
-from ampel.types import UBson
-from ampel.struct.UnitResult import UnitResult
-from ampel.content.DataPoint import DataPoint
+from time import time
+
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
+from ampel.content.DataPoint import DataPoint
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import UBson
 
 
 class DemoPointT2Unit(AbsPointT2Unit):

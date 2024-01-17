@@ -9,6 +9,7 @@
 
 from ampel.view.ReadOnlyDict import ReadOnlyDict
 
+
 def ro(arg):
 	if arg.__class__ is list:
 		return (*arg,)

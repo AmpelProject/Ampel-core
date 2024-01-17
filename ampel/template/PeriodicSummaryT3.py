@@ -7,20 +7,20 @@
 # Last Modified Date: 04.04.2023
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Any, Literal
 from collections.abc import Sequence
+from typing import Any, Literal
 
-from ampel.types import OneOrMany, ChannelId, Tag
+from ampel.abstract.AbsConfigMorpher import AbsConfigMorpher
+from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.log.AmpelLogger import AmpelLogger
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.OneOf import OneOf
+from ampel.model.ProcessModel import ProcessModel
 from ampel.model.t3.LoaderDirective import LoaderDirective
 from ampel.model.t3.T2FilterModel import T2FilterModel
 from ampel.model.UnitModel import UnitModel
-from ampel.model.ProcessModel import ProcessModel
-from ampel.base.AmpelBaseModel import AmpelBaseModel
-from ampel.log.AmpelLogger import AmpelLogger
-from ampel.abstract.AbsConfigMorpher import AbsConfigMorpher
+from ampel.types import ChannelId, OneOrMany, Tag
 
 
 class FilterModel(AmpelBaseModel):

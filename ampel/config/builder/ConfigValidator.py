@@ -8,11 +8,11 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
+
 from ampel.base.BadConfig import BadConfig
-from ampel.util.pretty import prettyjson
-from ampel.model.ProcessModel import ProcessModel
-from ampel.base.AmpelUnit import AmpelUnit
 from ampel.config.builder.BaseConfigChecker import BaseConfigChecker
+from ampel.model.ProcessModel import ProcessModel
+from ampel.util.pretty import prettyjson
 
 
 class ConfigValidator(BaseConfigChecker):

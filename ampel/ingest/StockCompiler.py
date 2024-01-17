@@ -7,15 +7,17 @@
 # Last Modified Date:  21.11.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from ujson import encode
 from typing import Any
-from ampel.types import ChannelId, Tag, StockId
-from ampel.content.StockDocument import StockDocument
-from ampel.content.JournalRecord import JournalRecord
-from ampel.abstract.AbsDocIngester import AbsDocIngester
+
+from ujson import encode
+
 from ampel.abstract.AbsCompiler import AbsCompiler
+from ampel.abstract.AbsDocIngester import AbsDocIngester
 from ampel.abstract.AbsIdMapper import AbsIdMapper
 from ampel.base.AuxUnitRegister import AuxUnitRegister
+from ampel.content.JournalRecord import JournalRecord
+from ampel.content.StockDocument import StockDocument
+from ampel.types import ChannelId, StockId, Tag
 
 
 class StockCompiler(AbsCompiler):

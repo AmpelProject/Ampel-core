@@ -7,50 +7,53 @@
 # Last Modified Date:  24.11.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+from collections.abc import Callable, Sequence
 from datetime import timedelta
 from time import time
-from typing import Literal, Any
-from collections.abc import Callable, Sequence
-from ampel.model.ChannelModel import ChannelModel
-from ampel.types import StockId, ChannelId, UnitId, DataPointId, UBson, Tag
-from ampel.abstract.AbsT0Muxer import AbsT0Muxer
-from ampel.abstract.AbsDocIngester import AbsDocIngester
+from typing import Any, Literal
+
 from ampel.abstract.AbsApplicable import AbsApplicable
+from ampel.abstract.AbsDocIngester import AbsDocIngester
+from ampel.abstract.AbsT0Muxer import AbsT0Muxer
 from ampel.abstract.AbsT0Unit import AbsT0Unit
-from ampel.abstract.AbsT1ComputeUnit import AbsT1ComputeUnit
 from ampel.abstract.AbsT1CombineUnit import AbsT1CombineUnit
+from ampel.abstract.AbsT1ComputeUnit import AbsT1ComputeUnit
 from ampel.abstract.AbsT1RetroCombineUnit import AbsT1RetroCombineUnit
-from ampel.model.UnitModel import UnitModel
+from ampel.base.AuxUnitRegister import AuxUnitRegister
+from ampel.base.LogicalUnit import LogicalUnit
+from ampel.content.DataPoint import DataPoint
+from ampel.content.MetaActivity import MetaActivity
+from ampel.content.StockDocument import StockDocument
+from ampel.content.T1Document import T1Document
+from ampel.content.T2Document import T2Document
+from ampel.core.AmpelContext import AmpelContext
 from ampel.enum.DocumentCode import DocumentCode
-from ampel.enum.MetaActionCode import MetaActionCode
 from ampel.enum.JournalActionCode import JournalActionCode
+from ampel.enum.MetaActionCode import MetaActionCode
+from ampel.ingest.StockCompiler import StockCompiler
+from ampel.ingest.T0Compiler import T0Compiler
+from ampel.ingest.T1Compiler import T1Compiler
+from ampel.ingest.T2Compiler import T2Compiler
+from ampel.log import AmpelLogger
+from ampel.log.handlers.DefaultRecordBufferingHandler import (
+	DefaultRecordBufferingHandler,
+)
+from ampel.log.LogFlag import LogFlag
+from ampel.model.ChannelModel import ChannelModel
+from ampel.model.DPSelection import DPSelection
 from ampel.model.ingest.CompilerOptions import CompilerOptions
+from ampel.model.ingest.DualIngestDirective import DualIngestDirective
+from ampel.model.ingest.IngestBody import IngestBody
+from ampel.model.ingest.IngestDirective import IngestDirective
 from ampel.model.ingest.T1Combine import T1Combine
 from ampel.model.ingest.T1CombineCompute import T1CombineCompute
 from ampel.model.ingest.T1CombineComputeNow import T1CombineComputeNow
 from ampel.model.ingest.T2Compute import T2Compute
-from ampel.model.ingest.IngestDirective import IngestDirective
-from ampel.model.ingest.DualIngestDirective import DualIngestDirective
-from ampel.model.ingest.IngestBody import IngestBody
-from ampel.model.DPSelection import DPSelection
-from ampel.core.AmpelContext import AmpelContext
-from ampel.base.LogicalUnit import LogicalUnit
-from ampel.base.AuxUnitRegister import AuxUnitRegister
-from ampel.content.T1Document import T1Document
-from ampel.content.T2Document import T2Document
-from ampel.content.StockDocument import StockDocument
-from ampel.content.DataPoint import DataPoint
-from ampel.content.MetaActivity import MetaActivity
+from ampel.model.UnitModel import UnitModel
 from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
-from ampel.ingest.T0Compiler import T0Compiler
-from ampel.ingest.T2Compiler import T2Compiler
-from ampel.ingest.StockCompiler import StockCompiler
-from ampel.ingest.T1Compiler import T1Compiler
-from ampel.struct.UnitResult import UnitResult
 from ampel.struct.T1CombineResult import T1CombineResult
-from ampel.log import AmpelLogger
-from ampel.log.LogFlag import LogFlag
-from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import ChannelId, DataPointId, StockId, Tag, UBson, UnitId
 from ampel.util.hash import build_unsafe_dict_id
 
 

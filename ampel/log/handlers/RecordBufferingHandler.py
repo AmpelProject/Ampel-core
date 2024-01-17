@@ -7,7 +7,8 @@
 # Last Modified Date:  09.05.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from logging import LogRecord, WARNING
+from logging import WARNING, LogRecord
+
 from ampel.log.LightLogRecord import LightLogRecord
 
 

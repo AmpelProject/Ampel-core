@@ -7,10 +7,10 @@
 # Last Modified Date:  26.03.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from ampel.util.collections import check_seq_inner_type
-from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
+from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.OneOf import OneOf
+from ampel.util.collections import check_seq_inner_type
 
 VALID_TYPES = (int, str)
 

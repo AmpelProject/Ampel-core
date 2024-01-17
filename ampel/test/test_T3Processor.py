@@ -12,20 +12,19 @@ from typing import Any
 
 import pytest
 
+from ampel.abstract.AbsT3Unit import AbsT3Unit, T3Send
 from ampel.content.StockDocument import StockDocument
 from ampel.content.T2Document import T2Document
 from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.enum.DocumentCode import DocumentCode
+from ampel.enum.EventCode import EventCode
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.struct.StockAttributes import StockAttributes
-from ampel.enum.EventCode import EventCode
-from ampel.view.SnapView import SnapView
 from ampel.struct.T3Store import T3Store
+from ampel.t3.T3Processor import T3Processor
 from ampel.test.dummy import DummyStateT2Unit
 from ampel.util.config import get_unit_confid
-
-from ampel.abstract.AbsT3Unit import AbsT3Unit, T3Send
-from ampel.t3.T3Processor import T3Processor
+from ampel.view.SnapView import SnapView
 
 
 class Mutineer(AbsT3Unit):

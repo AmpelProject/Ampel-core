@@ -7,10 +7,11 @@
 # Last Modified Date:  04.03.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any
 from collections.abc import Sequence
-from ampel.config.collector.ConfigCollector import ConfigCollector
+from typing import Any
+
 from ampel.config.collector.AbsForwardConfigCollector import AbsForwardConfigCollector
+from ampel.config.collector.ConfigCollector import ConfigCollector
 from ampel.log import VERBOSE
 
 

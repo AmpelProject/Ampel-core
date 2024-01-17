@@ -1,7 +1,7 @@
-from ampel.model.UnitModel import UnitModel
 import pytest
 
 from ampel.model.DPSelection import DPSelection
+from ampel.model.UnitModel import UnitModel
 
 
 @pytest.mark.parametrize(

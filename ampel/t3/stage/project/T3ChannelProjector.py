@@ -7,16 +7,17 @@
 # Last Modified Date:  22.11.2020
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
-from typing import Any
 from collections.abc import Sequence
-from ampel.types import ChannelId
+from typing import Any
+
+from ampel.aux.ComboDictModifier import ComboDictModifier
 from ampel.log import VERBOSE
-from ampel.util.logicschema import reduce_to_set
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.OneOf import OneOf
-from ampel.aux.ComboDictModifier import ComboDictModifier
 from ampel.t3.stage.project.T3BaseProjector import T3BaseProjector
+from ampel.types import ChannelId
+from ampel.util.logicschema import reduce_to_set
 
 
 class T3ChannelProjector(T3BaseProjector):

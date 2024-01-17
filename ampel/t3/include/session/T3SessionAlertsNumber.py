@@ -8,10 +8,11 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import ClassVar
-from ampel.mongo.query.var.events import build_t0_stats_query
+
 from ampel.abstract.AbsT3Supplier import AbsT3Supplier
-from ampel.t3.include.session.T3SessionLastRunTime import T3SessionLastRunTime
+from ampel.mongo.query.var.events import build_t0_stats_query
 from ampel.struct.T3Store import T3Store
+from ampel.t3.include.session.T3SessionLastRunTime import T3SessionLastRunTime
 
 
 class T3SessionAlertsNumber(AbsT3Supplier[dict]):

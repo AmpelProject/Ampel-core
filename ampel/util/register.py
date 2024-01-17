@@ -36,18 +36,23 @@ Properties:
 Known class making use of this module: `ampel.core.AmpelRegister.AmpelRegister` and sub-classes
 """
 
-import bson, json, sys
+import json
+import sys
 from errno import ENOENT
-from struct import iter_unpack, calcsize
 from os import path, strerror
+from struct import calcsize, iter_unpack
 from zlib import compress, decompress
+
+import bson
+
 if sys.version_info.minor > 8:
 	from typing import TypedDict
 else:
 	from typing_extensions import TypedDict
-from typing import BinaryIO, Any
 from collections.abc import Callable, Generator
-from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
+from typing import Any, BinaryIO
+
+from ampel.log.AmpelLogger import VERBOSE, AmpelLogger
 
 ampel_magic_bytes = bytes([97, 109, 112, 101, 108])
 
@@ -272,8 +277,8 @@ def rescale_header(
 	header: None | dict[str, Any] = None
 ) -> None:
 
-	from mmap import mmap, ACCESS_WRITE
-	from os import rename, remove
+	from mmap import ACCESS_WRITE, mmap
+	from os import remove, rename
 
 	logger = AmpelLogger.get_logger()
 	with open(file_path, "r+b") as f1:

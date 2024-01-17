@@ -7,26 +7,26 @@
 # Last Modified Date:  09.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from time import time
+from collections.abc import Generator, Sequence
 from itertools import islice
 from multiprocessing import JoinableQueue
-from multiprocessing.pool import ThreadPool, AsyncResult
-from collections.abc import Generator, Sequence
+from multiprocessing.pool import AsyncResult, ThreadPool
+from time import time
 
-from ampel.types import ChannelId
-from ampel.struct.T3Store import T3Store
-from ampel.view.SnapView import SnapView
-from ampel.model.UnitModel import UnitModel
-from ampel.content.T3Document import T3Document
-from ampel.log import VERBOSE
-from ampel.struct.AmpelBuffer import AmpelBuffer
-from ampel.base.AuxUnitRegister import AuxUnitRegister
-from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.abstract.AbsT3Filter import AbsT3Filter
 from ampel.abstract.AbsT3Projector import AbsT3Projector
-from ampel.t3.stage.T3ThreadedStager import T3ThreadedStager
+from ampel.abstract.AbsT3Unit import AbsT3Unit
+from ampel.base.AuxUnitRegister import AuxUnitRegister
+from ampel.content.T3Document import T3Document
+from ampel.log import VERBOSE
+from ampel.model.UnitModel import UnitModel
+from ampel.struct.AmpelBuffer import AmpelBuffer
+from ampel.struct.T3Store import T3Store
 from ampel.t3.stage.T3ProjectingStager import RunBlock
+from ampel.t3.stage.T3ThreadedStager import T3ThreadedStager
 from ampel.t3.stage.ThreadedViewGenerator import ThreadedViewGenerator
+from ampel.types import ChannelId
+from ampel.view.SnapView import SnapView
 
 
 class T3AdaptativeStager(T3ThreadedStager):

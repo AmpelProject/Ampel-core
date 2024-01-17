@@ -9,12 +9,12 @@
 
 
 import json
-from typing import Any, Tuple
 from collections.abc import Generator
+from typing import Any
 
-from ampel.log.AmpelLogger import AmpelLogger, DEBUG, ERROR
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.core.UnitLoader import UnitLoader
+from ampel.log.AmpelLogger import DEBUG, ERROR, AmpelLogger
 from ampel.secret.AmpelVault import AmpelVault
 from ampel.secret.PotemkinSecretProvider import PotemkinSecretProvider
 

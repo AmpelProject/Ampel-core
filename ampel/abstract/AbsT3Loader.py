@@ -7,18 +7,19 @@
 # Last Modified Date:  13.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from collections.abc import Iterator, Iterable, Sequence
-from ampel.types import Traceless, StockId, ChannelId, StrictIterable
-from ampel.base.decorator import abstractmethod
+from collections.abc import Iterable, Iterator, Sequence
+
 from ampel.base.AmpelABC import AmpelABC
+from ampel.base.decorator import abstractmethod
 from ampel.core.ContextUnit import ContextUnit
-from ampel.struct.AmpelBuffer import AmpelBuffer
+from ampel.core.DataLoader import DataLoader
+from ampel.log.AmpelLogger import AmpelLogger
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.OneOf import OneOf
-from ampel.core.DataLoader import DataLoader
 from ampel.model.t3.LoaderDirective import LoaderDirective
-from ampel.log.AmpelLogger import AmpelLogger
+from ampel.struct.AmpelBuffer import AmpelBuffer
+from ampel.types import ChannelId, StockId, StrictIterable, Traceless
 
 
 # Data loaders need access to the ampel db (and hence inherits ContextUnit)

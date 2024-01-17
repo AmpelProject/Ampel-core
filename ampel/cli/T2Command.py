@@ -7,27 +7,28 @@
 # Last Modified Date:  27.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from json import dumps
-from datetime import datetime
 from argparse import ArgumentParser
-from typing import Any
 from collections.abc import Sequence
-from ampel.core.EventHandler import EventHandler
-from ampel.core.AmpelContext import AmpelContext
+from datetime import datetime
+from json import dumps
+from typing import Any
+
 from ampel.abstract.AbsIdMapper import AbsIdMapper
+from ampel.cli.AbsCoreCommand import AbsCoreCommand
+from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
+from ampel.cli.ArgParserBuilder import ArgParserBuilder
+from ampel.cli.LoadJSONAction import LoadJSONAction
+from ampel.cli.MaybeIntAction import MaybeIntAction
+from ampel.cli.utils import maybe_load_idmapper, maybe_resolve_enum
+from ampel.content.T2Document import T2Document
+from ampel.core.AmpelContext import AmpelContext
+from ampel.core.EventHandler import EventHandler
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogFlag import LogFlag
 from ampel.t2.T2Utils import T2Utils
 from ampel.util.pretty import prettyjson
 from ampel.util.serialize import walk_and_encode
-from ampel.content.T2Document import T2Document
-from ampel.cli.utils import maybe_load_idmapper, maybe_resolve_enum
-from ampel.cli.AbsCoreCommand import AbsCoreCommand
-from ampel.cli.ArgParserBuilder import ArgParserBuilder
-from ampel.cli.MaybeIntAction import MaybeIntAction
-from ampel.cli.LoadJSONAction import LoadJSONAction
-from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
 
 hlp = {
 	"show": "Show T2 document(s) as JSON (stdout)",

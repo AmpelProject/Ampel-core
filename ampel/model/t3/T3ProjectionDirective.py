@@ -9,8 +9,9 @@
 
 
 from collections.abc import Sequence
-from ampel.model.UnitModel import UnitModel
+
 from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.model.UnitModel import UnitModel
 
 
 class T3ProjectionDirective(AmpelBaseModel):

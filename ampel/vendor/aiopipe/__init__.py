@@ -87,12 +87,18 @@ b'HELLO WORLD\\n'
 ```
 """
 
-from asyncio import StreamReader, StreamWriter, StreamReaderProtocol, BaseTransport, \
-        get_running_loop, sleep
-from contextlib import contextmanager, asynccontextmanager
-from typing import Any, ContextManager, AsyncIterator
-from collections.abc import Iterator
 import os
+from asyncio import (
+    BaseTransport,
+    StreamReader,
+    StreamReaderProtocol,
+    StreamWriter,
+    get_running_loop,
+    sleep,
+)
+from collections.abc import Iterator
+from contextlib import asynccontextmanager, contextmanager
+from typing import Any, AsyncIterator
 
 __pdoc__ = {} # type: ignore
 

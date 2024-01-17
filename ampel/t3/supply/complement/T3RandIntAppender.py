@@ -9,9 +9,10 @@
 
 from random import randint
 from typing import Iterable
-from ampel.struct.T3Store import T3Store
-from ampel.struct.AmpelBuffer import AmpelBuffer
+
 from ampel.abstract.AbsBufferComplement import AbsBufferComplement
+from ampel.struct.AmpelBuffer import AmpelBuffer
+from ampel.struct.T3Store import T3Store
 
 
 class T3RandIntAppender(AbsBufferComplement):

@@ -8,11 +8,12 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
-from ampel.base.decorator import abstractmethod
+
 from ampel.base.AmpelABC import AmpelABC
+from ampel.base.decorator import abstractmethod
+from ampel.config.builder.FirstPassConfig import FirstPassConfig
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.model.ChannelModel import ChannelModel
-from ampel.config.builder.FirstPassConfig import FirstPassConfig
 
 
 class AbsChannelTemplate(AmpelABC, ChannelModel, abstract=True):

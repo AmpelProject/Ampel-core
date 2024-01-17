@@ -1,9 +1,10 @@
 import copy
 
+from ampel.config.alter.HashT2Config import HashT2Config
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.test.DummyStateT2Unit import DummyStateT2Unit
-from ampel.config.alter.HashT2Config import HashT2Config
+
 
 def test_load_old_configids(mock_context: DevAmpelContext, ampel_logger):
     """ This test unit might no longer be required or might need a rename """

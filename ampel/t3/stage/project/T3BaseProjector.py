@@ -7,16 +7,17 @@
 # Last Modified Date:  15.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any
 from collections.abc import Callable, Iterable, Sequence
-from ampel.types import Traceless
-from ampel.log import AmpelLogger, VERBOSE
-from ampel.struct.AmpelBuffer import AmpelBuffer, BufferKey
+from typing import Any
+
 from ampel.abstract.AbsApplicable import AbsApplicable
-from ampel.model.UnitModel import UnitModel
-from ampel.base.AuxUnitRegister import AuxUnitRegister
-from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.abstract.AbsT3Projector import AbsT3Projector
+from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.base.AuxUnitRegister import AuxUnitRegister
+from ampel.log import VERBOSE, AmpelLogger
+from ampel.model.UnitModel import UnitModel
+from ampel.struct.AmpelBuffer import AmpelBuffer, BufferKey
+from ampel.types import Traceless
 
 
 class T3BaseProjector(AbsT3Projector):

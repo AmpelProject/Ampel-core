@@ -8,17 +8,18 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any, Literal
-from ampel.cli.ArgParserBuilder import ArgParserBuilder
-from ampel.cli.MaybeIntAction import MaybeIntAction
-from ampel.cli.LoadJSONAction import LoadJSONAction
+
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
-from ampel.mongo.utils import maybe_match_array
-from ampel.model.UnitModel import UnitModel
-from ampel.model.time.UnixTimeModel import UnixTimeModel
-from ampel.model.time.TimeStringModel import TimeStringModel
-from ampel.model.time.TimeLastRunModel import TimeLastRunModel
-from ampel.model.time.TimeDeltaModel import TimeDeltaModel
+from ampel.cli.ArgParserBuilder import ArgParserBuilder
+from ampel.cli.LoadJSONAction import LoadJSONAction
+from ampel.cli.MaybeIntAction import MaybeIntAction
 from ampel.model.time.TimeConstraintModel import TimeConstraintModel
+from ampel.model.time.TimeDeltaModel import TimeDeltaModel
+from ampel.model.time.TimeLastRunModel import TimeLastRunModel
+from ampel.model.time.TimeStringModel import TimeStringModel
+from ampel.model.time.UnixTimeModel import UnixTimeModel
+from ampel.model.UnitModel import UnitModel
+from ampel.mongo.utils import maybe_match_array
 
 
 class AbsStockCommand(AbsCoreCommand, abstract=True):

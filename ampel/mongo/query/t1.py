@@ -8,16 +8,18 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import collections
-from bson.int64 import Int64
-from typing import Any
 from collections.abc import Sequence
-from ampel.types import StockId, ChannelId, StrictIterable
-from ampel.util.collections import check_seq_inner_type
-from ampel.model.operator.AnyOf import AnyOf
+from typing import Any
+
+from bson.int64 import Int64
+
 from ampel.model.operator.AllOf import AllOf
+from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.OneOf import OneOf
-from ampel.mongo.schema import apply_schema
 from ampel.mongo.query.general import type_stock_id
+from ampel.mongo.schema import apply_schema
+from ampel.types import ChannelId, StockId, StrictIterable
+from ampel.util.collections import check_seq_inner_type
 
 """
 Lastest by mean of compound 'body' length.

@@ -7,16 +7,17 @@
 # Last Modified Date:  20.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from ampel.core.AmpelContext import AmpelContext
 from argparse import ArgumentParser
-from typing import Any
 from collections.abc import Sequence
+from typing import Any
+
+from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
 from ampel.config.AmpelConfig import AmpelConfig
-from ampel.model.ProcessModel import ProcessModel
-from ampel.abstract.AbsEventUnit import AbsEventUnit
+from ampel.core.AmpelContext import AmpelContext
 from ampel.log.LogFlag import LogFlag
+from ampel.model.ProcessModel import ProcessModel
 
 
 class RunCommand(AbsCoreCommand):

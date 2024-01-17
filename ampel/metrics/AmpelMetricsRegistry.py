@@ -1,5 +1,6 @@
 import os
-from typing import Any, ClassVar, Iterable, Optional, Sequence
+from time import perf_counter_ns
+from typing import Any, ClassVar
 
 from prometheus_client import (
     CollectorRegistry,
@@ -9,12 +10,10 @@ from prometheus_client import (
     Summary,
     push_to_gateway,
 )
-from prometheus_client.multiprocess import MultiProcessCollector
-from prometheus_client.metrics import MetricWrapperBase
 from prometheus_client.context_managers import Timer
-from time import perf_counter_ns
-
-from prometheus_client.registry import REGISTRY, CollectorRegistry
+from prometheus_client.metrics import MetricWrapperBase
+from prometheus_client.multiprocess import MultiProcessCollector
+from prometheus_client.registry import CollectorRegistry
 
 
 def reset_metric(metric: MetricWrapperBase) -> None:

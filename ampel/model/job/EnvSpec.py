@@ -9,6 +9,7 @@
 
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 
+
 class EnvSpec(AmpelBaseModel):
     set: dict[str, str] = {}
     check: dict[str, int|str] = {}

@@ -8,6 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from collections.abc import Sequence
+
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.model.ingest.MuxModel import MuxModel
 from ampel.model.ingest.T1Combine import T1Combine

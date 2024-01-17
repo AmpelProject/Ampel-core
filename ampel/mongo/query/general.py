@@ -7,14 +7,16 @@
 # Last Modified Date:  17.02.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from bson.int64 import Int64
 from typing import Any, Literal
-from ampel.types import Tag, ChannelId, StockId, StrictIterable
-from ampel.model.operator.AnyOf import AnyOf
+
+from bson.int64 import Int64
+
 from ampel.model.operator.AllOf import AllOf
+from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.OneOf import OneOf
+from ampel.mongo.schema import apply_excl_schema, apply_schema
 from ampel.mongo.utils import maybe_match_array
-from ampel.mongo.schema import apply_schema, apply_excl_schema
+from ampel.types import ChannelId, StockId, StrictIterable, Tag
 
 type_stock_id = (int, Int64, bytes, str)
 

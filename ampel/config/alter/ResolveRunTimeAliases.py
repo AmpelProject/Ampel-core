@@ -8,9 +8,10 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
-from ampel.log.AmpelLogger import AmpelLogger
-from ampel.core.AmpelContext import AmpelContext
+
 from ampel.abstract.AbsConfigUpdater import AbsConfigUpdater
+from ampel.core.AmpelContext import AmpelContext
+from ampel.log.AmpelLogger import AmpelLogger
 from ampel.util.recursion import walk_and_process_dict
 
 

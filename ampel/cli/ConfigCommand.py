@@ -7,25 +7,30 @@
 # Last Modified Date:  19.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import os, subprocess, json, yaml, shutil
+import json
+import os
+import shutil
+import subprocess
+from argparse import ArgumentParser, FileType
+from collections.abc import Mapping, Sequence
 from io import StringIO, UnsupportedOperation
 from pathlib import Path
 from time import time
-from typing import Any, TextIO, Iterable
-from argparse import ArgumentParser, FileType
-from collections.abc import Sequence, Mapping
+from typing import Any, Iterable, TextIO
 
-from ampel.core.AmpelContext import AmpelContext
-from ampel.secret.AmpelVault import AmpelVault
-from ampel.secret.DictSecretProvider import DictSecretProvider
-from ampel.secret.PotemkinSecretProvider import PotemkinSecretProvider
-from ampel.log.AmpelLogger import AmpelLogger, DEBUG, INFO
+import yaml
+
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
 from ampel.cli.ArgParserBuilder import ArgParserBuilder
 from ampel.cli.config import get_user_data_config_path
-from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
 from ampel.config.builder.DisplayOptions import DisplayOptions
+from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
+from ampel.core.AmpelContext import AmpelContext
+from ampel.log.AmpelLogger import DEBUG, INFO, AmpelLogger
+from ampel.secret.AmpelVault import AmpelVault
+from ampel.secret.DictSecretProvider import DictSecretProvider
+from ampel.secret.PotemkinSecretProvider import PotemkinSecretProvider
 from ampel.util.pretty import out_stack, prettyjson
 
 hlp = {

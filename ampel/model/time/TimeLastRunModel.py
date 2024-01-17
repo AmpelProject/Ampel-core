@@ -7,11 +7,12 @@
 # Last Modified Date:  31.07.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Literal
 from datetime import datetime, timedelta
+from typing import Literal
+
 from ampel.base.AmpelBaseModel import AmpelBaseModel
-from ampel.mongo.query.var.events import get_last_run
 from ampel.core.AmpelDB import AmpelDB
+from ampel.mongo.query.var.events import get_last_run
 
 
 class TimeLastRunModel(AmpelBaseModel):

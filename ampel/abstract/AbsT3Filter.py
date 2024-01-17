@@ -8,9 +8,10 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from collections.abc import Iterable, Sequence
+
 from ampel.base.AmpelABC import AmpelABC
-from ampel.base.decorator import abstractmethod
 from ampel.base.AmpelUnit import AmpelUnit
+from ampel.base.decorator import abstractmethod
 from ampel.struct.AmpelBuffer import AmpelBuffer
 
 

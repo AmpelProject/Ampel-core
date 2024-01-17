@@ -7,26 +7,36 @@
 # Last Modified Date:  01.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import os, sys, re, json, yaml, datetime, getpass, importlib, subprocess, pkg_resources
-from typing import Any
-from multiprocessing import Pool
+import datetime
+import getpass
+import importlib
+import json
+import os
+import re
+import subprocess
+import sys
 from collections.abc import Iterable
+from multiprocessing import Pool
+from typing import Any
 
-from ampel.log.utils import log_exception
+import pkg_resources
+import yaml
+
 from ampel.abstract.AbsChannelTemplate import AbsChannelTemplate
-from ampel.log.AmpelLogger import AmpelLogger, VERBOSE, DEBUG, ERROR
 from ampel.config.builder.DisplayOptions import DisplayOptions
 from ampel.config.builder.FirstPassConfig import FirstPassConfig
-from ampel.config.collector.ConfigCollector import ConfigCollector
-from ampel.config.collector.T02ConfigCollector import T02ConfigCollector
-from ampel.template.ChannelWithProcsTemplate import ChannelWithProcsTemplate
-from ampel.config.collector.ProcessConfigCollector import ProcessConfigCollector
-from ampel.config.collector.ChannelConfigCollector import ChannelConfigCollector
 from ampel.config.builder.ProcessMorpher import ProcessMorpher
+from ampel.config.collector.ChannelConfigCollector import ChannelConfigCollector
+from ampel.config.collector.ConfigCollector import ConfigCollector
+from ampel.config.collector.ProcessConfigCollector import ProcessConfigCollector
+from ampel.config.collector.T02ConfigCollector import T02ConfigCollector
+from ampel.log.AmpelLogger import DEBUG, ERROR, VERBOSE, AmpelLogger
+from ampel.log.utils import log_exception
 from ampel.secret.AESecret import AESecret
 from ampel.secret.AESecretProvider import AESecretProvider
+from ampel.template.ChannelWithProcsTemplate import ChannelWithProcsTemplate
+from ampel.util.mappings import dictify, get_by_path, set_by_path
 from ampel.util.recursion import walk_and_process_dict
-from ampel.util.mappings import get_by_path, set_by_path, dictify
 
 
 class ConfigBuilder:
@@ -478,7 +488,7 @@ class ConfigBuilder:
 
 		if save:
 
-			import pathlib # type: ignore
+			import pathlib  # type: ignore
 			path = pathlib.Path(save if isinstance(save, str) else 'ampel_conf.yaml')
 			with open(path, 'w') as file:
 				yaml.dump(d, file, sort_keys=False)

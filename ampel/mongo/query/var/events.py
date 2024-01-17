@@ -7,12 +7,14 @@
 # Last Modified Date:  20.06.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+from datetime import datetime, timedelta
+from typing import Any, Literal, overload
+
 from bson import ObjectId
 from pymongo.collection import Collection
-from datetime import datetime, timedelta
-from typing import Literal, Any, overload
 
 from ampel.enum.EventCode import EventCode
+
 
 def build_query(
 	tier: Literal[0, 1, 2, 3] = 0,

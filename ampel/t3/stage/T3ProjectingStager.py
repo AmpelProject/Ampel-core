@@ -7,26 +7,26 @@
 # Last Modified Date:  17.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from time import time
 from collections.abc import Generator, Iterable, Sequence
 from itertools import islice
 from multiprocessing import JoinableQueue
 from multiprocessing.pool import ThreadPool
+from time import time
 
-from ampel.log import VERBOSE
-from ampel.types import StockId, UBson
-from ampel.struct.T3Store import T3Store
-from ampel.struct.UnitResult import UnitResult
-from ampel.struct.AmpelBuffer import AmpelBuffer
-from ampel.content.T3Document import T3Document
-from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.abstract.AbsT3Filter import AbsT3Filter
 from ampel.abstract.AbsT3Projector import AbsT3Projector
+from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.base.AuxUnitRegister import AuxUnitRegister
-from ampel.t3.stage.T3ThreadedStager import T3ThreadedStager
-from ampel.t3.stage.SimpleViewGenerator import BaseViewGenerator, SimpleViewGenerator
-from ampel.t3.stage.NoViewGenerator import NoViewGenerator
+from ampel.content.T3Document import T3Document
+from ampel.log import VERBOSE
 from ampel.model.t3.T3ProjectionDirective import T3ProjectionDirective
+from ampel.struct.AmpelBuffer import AmpelBuffer
+from ampel.struct.T3Store import T3Store
+from ampel.struct.UnitResult import UnitResult
+from ampel.t3.stage.NoViewGenerator import NoViewGenerator
+from ampel.t3.stage.SimpleViewGenerator import BaseViewGenerator, SimpleViewGenerator
+from ampel.t3.stage.T3ThreadedStager import T3ThreadedStager
+from ampel.types import StockId, UBson
 
 
 class RunBlock:

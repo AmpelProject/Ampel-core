@@ -7,36 +7,48 @@
 # Last Modified Date:  05.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import tempfile, ujson, yaml, io, os, signal, sys, \
-	subprocess, platform, shutil, filecmp, psutil, pkg_resources
-from time import time, sleep
-from multiprocessing import Queue, Process
+import filecmp
+import io
+import os
+import platform
+import shutil
+import signal
+import subprocess
+import sys
+import tempfile
 from argparse import ArgumentParser
-from typing import Any, Type
 from collections.abc import Sequence
+from multiprocessing import Process, Queue
+from time import sleep, time
+from typing import Any, Type
+
+import pkg_resources
+import psutil
+import ujson
+import yaml
+
 from ampel.abstract.AbsEventUnit import AbsEventUnit
-from ampel.model.UnitModel import UnitModel
-from ampel.core.EventHandler import EventHandler
+from ampel.cli.AbsCoreCommand import AbsCoreCommand
+from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
+from ampel.cli.config import get_user_data_config_path
+from ampel.cli.MaybeIntAction import MaybeIntAction
+from ampel.cli.utils import _maybe_int
 from ampel.core.AmpelContext import AmpelContext
+from ampel.core.EventHandler import EventHandler
 from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogFlag import LogFlag
-from ampel.util.freeze import recursive_freeze
-from ampel.util.hash import build_unsafe_dict_id
-from ampel.util.distrib import get_dist_names
-from ampel.util.collections import try_reduce
-from ampel.util.template import apply_templates
-from ampel.util.pretty import prettyjson
-from ampel.cli.config import get_user_data_config_path
-from ampel.cli.utils import _maybe_int
-from ampel.cli.AbsCoreCommand import AbsCoreCommand
-from ampel.cli.MaybeIntAction import MaybeIntAction
-from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
 from ampel.model.job.JobModel import JobModel
 from ampel.model.job.JobTaskModel import JobTaskModel
-from ampel.util.pretty import out_stack, get_time_delta
+from ampel.model.UnitModel import UnitModel
+from ampel.util.collections import try_reduce
 from ampel.util.debug import MockPool
+from ampel.util.distrib import get_dist_names
+from ampel.util.freeze import recursive_freeze
 from ampel.util.getch import yes_no
+from ampel.util.hash import build_unsafe_dict_id
+from ampel.util.pretty import get_time_delta, out_stack, prettyjson
+from ampel.util.template import apply_templates
 
 
 class JobCommand(AbsCoreCommand):

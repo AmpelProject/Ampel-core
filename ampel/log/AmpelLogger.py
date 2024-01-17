@@ -7,15 +7,21 @@
 # Last Modified Date:  20.04.2022
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
-import logging, sys, traceback
-from sys import _getframe
+import logging
+import sys
+import traceback
 from os.path import basename
-from typing import Any, TYPE_CHECKING
-from ampel.types import ChannelId
+from sys import _getframe
+from typing import TYPE_CHECKING, Any
+
+from ampel.log.handlers.AmpelStreamHandler import AmpelStreamHandler
 from ampel.log.LightLogRecord import LightLogRecord
 from ampel.log.LogFlag import LogFlag
-from ampel.protocol.LoggingHandlerProtocol import LoggingHandlerProtocol, AggregatingLoggingHandlerProtocol
-from ampel.log.handlers.AmpelStreamHandler import AmpelStreamHandler
+from ampel.protocol.LoggingHandlerProtocol import (
+	AggregatingLoggingHandlerProtocol,
+	LoggingHandlerProtocol,
+)
+from ampel.types import ChannelId
 
 if TYPE_CHECKING:
 	from ampel.mongo.update.var.DBLoggingHandler import DBLoggingHandler

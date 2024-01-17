@@ -8,13 +8,15 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
+from typing import TYPE_CHECKING, Any, Literal
+
 from bson import ObjectId
-from typing import Any, Literal, TYPE_CHECKING
+
 from ampel.enum.EventCode import EventCode
-from ampel.struct.Resource import Resource
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.AmpelLoggingError import AmpelLoggingError
 from ampel.log.utils import report_exception
+from ampel.struct.Resource import Resource
 
 if TYPE_CHECKING:
 	from ampel.core.AmpelDB import AmpelDB

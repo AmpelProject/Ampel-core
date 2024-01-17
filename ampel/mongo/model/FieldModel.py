@@ -11,6 +11,7 @@ from pydantic import model_serializer
 
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 
+
 class FieldModel(AmpelBaseModel):
 
 	field: str

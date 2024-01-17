@@ -8,11 +8,13 @@
 # Last Modified By:    jvs
 
 from typing import Any
+
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
 from ampel.core.ContextUnit import ContextUnit
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.types import Traceless
+
 
 class AbsOpsUnit(AmpelABC, ContextUnit, abstract=True):
     """

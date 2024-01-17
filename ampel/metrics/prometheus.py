@@ -35,8 +35,8 @@ import tempfile
 from typing import Collection
 
 from prometheus_client import (
-    Metric,
     CollectorRegistry,
+    Metric,
     core,
     generate_latest,
     mmap_dict,

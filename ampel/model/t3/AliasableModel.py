@@ -7,7 +7,7 @@
 # Last Modified Date:  Unspecified
 # Last Modified By:    jvs
 
-from typing import Any, ClassVar, Type, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, ClassVar, Type
 
 from pydantic import model_validator
 

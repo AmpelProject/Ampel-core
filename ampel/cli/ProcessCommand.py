@@ -7,26 +7,30 @@
 # Last Modified Date:  14.08.2022
 # Last Modified By:    jvs
 
-from contextlib import contextmanager
 import json
-import signal, traceback, yaml, os
-from ampel.core.Schedulable import Schedulable
+import os
+import signal
+import traceback
 from argparse import ArgumentParser
+from contextlib import contextmanager
 from time import time
 from typing import Any, Generator, Optional, Sequence, Union
+
+import yaml
 
 from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
+from ampel.core.EventHandler import EventHandler
+from ampel.core.Schedulable import Schedulable
 from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogFlag import LogFlag
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 from ampel.model.ChannelModel import ChannelModel
 from ampel.model.UnitModel import UnitModel
-from ampel.util.freeze import recursive_freeze
-from ampel.core.EventHandler import EventHandler
 from ampel.struct.Resource import Resource
+from ampel.util.freeze import recursive_freeze
 
 
 def _handle_traceback(signal, frame):

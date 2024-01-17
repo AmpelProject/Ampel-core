@@ -9,12 +9,12 @@
 
 from collections.abc import Generator
 
-from ampel.struct.T3Store import T3Store
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
-from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.content.T3Document import T3Document
 from ampel.core.ContextUnit import ContextUnit
+from ampel.struct.AmpelBuffer import AmpelBuffer
+from ampel.struct.T3Store import T3Store
 
 
 class AbsT3Stager(ContextUnit, AmpelABC, abstract=True):

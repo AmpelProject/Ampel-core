@@ -8,8 +8,10 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
-from ampel.types import ChannelId
+
 from ampel.mongo.view.AbsMongoView import AbsMongoView
+from ampel.types import ChannelId
+
 
 class MongoOneView(AbsMongoView):
 

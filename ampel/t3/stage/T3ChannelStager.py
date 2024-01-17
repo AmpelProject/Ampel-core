@@ -8,14 +8,15 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from collections.abc import Generator, Sequence
-from ampel.types import ChannelId
-from ampel.struct.T3Store import T3Store
-from ampel.struct.AmpelBuffer import AmpelBuffer
-from ampel.content.T3Document import T3Document
-from ampel.model.UnitModel import UnitModel
-from ampel.model.t3.T3ProjectionDirective import T3ProjectionDirective
+
 from ampel.abstract.AbsT3Stager import AbsT3Stager
+from ampel.content.T3Document import T3Document
+from ampel.model.t3.T3ProjectionDirective import T3ProjectionDirective
+from ampel.model.UnitModel import UnitModel
+from ampel.struct.AmpelBuffer import AmpelBuffer
+from ampel.struct.T3Store import T3Store
 from ampel.t3.stage.T3ProjectingStager import T3ProjectingStager
+from ampel.types import ChannelId
 
 
 class T3ChannelStager(AbsT3Stager):

@@ -9,13 +9,13 @@
 
 from typing import Any, Literal
 
-from ampel.types import Tag
-from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
+from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.OneOf import OneOf
 from ampel.model.time.QueryTimeModel import QueryTimeModel
-from ampel.util.logicschema import reduce_to_set
 from ampel.mongo.query.general import build_general_query
+from ampel.types import Tag
+from ampel.util.logicschema import reduce_to_set
 
 
 def build_stock_query(

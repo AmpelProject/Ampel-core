@@ -7,11 +7,13 @@
 # Last Modified Date:  09.10.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from pymongo import UpdateOne
 from typing import Any
-from ampel.mongo.utils import maybe_use_each
-from ampel.content.T1Document import T1Document
+
+from pymongo import UpdateOne
+
 from ampel.abstract.AbsDocIngester import AbsDocIngester
+from ampel.content.T1Document import T1Document
+from ampel.mongo.utils import maybe_use_each
 
 
 class MongoT1Ingester(AbsDocIngester[T1Document]):

@@ -7,14 +7,16 @@
 # Last Modified Date:  17.03.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import sys, json
-from typing import IO
+import json
+import sys
 from collections.abc import Sequence
+from typing import IO
+
 from ampel.abstract.AbsIdMapper import AbsIdMapper
-from ampel.log.LogFlag import LogFlag
+from ampel.base.AmpelFlexModel import AmpelFlexModel
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LightLogRecord import LightLogRecord
-from ampel.base.AmpelFlexModel import AmpelFlexModel
+from ampel.log.LogFlag import LogFlag
 from ampel.util.pretty import prettyjson
 from ampel.util.serialize import walk_and_encode
 

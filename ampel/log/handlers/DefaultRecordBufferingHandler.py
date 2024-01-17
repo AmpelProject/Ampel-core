@@ -8,9 +8,10 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
+
 from ampel.log.handlers.RecordBufferingHandler import RecordBufferingHandler
 from ampel.protocol.LoggingHandlerProtocol import LoggingHandlerProtocol
-from ampel.types import StockId, ChannelId
+from ampel.types import ChannelId, StockId
 
 
 class DefaultRecordBufferingHandler(RecordBufferingHandler):

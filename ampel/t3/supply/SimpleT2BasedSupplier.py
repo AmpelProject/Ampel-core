@@ -7,11 +7,12 @@
 # Last Modified Date:  15.07.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any
 from collections.abc import Generator
+from typing import Any
+
 from ampel.abstract.AbsT3Supplier import AbsT3Supplier
-from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.log.utils import safe_query_dict
+from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.struct.T3Store import T3Store
 
 

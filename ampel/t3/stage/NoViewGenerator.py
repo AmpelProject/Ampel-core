@@ -7,11 +7,12 @@
 # Last Modified Date:  17.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Iterable
 from collections.abc import Generator
+from typing import Iterable
+
 from ampel.abstract.AbsT3Unit import AbsT3Unit
-from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
+from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.t3.stage.BaseViewGenerator import BaseViewGenerator, T, T3Send
 
 

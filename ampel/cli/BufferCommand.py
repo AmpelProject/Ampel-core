@@ -9,15 +9,16 @@
 
 import sys
 from argparse import ArgumentParser
-from typing import Any
 from collections.abc import Sequence
-from ampel.log.LogFlag import LogFlag
-from ampel.core.AmpelContext import AmpelContext
-from ampel.cli.utils import maybe_load_idmapper
-from ampel.cli.ArgParserBuilder import ArgParserBuilder
-from ampel.cli.AbsStockCommand import AbsStockCommand
+from typing import Any
+
 from ampel.cli.AbsLoadCommand import AbsLoadCommand
+from ampel.cli.AbsStockCommand import AbsStockCommand
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
+from ampel.cli.ArgParserBuilder import ArgParserBuilder
+from ampel.cli.utils import maybe_load_idmapper
+from ampel.core.AmpelContext import AmpelContext
+from ampel.log.LogFlag import LogFlag
 from ampel.t3.T3Processor import T3Processor
 
 hlp = {

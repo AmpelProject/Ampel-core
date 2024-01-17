@@ -8,10 +8,12 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
+
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.types import strict_iterable
 from ampel.util.collections import check_seq_inner_type
 from ampel.util.docstringutils import gendocstring
-from ampel.base.AmpelBaseModel import AmpelBaseModel
+
 
 @gendocstring
 class QueryMatchModel(AmpelBaseModel):

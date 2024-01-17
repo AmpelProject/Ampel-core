@@ -7,19 +7,20 @@
 # Last Modified Date:  28.02.2022
 # Last Modified By:    Marcus Fenner <mf@physik.hu-berlin.de>
 
+from collections.abc import Iterable
+
 from pymongo import MongoClient
 from pymongo.collection import Collection
-from typing import Optional
-from collections.abc import Iterable
-from ampel.types import StockId
+
+from ampel.abstract.AbsBufferComplement import AbsBufferComplement
 from ampel.aux.filter.SimpleDictArrayFilter import SimpleDictArrayFilter
 from ampel.content.JournalRecord import JournalRecord
-from ampel.struct.AmpelBuffer import AmpelBuffer
-from ampel.abstract.AbsBufferComplement import AbsBufferComplement
 from ampel.model.aux.FilterCriterion import FilterCriterion
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.FlatAnyOf import FlatAnyOf
+from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.struct.T3Store import T3Store
+from ampel.types import StockId
 
 
 class T3ExtJournalAppender(AbsBufferComplement):

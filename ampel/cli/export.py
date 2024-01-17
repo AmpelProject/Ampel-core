@@ -8,20 +8,21 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import sys
-from json import dumps
-from bson import ObjectId, encode
+from collections.abc import Generator
+from datetime import datetime
 from io import BufferedWriter, TextIOWrapper
 from itertools import islice
-from datetime import datetime
-from typing import TextIO, BinaryIO
-from collections.abc import Generator
+from json import dumps
+from typing import BinaryIO, TextIO
 
-from ampel.protocol.LoggerProtocol import LoggerProtocol
+from bson import ObjectId, encode
+
 from ampel.abstract.AbsIdMapper import AbsIdMapper
+from ampel.protocol.LoggerProtocol import LoggerProtocol
 from ampel.struct.AmpelBuffer import AmpelBuffer
-from ampel.util.serialize import walk_and_encode
-from ampel.util.pretty import prettyjson
 from ampel.util.getch import getch as fgetch
+from ampel.util.pretty import prettyjson
+from ampel.util.serialize import walk_and_encode
 
 dsi = dict.__setitem__
 ufts = datetime.utcfromtimestamp
@@ -167,7 +168,8 @@ def convert_timestamps(ab: AmpelBuffer) -> None:
 					dsi(t2meta, 'ts', ufts(t2meta['ts']).isoformat()) # type: ignore[arg-type]
 
 	except Exception:
-		import traceback, sys
+		import sys
+		import traceback
 		traceback.print_exc()
 		print(ab)
 		sys.exit("Exception occured")

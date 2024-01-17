@@ -1,21 +1,21 @@
-import contextlib, pytest
-from ampel.content.T2Document import T2Document
-from ampel.content.T1Document import T1Document
+import contextlib
 import datetime
-
-from itertools import count
-from typing import Any, Sequence
 from collections import defaultdict
 from collections.abc import Generator
-from ampel.config.AmpelConfig import AmpelConfig
-from ampel.content.MetaRecord import MetaRecord
-from ampel.enum.MetaActionCode import MetaActionCode
-from ampel.util.freeze import recursive_unfreeze
+from itertools import count
+from typing import Any
+
+import pytest
 from pymongo.errors import DuplicateKeyError
 from pytest_mock import MockFixture
 
+from ampel.config.AmpelConfig import AmpelConfig
 from ampel.content.DataPoint import DataPoint
+from ampel.content.MetaRecord import MetaRecord
+from ampel.content.T1Document import T1Document
+from ampel.content.T2Document import T2Document
 from ampel.dev.DevAmpelContext import DevAmpelContext
+from ampel.enum.MetaActionCode import MetaActionCode
 from ampel.ingest.ChainedIngestionHandler import ChainedIngestionHandler, IngestBody
 from ampel.log.AmpelLogger import DEBUG, AmpelLogger
 from ampel.model.ingest.CompilerOptions import CompilerOptions
@@ -30,12 +30,13 @@ from ampel.mongo.update.MongoT0Ingester import MongoT0Ingester
 from ampel.mongo.update.MongoT1Ingester import MongoT1Ingester
 from ampel.mongo.update.MongoT2Ingester import MongoT2Ingester
 from ampel.test.dummy import (
-    DummyMuxer,
     DummyHistoryMuxer,
+    DummyMuxer,
     DummyPointT2Unit,
     DummyStateT2Unit,
     DummyStockT2Unit,
 )
+from ampel.util.freeze import recursive_unfreeze
 
 
 @pytest.fixture

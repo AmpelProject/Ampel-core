@@ -9,6 +9,7 @@
 
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 
+
 class MongoClientRoleModel(AmpelBaseModel):
 	r: str
 	w: str

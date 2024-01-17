@@ -4,10 +4,10 @@ from functools import partial
 from typing import Any, Literal
 
 from pymongo.client_session import ClientSession
+from pymongo.errors import OperationFailure
 from pymongo.read_concern import ReadConcern
 from pymongo.read_preferences import ReadPreference
 from pymongo.write_concern import WriteConcern
-from pymongo.errors import OperationFailure
 
 from ampel.abstract.AbsOpsUnit import AbsOpsUnit
 from ampel.base.AmpelBaseModel import AmpelBaseModel

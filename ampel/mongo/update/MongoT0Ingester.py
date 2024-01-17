@@ -9,11 +9,13 @@
 
 from collections import defaultdict
 from datetime import datetime
-from pymongo import UpdateOne, UpdateMany
 from typing import Any, Literal
-from ampel.mongo.utils import maybe_use_each
-from ampel.content.DataPoint import DataPoint
+
+from pymongo import UpdateMany, UpdateOne
+
 from ampel.abstract.AbsDocIngester import AbsDocIngester
+from ampel.content.DataPoint import DataPoint
+from ampel.mongo.utils import maybe_use_each
 from ampel.types import DataPointId
 
 

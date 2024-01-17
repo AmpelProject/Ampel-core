@@ -8,13 +8,14 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Generator
-from ampel.types import Traceless, OneOrMany, ChannelId
+
 from ampel.base.AmpelABC import AmpelABC
-from ampel.content.T4Document import T4Document
 from ampel.base.decorator import abstractmethod
+from ampel.content.T4Document import T4Document
 from ampel.core.ContextUnit import ContextUnit
 from ampel.core.EventHandler import EventHandler
 from ampel.log.AmpelLogger import AmpelLogger
+from ampel.types import ChannelId, OneOrMany, Traceless
 
 
 class AbsT4ControlUnit(ContextUnit, AmpelABC, abstract=True):

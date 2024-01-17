@@ -1,7 +1,10 @@
-import pytest, yaml
 from typing import Any
-from ampel.model.UnitModel import UnitModel
+
+import pytest
+import yaml
+
 from ampel.model.ingest.T2Compute import T2Compute
+from ampel.model.UnitModel import UnitModel
 from ampel.util.template import check_tied_units, filter_units
 
 

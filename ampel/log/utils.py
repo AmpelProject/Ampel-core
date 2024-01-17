@@ -7,21 +7,24 @@
 # Last Modified Date:  11.11.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import sys, traceback, contextlib
-from math import log2
-from bson import ObjectId
+import contextlib
+import sys
+import traceback
 from datetime import datetime
-from typing import overload, Generator
+from math import log2
+from typing import Generator, overload
+
+from bson import ObjectId
 from pymongo import WriteConcern
 
-from ampel.types import JDict
-from ampel.core.AmpelDB import AmpelDB
 from ampel.config.AmpelConfig import AmpelConfig
-from ampel.util.collections import has_nested_type
+from ampel.core.AmpelDB import AmpelDB
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogFlag import LogFlag
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 from ampel.protocol.LoggerProtocol import LoggerProtocol
+from ampel.types import JDict
+from ampel.util.collections import has_nested_type
 
 exception_counter = AmpelMetricsRegistry.counter(
 	"exceptions",
@@ -96,8 +99,8 @@ def report_exception(
 	in the document inserted into Ampel_troubles
 	"""
 
-	from traceback import format_exc
 	from sys import exc_info
+	from traceback import format_exc
 
 	# Don't create report for executions canceled manually
 	if exc_info()[0] == KeyboardInterrupt:

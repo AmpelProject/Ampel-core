@@ -7,13 +7,13 @@
 # Last Modified Date:  13.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from ampel.types import Traceless, StockId
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
-from ampel.core.ContextUnit import ContextUnit
 from ampel.content.DataPoint import DataPoint
+from ampel.core.ContextUnit import ContextUnit
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
+from ampel.types import StockId, Traceless
 
 
 class AbsT0Muxer(AmpelABC, ContextUnit, abstract=True):

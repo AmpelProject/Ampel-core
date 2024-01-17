@@ -7,7 +7,9 @@
 # Last Modified Date:  23.04.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import sys, importlib
+import importlib
+import sys
+
 from pip._internal.operations import freeze
 
 if __name__ == "__main__":

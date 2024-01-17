@@ -7,13 +7,15 @@
 # Last Modified Date:  16.03.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Literal, Any
 from collections.abc import Sequence
+from typing import Any, Literal
+
 from pymongo.collection import Collection
+
 from ampel.base.AmpelFlexModel import AmpelFlexModel
-from ampel.view.ReadOnlyDict import ReadOnlyDict
 from ampel.content.LogDocument import LogDocument
 from ampel.log.LogFlag import LogFlag
+from ampel.view.ReadOnlyDict import ReadOnlyDict
 
 
 class LogsLoader(AmpelFlexModel):

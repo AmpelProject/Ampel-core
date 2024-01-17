@@ -1,15 +1,13 @@
-import base64, json, sys, pytest, yaml
+import sys
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Optional
 from unittest.mock import MagicMock
+
+import pytest
+import yaml
 from pytest_mock import MockerFixture
-from contextlib import contextmanager, nullcontext
 
 from ampel.cli.main import main
-from ampel.cli.utils import get_vault
-from ampel.model.job.JobModel import JobModel
-from ampel.config.AmpelConfig import AmpelConfig
-from ampel.secret.AmpelVault import AmpelVault
 
 
 @contextmanager

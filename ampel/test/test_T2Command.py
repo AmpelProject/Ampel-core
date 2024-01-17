@@ -1,13 +1,12 @@
-import pytest
 import sys
-import yaml
-from pathlib import Path
 from contextlib import contextmanager
-
+from pathlib import Path
 from typing import Sequence
 
-from pytest_mock import MockerFixture
+import pytest
+import yaml
 from mongomock import MongoClient
+from pytest_mock import MockerFixture
 
 from ampel.cli.main import main
 from ampel.cli.T2Command import T2Command

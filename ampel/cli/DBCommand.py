@@ -7,17 +7,17 @@
 # Last Modified Date:  20.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any
+from argparse import ArgumentParser  # type: ignore[import]
 from collections.abc import Sequence
-from argparse import ArgumentParser # type: ignore[import]
-from ampel.core.AmpelDB import AmpelDB
-from ampel.core.AmpelContext import AmpelContext
+from typing import Any
+
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.ArgParserBuilder import ArgParserBuilder
 from ampel.cli.main import AmpelArgumentParser
+from ampel.core.AmpelContext import AmpelContext
+from ampel.core.AmpelDB import AmpelDB
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogFlag import LogFlag
-
 
 # Help parameter descriptions
 hlp = {

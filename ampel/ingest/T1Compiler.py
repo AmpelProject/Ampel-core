@@ -8,14 +8,17 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import datetime
-import xxhash
 from struct import pack
 from typing import Any, NamedTuple
-from ampel.types import ChannelId, DataPointId, StockId, UnitId, UBson
-from ampel.content.T1Document import T1Document
-from ampel.content.MetaActivity import MetaActivity
-from ampel.abstract.AbsDocIngester import AbsDocIngester
+
+import xxhash
+
 from ampel.abstract.AbsCompiler import AbsCompiler, ActivityRegister
+from ampel.abstract.AbsDocIngester import AbsDocIngester
+from ampel.content.MetaActivity import MetaActivity
+from ampel.content.T1Document import T1Document
+from ampel.types import ChannelId, DataPointId, StockId, UBson, UnitId
+
 
 class T1Compiler(AbsCompiler):
 	"""

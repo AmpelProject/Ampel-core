@@ -7,13 +7,15 @@
 # Last Modified Date:  29.03.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from bson.codec_options import CodecOptions
 from collections.abc import Iterable, Iterator
 from typing import ClassVar
-from ampel.types import StockId, StrictIterable
-from ampel.struct.AmpelBuffer import AmpelBuffer
+
+from bson.codec_options import CodecOptions
+
 from ampel.abstract.AbsT3Loader import AbsT3Loader
 from ampel.mongo.view.FrozenValuesDict import FrozenValuesDict
+from ampel.struct.AmpelBuffer import AmpelBuffer
+from ampel.types import StockId, StrictIterable
 
 
 class T3SimpleDataLoader(AbsT3Loader):

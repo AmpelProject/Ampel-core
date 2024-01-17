@@ -1,16 +1,17 @@
 from typing import Optional
-from ampel.base.LogicalUnit import LogicalUnit
-from ampel.model.ingest.CompilerOptions import CompilerOptions
-from ampel.secret.NamedSecret import NamedSecret
-from ampel.dev.DevAmpelContext import DevAmpelContext
+
 import pytest
 
-from ampel.secret.Secret import Secret
-from ampel.secret.DictSecretProvider import DictSecretProvider
-from ampel.secret.AmpelVault import AmpelVault
-from ampel.model.UnitModel import UnitModel
 from ampel.abstract.AbsOpsUnit import AbsOpsUnit
+from ampel.base.LogicalUnit import LogicalUnit
 from ampel.core.ContextUnit import ContextUnit
+from ampel.dev.DevAmpelContext import DevAmpelContext
+from ampel.model.ingest.CompilerOptions import CompilerOptions
+from ampel.model.UnitModel import UnitModel
+from ampel.secret.AmpelVault import AmpelVault
+from ampel.secret.DictSecretProvider import DictSecretProvider
+from ampel.secret.NamedSecret import NamedSecret
+from ampel.secret.Secret import Secret
 
 
 @pytest.fixture

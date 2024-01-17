@@ -7,9 +7,11 @@
 # Last Modified Date:  23.04.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import pytest, yaml
-from ampel.config.builder.ProcessMorpher import ProcessMorpher
+import pytest
+import yaml
+
 from ampel.config.builder.DisplayOptions import DisplayOptions
+from ampel.config.builder.ProcessMorpher import ProcessMorpher
 from ampel.config.collector.T02ConfigCollector import T02ConfigCollector
 
 

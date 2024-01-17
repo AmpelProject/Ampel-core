@@ -7,10 +7,11 @@
 # Last Modified Date:  09.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import ClassVar
 from datetime import datetime, timedelta
-from ampel.mongo.query.var.events import get_last_run
+from typing import ClassVar
+
 from ampel.abstract.AbsT3Supplier import AbsT3Supplier
+from ampel.mongo.query.var.events import get_last_run
 from ampel.struct.T3Store import T3Store
 
 

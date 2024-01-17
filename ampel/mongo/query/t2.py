@@ -7,14 +7,16 @@
 # Last Modified Date:  27.12.2019
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from bson.binary import Binary
 from typing import Any
-from ampel.types import StockId, ChannelId, StrictIterable, strict_iterable
-from ampel.model.operator.AnyOf import AnyOf
+
+from bson.binary import Binary
+
 from ampel.model.operator.AllOf import AllOf
+from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.OneOf import OneOf
-from ampel.mongo.utils import maybe_match_array
 from ampel.mongo.query.general import build_general_query
+from ampel.mongo.utils import maybe_match_array
+from ampel.types import ChannelId, StockId, StrictIterable, strict_iterable
 
 
 def build_stateless_query(

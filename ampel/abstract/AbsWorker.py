@@ -7,39 +7,43 @@
 # Last Modified Date:  03.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import gc, signal, sys
+import gc
 import random
-from math import ceil
-from time import time, sleep
-from typing import ClassVar, Any, TypeVar, Generic, Literal, Sequence, Generator
-from ampel.base.AmpelBaseModel import AmpelBaseModel
+import signal
 from contextlib import contextmanager
+from math import ceil
 from threading import Event
+from time import time
+from typing import Any, ClassVar, Generator, Generic, Literal, Sequence, TypeVar
 
-from pymongo.write_concern import WriteConcern
 from pymongo.read_concern import ReadConcern
+from pymongo.write_concern import WriteConcern
 
-from ampel.types import OneOrMany, JDict, UBson, Tag
+from ampel.abstract.AbsEventUnit import AbsEventUnit
+from ampel.abstract.AbsUnitResultAdapter import AbsUnitResultAdapter
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.base.decorator import abstractmethod
 from ampel.base.LogicalUnit import LogicalUnit
-from ampel.mongo.utils import maybe_match_array
-from ampel.log.utils import convert_dollars
-from ampel.enum.DocumentCode import DocumentCode
 from ampel.content.MetaRecord import MetaRecord
 from ampel.content.T1Document import T1Document
 from ampel.content.T2Document import T2Document
-from ampel.enum.MetaActionCode import MetaActionCode
-from ampel.enum.EventCode import EventCode
-from ampel.log import AmpelLogger, LogFlag, VERBOSE, DEBUG
 from ampel.core.EventHandler import EventHandler
-from ampel.log.utils import report_exception, report_error
-from ampel.util.hash import build_unsafe_dict_id
-from ampel.abstract.AbsEventUnit import AbsEventUnit
-from ampel.abstract.AbsUnitResultAdapter import AbsUnitResultAdapter
+from ampel.enum.DocumentCode import DocumentCode
+from ampel.enum.EventCode import EventCode
+from ampel.enum.MetaActionCode import MetaActionCode
+from ampel.log import DEBUG, VERBOSE, AmpelLogger, LogFlag
+from ampel.log.utils import convert_dollars, report_error, report_exception
+from ampel.metrics.AmpelMetricsRegistry import (
+	AmpelMetricsRegistry,
+	Histogram,
+	Summary,
+	TimingCounter,
+)
 from ampel.model.UnitModel import UnitModel
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
-from ampel.mongo.utils import maybe_use_each
-from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry, Histogram, TimingCounter, Summary
+from ampel.mongo.utils import maybe_match_array, maybe_use_each
+from ampel.types import JDict, OneOrMany, Tag, UBson
+from ampel.util.hash import build_unsafe_dict_id
 from ampel.util.tag import merge_tags
 
 T = TypeVar("T", T1Document, T2Document)

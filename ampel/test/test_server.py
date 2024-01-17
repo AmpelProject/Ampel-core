@@ -7,19 +7,22 @@
 # Last Modified Date:  11.02.2021
 # Last Modified By:    jvs
 
-import asyncio, pytest, yaml
+import asyncio
 import json
-from ampel.core.AmpelContext import AmpelContext
 from datetime import datetime
 from io import StringIO
+
+import pytest
+import pytest_asyncio
+import yaml
 from httpx import AsyncClient
 from prometheus_client.parser import text_fd_to_metric_families
-import pytest_asyncio
 
+from ampel.core.AmpelContext import AmpelContext
+from ampel.enum.DocumentCode import DocumentCode
 from ampel.metrics.AmpelDBCollector import AmpelDBCollector
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 from ampel.run import server
-from ampel.enum.DocumentCode import DocumentCode
 from ampel.util.freeze import recursive_unfreeze
 from ampel.util.mappings import set_by_path
 

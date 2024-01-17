@@ -1,37 +1,38 @@
-import mongomock, pytest, pymongo, subprocess, json, datetime
+import datetime
+import json
+import subprocess
 from os import environ
 from pathlib import Path, PosixPath
 from typing import Any
 
-from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
+import mongomock
+import pymongo
+import pytest
+
 from ampel.config.builder.DisplayOptions import DisplayOptions
-from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
-from ampel.dev.DevAmpelContext import DevAmpelContext
+from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
 from ampel.content.JournalRecord import JournalRecord
-
-from ampel.mongo.update.MongoStockIngester import MongoStockIngester
-from ampel.mongo.update.MongoT2Ingester import MongoT2Ingester
-from ampel.ingest.T2Compiler import T2Compiler
+from ampel.dev.DevAmpelContext import DevAmpelContext
+from ampel.ingest.ChainedIngestionHandler import ChainedIngestionHandler
 from ampel.ingest.StockCompiler import StockCompiler
+from ampel.ingest.T2Compiler import T2Compiler
 from ampel.log.AmpelLogger import AmpelLogger
-from ampel.util.config import get_unit_confid
-
+from ampel.model.ingest.CompilerOptions import CompilerOptions
+from ampel.model.ingest.IngestBody import IngestBody
+from ampel.model.ingest.IngestDirective import IngestDirective
 from ampel.model.ingest.T1Combine import T1Combine
 from ampel.model.ingest.T2Compute import T2Compute
-from ampel.model.ingest.IngestBody import IngestBody
 from ampel.model.UnitModel import UnitModel
-from ampel.model.ingest.CompilerOptions import CompilerOptions
-from ampel.model.ingest.IngestDirective import IngestDirective
-
-from ampel.ingest.ChainedIngestionHandler import ChainedIngestionHandler
-
-
+from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
+from ampel.mongo.update.MongoStockIngester import MongoStockIngester
+from ampel.mongo.update.MongoT2Ingester import MongoT2Ingester
 from ampel.test.dummy import (
-    DummyStockT2Unit,
     DummyPointT2Unit,
     DummyStateT2Unit,
+    DummyStockT2Unit,
     DummyTiedStateT2Unit,
 )
+from ampel.util.config import get_unit_confid
 
 
 def pytest_addoption(parser):

@@ -8,14 +8,15 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from collections.abc import Generator, Sequence
-from ampel.abstract.AbsT3Supplier import AbsT3Supplier
-from ampel.abstract.AbsT3Selector import AbsT3Selector
-from ampel.abstract.AbsT3Loader import AbsT3Loader
+
 from ampel.abstract.AbsBufferComplement import AbsBufferComplement
-from ampel.util.collections import get_chunks as chunks_func
-from ampel.struct.AmpelBuffer import AmpelBuffer
+from ampel.abstract.AbsT3Loader import AbsT3Loader
+from ampel.abstract.AbsT3Selector import AbsT3Selector
+from ampel.abstract.AbsT3Supplier import AbsT3Supplier
 from ampel.model.UnitModel import UnitModel
+from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.struct.T3Store import T3Store
+from ampel.util.collections import get_chunks as chunks_func
 
 
 class T3DefaultBufferSupplier(AbsT3Supplier[Generator[AmpelBuffer, None, None]]):

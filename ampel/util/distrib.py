@@ -7,11 +7,15 @@
 # Last Modified Date:  23.04.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import os, re
+import os
+import re
 from collections.abc import Generator
-from pkg_resources import ( # type: ignore[attr-defined]
-	get_distribution, AvailableDistributions,
-	EggInfoDistribution, DistInfoDistribution
+
+from pkg_resources import (  # type: ignore[attr-defined]
+	AvailableDistributions,
+	DistInfoDistribution,
+	EggInfoDistribution,
+	get_distribution,
 )
 
 

@@ -7,18 +7,19 @@
 # Last Modified Date:  09.01.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any, Literal, TYPE_CHECKING
 from collections.abc import Iterable
-from ampel.config.AmpelConfig import AmpelConfig
+from typing import TYPE_CHECKING, Any, Literal
+
 from ampel.base.AuxUnitRegister import AuxUnitRegister
-from ampel.secret.AmpelVault import AmpelVault
-from ampel.secret.AESecretProvider import AESecretProvider
+from ampel.config.AmpelConfig import AmpelConfig
 from ampel.config.builder.DisplayOptions import DisplayOptions
+from ampel.secret.AESecretProvider import AESecretProvider
+from ampel.secret.AmpelVault import AmpelVault
 
 # Avoid cyclic import issues
 if TYPE_CHECKING:
 	from ampel.core.AmpelDB import AmpelDB
-	from ampel.core.UnitLoader import UnitLoader # noqa
+	from ampel.core.UnitLoader import UnitLoader  # noqa
 
 
 class AmpelContext:

@@ -7,16 +7,16 @@
 # Last Modified Date:  21.11.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Literal, Any
-from ampel.types import OneOrMany, Tag, ChannelId
-from ampel.base.AmpelABC import AmpelABC
-from ampel.base.decorator import abstractmethod
-from ampel.base.AmpelUnit import AmpelUnit
-from ampel.abstract.AbsDocIngester import AbsDocIngester
-from ampel.content.MetaRecord import MetaRecord
-from ampel.content.MetaActivity import MetaActivity
-from ampel.enum.MetaActionCode import MetaActionCode
+from typing import Any, Literal
 
+from ampel.abstract.AbsDocIngester import AbsDocIngester
+from ampel.base.AmpelABC import AmpelABC
+from ampel.base.AmpelUnit import AmpelUnit
+from ampel.base.decorator import abstractmethod
+from ampel.content.MetaActivity import MetaActivity
+from ampel.content.MetaRecord import MetaRecord
+from ampel.enum.MetaActionCode import MetaActionCode
+from ampel.types import ChannelId, OneOrMany, Tag
 
 # Alias
 ActivityRegister = dict[

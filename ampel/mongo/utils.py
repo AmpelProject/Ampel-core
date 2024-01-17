@@ -7,8 +7,9 @@
 # Last Modified Date:  09.10.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any
 from collections.abc import Sequence
+from typing import Any
+
 from ampel.types import StrictIterable, strict_iterable
 
 

@@ -7,15 +7,14 @@
 # Last Modified Date:  03.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import sys, time
-from sys import _getframe
-from os.path import basename
+import sys
 from time import strftime
 from typing import Literal
-from ampel.log.LogFlag import LogFlag
+
 from ampel.log.LightLogRecord import LightLogRecord
-from ampel.util.mappings import compare_dict_values
+from ampel.log.LogFlag import LogFlag
 from ampel.util.collections import try_reduce
+from ampel.util.mappings import compare_dict_values
 
 levels = {1: 'DEBUG', 2: 'VERBOSE', 4: 'INFO', 8: 'SHOUT', 16: 'WARNING', 32: 'ERROR'}
 

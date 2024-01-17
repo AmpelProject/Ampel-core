@@ -7,11 +7,13 @@
 # Last Modified Date:  06.10.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any
 from collections.abc import Sequence
-from ampel.types import ChannelId
+from typing import Any
+
 from ampel.base.decorator import abstractmethod
 from ampel.mongo.view.AbsMongoView import AbsMongoView
+from ampel.types import ChannelId
+
 
 # mypy: disable-error-code = empty-body
 class AbsMongoFlatMultiView(AbsMongoView, abstract=True):

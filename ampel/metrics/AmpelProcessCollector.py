@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Tuple
 
 import psutil
 from prometheus_client.metrics_core import (  # type: ignore

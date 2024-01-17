@@ -7,15 +7,23 @@
 # Last Modified Date:  18.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import json, yaml, pkg_resources, os, re
-from typing import Any
-from functools import partial
+import json
+import os
+import re
 from collections.abc import Callable
-from pkg_resources import EggInfoDistribution, DistInfoDistribution # type: ignore[attr-defined]
+from functools import partial
+from typing import Any
+
+import pkg_resources
+import yaml
+from pkg_resources import (  # type: ignore[attr-defined]
+	DistInfoDistribution,
+	EggInfoDistribution,
+)
 
 from ampel.config.builder.ConfigBuilder import ConfigBuilder
+from ampel.log import SHOUT, VERBOSE
 from ampel.util.distrib import get_dist_names, get_files
-from ampel.log import VERBOSE, SHOUT
 
 
 class DistConfigBuilder(ConfigBuilder):

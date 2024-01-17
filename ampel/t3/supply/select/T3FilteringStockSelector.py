@@ -7,17 +7,17 @@
 # Last Modified Date:  02.08.2020
 # Last Modified By	: Jakob van Santen <jakob.van.santen@desy.de>
 
+from collections.abc import Generator
 from itertools import islice
 from typing import Any
-from collections.abc import Sequence, Generator
 
-from ampel.types import StockId
-from ampel.t3.supply.select.T3StockSelector import T3StockSelector
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.t3.T2FilterModel import T2FilterModel
 from ampel.mongo.query.general import build_general_query
 from ampel.mongo.utils import maybe_match_array
+from ampel.t3.supply.select.T3StockSelector import T3StockSelector
+from ampel.types import StockId
 
 
 class T3FilteringStockSelector(T3StockSelector):

@@ -7,20 +7,21 @@
 # Last Modified Date:  24.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import yaml
-from datetime import datetime
-from typing import Any, Callable
 from argparse import ArgumentParser
 from collections.abc import Sequence
+from datetime import datetime
+from typing import Any, Callable
+
+import yaml
 from bson.objectid import ObjectId
 
+from ampel.cli.AbsCoreCommand import AbsCoreCommand
+from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
+from ampel.cli.LoadJSONAction import LoadJSONAction
+from ampel.cli.MaybeIntAction import MaybeIntAction
 from ampel.core.AmpelContext import AmpelContext
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogFlag import LogFlag
-from ampel.cli.AbsCoreCommand import AbsCoreCommand
-from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
-from ampel.cli.MaybeIntAction import MaybeIntAction
-from ampel.cli.LoadJSONAction import LoadJSONAction
 from ampel.util.pretty import prettyjson
 
 

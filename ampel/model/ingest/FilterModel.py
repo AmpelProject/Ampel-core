@@ -8,6 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Literal
+
 from ampel.model.UnitModel import UnitModel
 
 

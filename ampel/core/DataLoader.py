@@ -7,23 +7,24 @@
 # Last Modified Date:  04.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from bson.codec_options import CodecOptions
-from typing import Literal
 from collections.abc import Iterable, Iterator
+from typing import Literal
 
-from ampel.types import StockId, ChannelId, StrictIterable, Tag
-from ampel.model.operator.AnyOf import AnyOf
+from bson.codec_options import CodecOptions
+
+from ampel.core.AmpelContext import AmpelContext
+from ampel.log.AmpelLogger import AmpelLogger
+from ampel.log.utils import safe_query_dict
+from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 from ampel.model.operator.AllOf import AllOf
+from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.OneOf import OneOf
 from ampel.model.t3.LoaderDirective import LoaderDirective
-from ampel.mongo.view.FrozenValuesDict import FrozenValuesDict
 from ampel.mongo.query.general import build_general_query
-from ampel.log.utils import safe_query_dict
-from ampel.log.AmpelLogger import AmpelLogger
+from ampel.mongo.view.FrozenValuesDict import FrozenValuesDict
 from ampel.struct.AmpelBuffer import AmpelBuffer
+from ampel.types import ChannelId, StockId, StrictIterable, Tag
 from ampel.util.collections import ampel_iter
-from ampel.core.AmpelContext import AmpelContext
-from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 
 # Monitoring counters
 stat_db_loads = AmpelMetricsRegistry.counter(

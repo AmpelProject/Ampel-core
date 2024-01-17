@@ -7,9 +7,9 @@
 # Last Modified Date:  09.01.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from ampel.types import Traceless
 from ampel.base.AmpelUnit import AmpelUnit
 from ampel.core.AmpelContext import AmpelContext
+from ampel.types import Traceless
 
 
 class ContextUnit(AmpelUnit):

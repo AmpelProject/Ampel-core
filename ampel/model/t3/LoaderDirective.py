@@ -8,12 +8,12 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any, Literal
-from ampel.content.StockDocument import StockDocument
+
 from ampel.content.DataPoint import DataPoint
+from ampel.content.StockDocument import StockDocument
 from ampel.content.T1Document import T1Document
 from ampel.content.T2Document import T2Document
 from ampel.model.t3.AliasableModel import AliasableModel
-
 
 models = {
 	"stock": StockDocument,

@@ -7,19 +7,20 @@
 # Last Modified Date:  03.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+from collections.abc import Generator, Iterable, Sequence
 from time import time
 from typing import Annotated
-from collections.abc import Generator, Iterable, Sequence
+
 from ampel.abstract.AbsT3Unit import AbsT3Unit, T
-from ampel.struct.T3Store import T3Store
-from ampel.view.T3DocView import T3DocView
-from ampel.view.SnapView import SnapView
-from ampel.model.UnitModel import UnitModel
 from ampel.content.T3Document import T3Document
+from ampel.model.UnitModel import UnitModel
+from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
 from ampel.struct.AmpelBuffer import AmpelBuffer
+from ampel.struct.T3Store import T3Store
 from ampel.t3.stage.BaseViewGenerator import BaseViewGenerator, T3Send
 from ampel.t3.stage.T3BaseStager import T3BaseStager
-from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
+from ampel.view.SnapView import SnapView
+from ampel.view.T3DocView import T3DocView
 
 
 class SimpleGenerator(BaseViewGenerator[T]):

@@ -9,6 +9,7 @@
 
 from enum import IntFlag
 
+
 # flake8: noqa: E221
 class LogFlag(IntFlag):
 	"""

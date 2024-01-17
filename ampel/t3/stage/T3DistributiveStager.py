@@ -7,15 +7,15 @@
 # Last Modified Date:  09.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from time import time
-from itertools import cycle
 from collections.abc import Generator
+from itertools import cycle
 from multiprocessing.pool import ThreadPool
+from time import time
 
-from ampel.struct.T3Store import T3Store
+from ampel.content.T3Document import T3Document
 from ampel.model.UnitModel import UnitModel
 from ampel.struct.AmpelBuffer import AmpelBuffer
-from ampel.content.T3Document import T3Document
+from ampel.struct.T3Store import T3Store
 from ampel.t3.stage.T3ThreadedStager import T3ThreadedStager
 
 

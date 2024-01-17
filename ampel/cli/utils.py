@@ -10,12 +10,13 @@
 import os
 from enum import IntEnum
 from typing import Any, Literal, Type, overload
-from ampel.core.AmpelDB import AmpelDB
-from ampel.secret.AmpelVault import AmpelVault
-from ampel.config.AmpelConfig import AmpelConfig
-from ampel.base.AuxUnitRegister import AuxUnitRegister
+
 from ampel.abstract.AbsIdMapper import AbsIdMapper
 from ampel.abstract.AbsSecretProvider import AbsSecretProvider
+from ampel.base.AuxUnitRegister import AuxUnitRegister
+from ampel.config.AmpelConfig import AmpelConfig
+from ampel.core.AmpelDB import AmpelDB
+from ampel.secret.AmpelVault import AmpelVault
 from ampel.util.collections import check_seq_inner_type
 
 

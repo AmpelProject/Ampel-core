@@ -8,30 +8,37 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import collections.abc
-from typing import Any, Literal
+from collections.abc import Sequence
 from functools import cached_property
+from typing import Any, Literal
+
 from pymongo import MongoClient
-from pymongo.database import Database
 from pymongo.collection import Collection
-from pymongo.errors import ConfigurationError, DuplicateKeyError, OperationFailure, CollectionInvalid
+from pymongo.database import Database
+from pymongo.errors import (
+	CollectionInvalid,
+	ConfigurationError,
+	DuplicateKeyError,
+	OperationFailure,
+)
 from pymongo.read_preferences import SecondaryPreferred
 
-from ampel.types import ChannelId
-from ampel.mongo.utils import get_ids
-from ampel.log.AmpelLogger import AmpelLogger
-from ampel.config.AmpelConfig import AmpelConfig
 from ampel.base.AmpelUnit import AmpelUnit
-from ampel.secret.AmpelVault import AmpelVault
-from ampel.mongo.view.AbsMongoView import AbsMongoView
-from ampel.mongo.view.MongoOneView import MongoOneView
-from ampel.mongo.view.MongoOrView import MongoOrView
-from ampel.mongo.view.MongoAndView import MongoAndView
+from ampel.config.AmpelConfig import AmpelConfig
+from ampel.log.AmpelLogger import AmpelLogger
 from ampel.mongo.model.AmpelColModel import AmpelColModel
 from ampel.mongo.model.AmpelDBModel import AmpelDBModel
 from ampel.mongo.model.IndexModel import IndexModel
-from ampel.mongo.model.ShortIndexModel import ShortIndexModel
 from ampel.mongo.model.MongoClientOptionsModel import MongoClientOptionsModel
 from ampel.mongo.model.MongoClientRoleModel import MongoClientRoleModel
+from ampel.mongo.model.ShortIndexModel import ShortIndexModel
+from ampel.mongo.utils import get_ids
+from ampel.mongo.view.AbsMongoView import AbsMongoView
+from ampel.mongo.view.MongoAndView import MongoAndView
+from ampel.mongo.view.MongoOneView import MongoOneView
+from ampel.mongo.view.MongoOrView import MongoOrView
+from ampel.secret.AmpelVault import AmpelVault
+from ampel.types import ChannelId
 from ampel.util.collections import try_reduce
 
 intcol = {'t0': 0, 't1': 1, 't2': 2, 't3': 3, 'stock': 4}

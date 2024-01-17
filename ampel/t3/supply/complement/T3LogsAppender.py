@@ -7,15 +7,17 @@
 # Last Modified Date:  28.02.2022
 # Last Modified By:    Marcus Fenner <mf@physik.hu-berlin.de>
 
-from datetime import datetime
-from bson.objectid import ObjectId
-from typing import Any
 from collections.abc import Iterable
-from ampel.struct.T3Store import T3Store
-from ampel.struct.AmpelBuffer import AmpelBuffer
-from ampel.mongo.query.var.LogsLoader import LogsLoader
-from ampel.log.utils import safe_query_dict
+from datetime import datetime
+from typing import Any
+
+from bson.objectid import ObjectId
+
 from ampel.abstract.AbsBufferComplement import AbsBufferComplement
+from ampel.log.utils import safe_query_dict
+from ampel.mongo.query.var.LogsLoader import LogsLoader
+from ampel.struct.AmpelBuffer import AmpelBuffer
+from ampel.struct.T3Store import T3Store
 
 
 class T3LogsAppender(AbsBufferComplement):

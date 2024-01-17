@@ -1,48 +1,41 @@
 #!/usr/bin/env python
 
 import asyncio
-from contextlib import asynccontextmanager
 import enum
 import logging
 import operator
 import os
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from functools import reduce
 from typing import (
-    Any,
-    cast,
-    Dict,
-    List,
-    Literal,
-    Optional,
-    Set,
-    Tuple,
-    Union,
-    cast,
     TYPE_CHECKING,
+    Any,
+    Literal,
+    cast,
 )
 
-from bson import json_util, tz_util, ObjectId
-from fastapi import FastAPI, Header, HTTPException, Path, Query, Depends
+from bson import ObjectId, json_util, tz_util
+from fastapi import Depends, FastAPI, Header, HTTPException, Path, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from prometheus_client.exposition import choose_encoder
 
 from ampel.abstract.AbsProcessController import AbsProcessController
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.core.AmpelContext import AmpelContext
 from ampel.core.AmpelController import AmpelController
+from ampel.core.AmpelDB import AmpelDB
 from ampel.core.UnitLoader import UnitLoader
-from ampel.secret.DictSecretProvider import DictSecretProvider
-from ampel.secret.AmpelVault import AmpelVault
+from ampel.enum.DocumentCode import DocumentCode
 from ampel.log.LogFlag import LogFlag
 from ampel.metrics.AmpelDBCollector import AmpelDBCollector
-from ampel.metrics.AmpelProcessCollector import AmpelProcessCollector
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
+from ampel.metrics.AmpelProcessCollector import AmpelProcessCollector
 from ampel.model.ProcessModel import ProcessModel
-from ampel.base.AmpelBaseModel import AmpelBaseModel
-from ampel.core.AmpelDB import AmpelDB
-from ampel.enum.DocumentCode import DocumentCode
+from ampel.secret.AmpelVault import AmpelVault
+from ampel.secret.DictSecretProvider import DictSecretProvider
 from ampel.util.hash import build_unsafe_dict_id
 
 if TYPE_CHECKING:

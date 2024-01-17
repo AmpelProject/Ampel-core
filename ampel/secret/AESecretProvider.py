@@ -7,9 +7,10 @@
 # Last Modified Date:  20.06.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from sjcl import SJCL
-from typing import Union
 from collections.abc import Iterable
+
+from sjcl import SJCL
+
 from ampel.abstract.AbsSecretProvider import AbsSecretProvider
 from ampel.secret.AESecret import AESecret
 from ampel.secret.Secret import Secret

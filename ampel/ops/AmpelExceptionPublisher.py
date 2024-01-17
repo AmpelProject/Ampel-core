@@ -8,11 +8,15 @@
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 
-import datetime, json, socket
+import datetime
+import json
+import socket
+from typing import Any
+
 from bson import ObjectId
 from slack_sdk.web import WebClient
 from slack_sdk.web.slack_response import SlackResponse
-from typing import Any
+
 from ampel.abstract.AbsOpsUnit import AbsOpsUnit
 from ampel.secret.NamedSecret import NamedSecret
 

@@ -8,13 +8,14 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Iterable
-from ampel.types import Traceless
-from ampel.struct.T3Store import T3Store
-from ampel.protocol.LoggerProtocol import LoggerProtocol
+
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
-from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.core.ContextUnit import ContextUnit
+from ampel.protocol.LoggerProtocol import LoggerProtocol
+from ampel.struct.AmpelBuffer import AmpelBuffer
+from ampel.struct.T3Store import T3Store
+from ampel.types import Traceless
 
 
 # Inherits ContextUnit because implementing classes might need access to

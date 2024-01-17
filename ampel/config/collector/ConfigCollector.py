@@ -8,8 +8,9 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any, Literal
-from ampel.log.AmpelLogger import AmpelLogger
+
 from ampel.config.builder.DisplayOptions import DisplayOptions
+from ampel.log.AmpelLogger import AmpelLogger
 
 
 class ConfigCollector(dict):

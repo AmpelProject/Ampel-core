@@ -1,7 +1,8 @@
-import pytest, mongomock
+import mongomock
+import pytest
 
-from ampel.t3.supply.select.T3FilteringStockSelector import T3FilteringStockSelector
 from ampel.t2.T2Worker import T2Worker
+from ampel.t3.supply.select.T3FilteringStockSelector import T3FilteringStockSelector
 
 
 @pytest.fixture

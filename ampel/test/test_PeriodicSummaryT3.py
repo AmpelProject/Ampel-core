@@ -1,4 +1,7 @@
-import copy, pytest
+import copy
+
+import pytest
+
 from ampel.config.builder.ConfigValidator import ConfigValidator
 from ampel.template.PeriodicSummaryT3 import PeriodicSummaryT3
 

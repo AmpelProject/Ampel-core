@@ -7,13 +7,14 @@
 # Last Modified Date:  27.05.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Literal
 from collections.abc import Sequence
-from ampel.model.UnitModel import UnitModel
+from typing import Literal
+
 from ampel.model.ingest.T1Combine import T1Combine
 from ampel.model.ingest.T1CombineCompute import T1CombineCompute
 from ampel.model.ingest.T1CombineComputeNow import T1CombineComputeNow
 from ampel.model.ingest.T2Compute import T2Compute
+from ampel.model.UnitModel import UnitModel
 
 
 class MuxModel(UnitModel[str]):

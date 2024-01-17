@@ -8,8 +8,8 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
-from ampel.model.aux.AuxAliasableModel import AuxAliasableModel
 
+from ampel.model.aux.AuxAliasableModel import AuxAliasableModel
 
 empty: dict[str, Any] = {}
 

@@ -7,17 +7,17 @@
 # Last Modified Date:  03.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any, Annotated
+from typing import Annotated, Any
 
-from ampel.types import ChannelId
 from ampel.abstract.AbsEventUnit import AbsEventUnit
-from ampel.abstract.AbsT3Supplier import AbsT3Supplier
 from ampel.abstract.AbsT3Stager import AbsT3Stager
-from ampel.struct.T3Store import T3Store
-from ampel.model.UnitModel import UnitModel
-from ampel.model.t3.T3IncludeDirective import T3IncludeDirective
+from ampel.abstract.AbsT3Supplier import AbsT3Supplier
 from ampel.core.EventHandler import EventHandler
-from ampel.log import AmpelLogger, LogFlag, SHOUT
+from ampel.log import SHOUT, AmpelLogger, LogFlag
+from ampel.model.t3.T3IncludeDirective import T3IncludeDirective
+from ampel.model.UnitModel import UnitModel
+from ampel.struct.T3Store import T3Store
+from ampel.types import ChannelId
 
 
 class T3Processor(AbsEventUnit):

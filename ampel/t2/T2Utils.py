@@ -7,22 +7,23 @@
 # Last Modified Date:  16.09.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from datetime import datetime
-from pymongo.collection import Collection
-from typing import Any, Literal
 from collections.abc import Iterable, Sequence
+from datetime import datetime
+from typing import Any, Literal
 
-from ampel.types import UnitId, Tag, StrictIterable, ChannelId, StockId
+from pymongo.collection import Collection
+
 from ampel.abstract.AbsIdMapper import AbsIdMapper
-from ampel.log.AmpelLogger import AmpelLogger
-from ampel.model.operator.AnyOf import AnyOf
-from ampel.model.operator.AllOf import AllOf
-from ampel.model.operator.OneOf import OneOf
-from ampel.content.T2Document import T2Document
 from ampel.content.JournalRecord import JournalRecord
+from ampel.content.T2Document import T2Document
 from ampel.enum.DocumentCode import DocumentCode
+from ampel.log.AmpelLogger import AmpelLogger
+from ampel.model.operator.AllOf import AllOf
+from ampel.model.operator.AnyOf import AnyOf
+from ampel.model.operator.OneOf import OneOf
 from ampel.mongo.query.general import build_general_query
 from ampel.mongo.utils import maybe_match_array
+from ampel.types import ChannelId, StockId, StrictIterable, Tag, UnitId
 from ampel.util.collections import check_seq_inner_type
 
 

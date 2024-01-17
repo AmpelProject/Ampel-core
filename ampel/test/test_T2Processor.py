@@ -1,17 +1,17 @@
-import pytest
+from contextlib import contextmanager
 from time import time
+
+import pytest
+from pymongo.errors import OperationFailure
+from pytest_mock import MockerFixture
 
 from ampel.content.T2Document import T2Document
 from ampel.core.AmpelContext import AmpelContext
 from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.enum.DocumentCode import DocumentCode
-from contextlib import contextmanager
-from pymongo.errors import OperationFailure
-
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 from ampel.t2.T2Worker import T2Worker
 from ampel.test.dummy import DummyPointT2Unit
-from pytest_mock import MockerFixture
 
 
 @contextmanager

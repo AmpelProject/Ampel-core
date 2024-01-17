@@ -7,19 +7,22 @@
 # Last Modified Date:  15.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import struct, socket
-from bson import ObjectId
-from typing import TYPE_CHECKING
+import socket
+import struct
 from logging import LogRecord
+from typing import TYPE_CHECKING
+
+from bson import ObjectId
 from pymongo.errors import BulkWriteError
+
 from ampel.base.AmpelUnit import AmpelUnit
-from ampel.util.mappings import compare_dict_values
-from ampel.util.collections import try_reduce
 from ampel.log.AmpelLogger import AmpelLogger
-from ampel.log.LightLogRecord import LightLogRecord
 from ampel.log.AmpelLoggingError import AmpelLoggingError
+from ampel.log.LightLogRecord import LightLogRecord
 from ampel.log.LogFlag import LogFlag
 from ampel.log.utils import log_exception, report_exception
+from ampel.util.collections import try_reduce
+from ampel.util.mappings import compare_dict_values
 
 if TYPE_CHECKING:
 	from ampel.core.AmpelDB import AmpelDB
@@ -270,7 +273,11 @@ class DBLoggingHandler(AmpelUnit):
 
 		try:
 
-			from ampel.log.utils import get_tier_from_log_flags, convert_dollars, log_exception
+			from ampel.log.utils import (
+				convert_dollars,
+				get_tier_from_log_flags,
+				log_exception,
+			)
 			raise_exc = False
 
 			for err_dict in bwe.details.get('writeErrors', []):

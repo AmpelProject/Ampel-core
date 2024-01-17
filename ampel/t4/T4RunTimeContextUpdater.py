@@ -7,14 +7,15 @@
 # Last Modified Date:  04.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from time import time
-from typing import Annotated, Generator, Any
 from collections.abc import Sequence
-from ampel.model.UnitModel import UnitModel
-from ampel.abstract.AbsT4Unit import AbsT4Unit
+from time import time
+from typing import Annotated, Any, Generator
+
 from ampel.abstract.AbsT4ControlUnit import AbsT4ControlUnit
+from ampel.abstract.AbsT4Unit import AbsT4Unit
 from ampel.content.T4Document import T4Document
 from ampel.core.DocBuilder import DocBuilder
+from ampel.model.UnitModel import UnitModel
 
 
 class T4RunTimeContextUpdater(AbsT4ControlUnit, DocBuilder):

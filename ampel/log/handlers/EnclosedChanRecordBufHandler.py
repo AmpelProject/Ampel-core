@@ -7,10 +7,11 @@
 # Last Modified Date:  15.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from logging import Logger, Handler
+from logging import Handler, Logger
+
 from ampel.log.handlers.RecordBufferingHandler import RecordBufferingHandler
 from ampel.protocol.LoggingHandlerProtocol import LoggingHandlerProtocol
-from ampel.types import StockId, ChannelId
+from ampel.types import ChannelId, StockId
 
 
 class EnclosedChanRecordBufHandler(RecordBufferingHandler):

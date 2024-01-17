@@ -1,15 +1,17 @@
-import sys, pytest, yaml
+import sys
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Optional
+
+import pytest
+import yaml
 from pytest_mock import MockerFixture
-from contextlib import contextmanager
 
 from ampel.cli.main import main
 from ampel.cli.utils import get_vault
-from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.config.AmpelConfig import AmpelConfig
+from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.secret.AmpelVault import AmpelVault
-
 from ampel.test.dummy import DummyInputUnit
 
 

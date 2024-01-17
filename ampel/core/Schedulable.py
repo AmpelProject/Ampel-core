@@ -7,11 +7,14 @@
 # Last Modified Date:  19.04.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import logging, threading, signal
-from logging import Logger
-from schedule import Scheduler
+import logging
+import signal
+import threading
 from collections.abc import Callable
 from contextlib import contextmanager
+from logging import Logger
+
+from schedule import Scheduler
 
 
 class Schedulable:

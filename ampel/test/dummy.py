@@ -11,26 +11,25 @@ import pathlib
 import time
 from collections.abc import Sequence
 from typing import Any
-from ampel.abstract.AbsConfigMorpher import AbsConfigMorpher
-from ampel.abstract.AbsUnitResultAdapter import AbsUnitResultAdapter
-from ampel.core.EventHandler import EventHandler
-from ampel.log.AmpelLogger import AmpelLogger
 
-from ampel.struct.UnitResult import UnitResult
-from ampel.types import StockId, UBson
+from ampel.abstract.AbsConfigMorpher import AbsConfigMorpher
 from ampel.abstract.AbsEventUnit import AbsEventUnit
-from ampel.abstract.AbsStockT2Unit import AbsStockT2Unit
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.abstract.AbsStateT2Unit import AbsStateT2Unit
+from ampel.abstract.AbsStockT2Unit import AbsStockT2Unit
+from ampel.abstract.AbsT0Muxer import AbsT0Muxer
 from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
-
+from ampel.abstract.AbsUnitResultAdapter import AbsUnitResultAdapter
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
-from ampel.view.T2DocView import T2DocView
-from ampel.model.StateT2Dependency import StateT2Dependency
-from ampel.abstract.AbsT0Muxer import AbsT0Muxer
+from ampel.core.EventHandler import EventHandler
+from ampel.log.AmpelLogger import AmpelLogger
 from ampel.model.ingest.CompilerOptions import CompilerOptions
+from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.struct.Resource import Resource
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import StockId, UBson
+from ampel.view.T2DocView import T2DocView
 
 
 class Sleepy(AbsEventUnit):

@@ -9,13 +9,14 @@
 
 import datetime
 from typing import Any
-from ampel.content.MetaRecord import MetaRecord
-from ampel.types import ChannelId, DataPointId
-from ampel.content.DataPoint import DataPoint
-from ampel.abstract.AbsDocIngester import AbsDocIngester
-from ampel.util.collections import try_reduce
+
 from ampel.abstract.AbsCompiler import AbsCompiler
+from ampel.abstract.AbsDocIngester import AbsDocIngester
+from ampel.content.DataPoint import DataPoint
+from ampel.content.MetaRecord import MetaRecord
 from ampel.enum.MetaActionCode import MetaActionCode
+from ampel.types import ChannelId, DataPointId
+from ampel.util.collections import try_reduce
 
 
 class T0Compiler(AbsCompiler):

@@ -8,20 +8,20 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import collections
+from collections.abc import Iterable, Sequence
 from typing import Literal, get_args
-from collections.abc import Sequence, Iterable
-from ampel.types import ChannelId
-from ampel.model.operator.AnyOf import AnyOf
-from ampel.model.operator.AllOf import AllOf
-from ampel.model.operator.OneOf import OneOf
-from ampel.struct.AmpelBuffer import AmpelBuffer, BufferKey
-from ampel.model.UnitModel import UnitModel
+
+from ampel.abstract.AbsT3Filter import AbsT3Filter
+from ampel.aux.filter.AbsLogicOperatorFilter import AbsLogicOperatorFilter
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.log.AmpelLogger import AmpelLogger
-from ampel.abstract.AbsT3Filter import AbsT3Filter
-from ampel.aux.filter.AbsLogicOperatorFilter import AbsLogicOperatorFilter
-
+from ampel.model.operator.AllOf import AllOf
+from ampel.model.operator.AnyOf import AnyOf
+from ampel.model.operator.OneOf import OneOf
+from ampel.model.UnitModel import UnitModel
+from ampel.struct.AmpelBuffer import AmpelBuffer, BufferKey
+from ampel.types import ChannelId
 
 channel_id = get_args(ChannelId) # type: ignore[misc]
 

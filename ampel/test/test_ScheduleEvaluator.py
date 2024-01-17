@@ -1,8 +1,8 @@
 from contextlib import nullcontext
 
 import pytest
-
 import schedule as sched
+
 from ampel.config.ScheduleEvaluator import ScheduleEvaluator
 
 

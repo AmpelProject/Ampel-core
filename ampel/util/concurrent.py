@@ -15,12 +15,18 @@ Unlike pebble (or concurrent.futures.ProcessPoolExecutor), no extra Python
 threads are needed to manage the process lifecycle.
 """
 
-import asyncio, io, itertools, os, signal, sys, traceback
-from typing import Any
-from functools import wraps, partial
+import asyncio
+import io
+import itertools
+import os
+import signal
+import sys
+import traceback
+from functools import partial, wraps
 from multiprocessing import reduction, spawn  # type: ignore
 from multiprocessing.context import set_spawning_popen
 from subprocess import _args_from_interpreter_flags  # type: ignore
+from typing import Any
 
 import ampel.vendor.aiopipe as aiopipe  # type: ignore
 from ampel.metrics.prometheus import prometheus_cleanup_worker, prometheus_setup_worker

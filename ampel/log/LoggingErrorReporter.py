@@ -10,6 +10,7 @@
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.utils import log_exception, report_exception
 
+
 class LoggingErrorReporter:
 
 	@staticmethod

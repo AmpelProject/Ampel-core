@@ -11,6 +11,7 @@ import ast
 
 from schedule import Job
 
+
 class ScheduleEvaluator(ast.NodeVisitor):
 	"""
 	Safely evaluate scheduling lines of the form\n

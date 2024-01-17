@@ -8,11 +8,12 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any, Literal
+
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.model.ChannelModel import ChannelModel
-from ampel.model.job.MongoOpts import MongoOpts
 from ampel.model.job.EnvSpec import EnvSpec
 from ampel.model.job.JobTaskModel import JobTaskModel
+from ampel.model.job.MongoOpts import MongoOpts
 
 
 class JobModel(AmpelBaseModel):

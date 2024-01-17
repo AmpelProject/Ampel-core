@@ -7,17 +7,19 @@
 # Last Modified Date:  05.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any
-from typing_extensions import Self
 from collections.abc import Sequence
-from ampel.types import ChannelId, OneOrMany, Traceless
+from typing import Any
+
+from typing_extensions import Self
+
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod, defaultmethod
-from ampel.core.EventHandler import EventHandler
 from ampel.core.ContextUnit import ContextUnit
+from ampel.core.EventHandler import EventHandler
 from ampel.enum.EventCode import EventCode
 from ampel.log.LogFlag import LogFlag
 from ampel.log.utils import get_logger
+from ampel.types import ChannelId, OneOrMany, Traceless
 from ampel.util.template import apply_templates
 
 

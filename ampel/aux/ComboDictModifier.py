@@ -7,12 +7,13 @@
 # Last Modified Date:  21.06.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Literal, Any
-from collections.abc import Container, Callable, Sequence
+from collections.abc import Callable, Container, Sequence
+from typing import Any, Literal
+
 from ampel.abstract.AbsApplicable import AbsApplicable
-from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.base.AmpelBaseModel import AmpelBaseModel
-from ampel.log import AmpelLogger, VERBOSE
+from ampel.base.AuxUnitRegister import AuxUnitRegister
+from ampel.log import VERBOSE, AmpelLogger
 from ampel.util.collections import to_set
 from ampel.view.ReadOnlyDict import ReadOnlyDict
 

@@ -7,12 +7,13 @@
 # Last Modified Date:  03.04.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Union, Literal, Any
 from collections.abc import Sequence
-from ampel.types import T, strict_iterable
+from typing import Any, Literal, Union
+
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.OneOf import OneOf
+from ampel.types import T, strict_iterable
 from ampel.util.collections import check_seq_inner_type
 
 

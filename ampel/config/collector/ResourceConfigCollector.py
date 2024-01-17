@@ -8,8 +8,9 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
-from ampel.log.AmpelLogger import VERBOSE
+
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
+from ampel.log.AmpelLogger import VERBOSE
 
 
 class ResourceConfigCollector(AbsDictConfigCollector):

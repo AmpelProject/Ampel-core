@@ -7,22 +7,22 @@
 # Last Modified Date:  03.09.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+from collections.abc import Mapping, Sequence
 from time import time
+from typing import Any, Literal, get_args
+
 from bson import ObjectId
 from pymongo.errors import BulkWriteError
 from pymongo.operations import UpdateMany, UpdateOne
-from typing import Any, Literal, get_args
-from collections.abc import Sequence, Mapping
 
+from ampel.content.JournalRecord import JournalRecord
 from ampel.core.AmpelDB import AmpelDB
-from ampel.types import ChannelId, Tag, StockId
-from ampel.log import AmpelLogger, VERBOSE
+from ampel.enum.JournalActionCode import JournalActionCode
+from ampel.log import VERBOSE, AmpelLogger
 from ampel.log.utils import report_exception
 from ampel.mongo.utils import maybe_use_each
-from ampel.enum.JournalActionCode import JournalActionCode
 from ampel.struct.JournalAttributes import JournalAttributes
-from ampel.content.JournalRecord import JournalRecord
-
+from ampel.types import ChannelId, StockId, Tag
 
 tag_type = get_args(Tag) # type: ignore[misc]
 chan_type = get_args(ChannelId) # type: ignore[misc]

@@ -9,6 +9,7 @@
 
 import sys
 
+
 def yes_no(question: str) -> bool:
 
 	try:

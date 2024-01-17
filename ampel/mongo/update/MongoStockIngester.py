@@ -8,7 +8,9 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
+
 from pymongo import UpdateOne
+
 from ampel.abstract.AbsDocIngester import AbsDocIngester
 from ampel.content.StockDocument import StockDocument
 from ampel.mongo.utils import maybe_use_each

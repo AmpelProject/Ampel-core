@@ -7,20 +7,20 @@
 # Last Modified Date:  22.04.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from time import time
-from math import inf
-from multiprocessing.pool import ThreadPool
-from pymongo.errors import BulkWriteError
-from pymongo.collection import Collection
-from pymongo import UpdateOne, InsertOne, UpdateMany
-from typing import Any, Generator, Literal, Union, Mapping
 from collections.abc import Callable, Iterable, Iterator
 from contextlib import contextmanager
+from multiprocessing.pool import ThreadPool
+from time import time
+from typing import Any, Generator, Literal, Mapping, Union
 
-from ampel.core.Schedulable import Schedulable
-from ampel.log.utils import report_exception, report_error, convert_dollars
-from ampel.log.AmpelLogger import AmpelLogger
+from pymongo import InsertOne, UpdateMany, UpdateOne
+from pymongo.collection import Collection
+from pymongo.errors import BulkWriteError
+
 from ampel.core.AmpelDB import AmpelDB, intcol
+from ampel.core.Schedulable import Schedulable
+from ampel.log.AmpelLogger import AmpelLogger
+from ampel.log.utils import convert_dollars, report_error, report_exception
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 
 DBOp = Union[UpdateOne, UpdateMany, InsertOne]

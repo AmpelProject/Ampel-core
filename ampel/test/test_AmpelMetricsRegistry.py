@@ -1,6 +1,7 @@
 import pytest
-from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry, reset_registry
 from prometheus_client.metrics import MetricWrapperBase
+
+from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry, reset_registry
 
 
 @pytest.fixture

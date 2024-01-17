@@ -7,10 +7,11 @@
 # Last Modified Date:  18.06.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import TypeVar
 from collections.abc import Sequence
-from ampel.model.aux.FilterCriterion import FilterCriterion
+from typing import TypeVar
+
 from ampel.aux.filter.AbsLogicOperatorFilter import AbsLogicOperatorFilter
+from ampel.model.aux.FilterCriterion import FilterCriterion
 
 T = TypeVar("T", int, str, float, str)
 

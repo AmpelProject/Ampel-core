@@ -11,7 +11,7 @@
 from dataclasses import dataclass
 from typing import Sequence
 
-from prometheus_client.metrics_core import GaugeMetricFamily, Metric # type: ignore
+from prometheus_client.metrics_core import GaugeMetricFamily, Metric  # type: ignore
 
 from ampel.core.AmpelDB import AmpelDB
 from ampel.enum.DocumentCode import DocumentCode
