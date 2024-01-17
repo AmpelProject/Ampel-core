@@ -214,7 +214,7 @@ class ComboDictModifier(AbsApplicable):
 				if v:
 					self.logger.log(VERBOSE, f" -> {k} ({len(v)})")
 
-		self.ops = [getattr(self, k) for k, v in ops.items() if v]
+		self._ops = [getattr(self, k) for k, v in ops.items() if v]
 
 		# Optimization
 		different_ops = sum([1 for instructions in ops.values() if instructions])
@@ -379,7 +379,7 @@ class ComboDictModifier(AbsApplicable):
 	def apply(self, d: dict) -> None | dict:
 		""" Modifies provided dict according to configured operations """
 		try:
-			for op in self.ops:
+			for op in self._ops:
 				d = op(d)
 			return d
 		except Exception as e:

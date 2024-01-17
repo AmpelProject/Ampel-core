@@ -1,5 +1,5 @@
 import asyncio
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 
 import pytest
 
@@ -26,6 +26,7 @@ async def test_process_gauge(dev_context, ampel_logger):
 
     c = DefaultProcessController(
         config=dev_context.config,
+        interval=1e-3,
         processes=[
             {
                 "name": "sleepy",
@@ -38,9 +39,7 @@ async def test_process_gauge(dev_context, ampel_logger):
         ],
     )
     async with run(c) as task:
-        try:
-            await asyncio.wait_for(asyncio.shield(task), 1)
-        except asyncio.exceptions.TimeoutError:
-            ...
+        with suppress(asyncio.exceptions.TimeoutError):
+            await asyncio.wait_for(asyncio.shield(task), 0.1)
         assert process_count() == 1
     assert process_count() == 0

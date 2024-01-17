@@ -4,7 +4,7 @@ import random
 import signal
 import socket
 import time
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 
 import pytest
 from prometheus_client.openmetrics.exposition import generate_latest
@@ -113,7 +113,7 @@ async def test_kill():
 
 @pytest.mark.asyncio
 async def test_multilaunch():
-    launch = lambda: _Process(target=echo, args=(42,)).launch()
+    launch = lambda: asyncio.create_task(_Process(target=echo, args=(42,)).launch())
     count = 0
     num_tasks = 5
     pending = {launch() for _ in range(num_tasks)}
@@ -258,12 +258,10 @@ async def fence(port):
     Wait for a connection on a TCP port, yield, then reply
     """
     condition = asyncio.Condition()
-    server = None
 
-    async def serve():
-        nonlocal server
-
-        async def connected(reader, writer):
+    async def connected(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+        try:
+            await reader.read(4)
             async with condition:
                 condition.notify()
             async with condition:
@@ -272,31 +270,33 @@ async def fence(port):
             await writer.drain()
             async with condition:
                 condition.notify()
+        finally:
+            writer.close()
 
-        server = await asyncio.start_server(connected, "127.0.0.1", port)
-        return await server.serve_forever()
-
-    serve = asyncio.create_task(serve())
+    server = await asyncio.start_server(connected, "127.0.0.1", port)
+    task = asyncio.create_task(server.serve_forever())
 
     async with condition:
         await condition.wait()
-    yield
-    async with condition:
-        condition.notify()
-    async with condition:
-        await condition.wait()
-    server.close()
     try:
-        await serve
-    except asyncio.CancelledError:
-        ...
+        yield
+    finally:
+        async with condition:
+            condition.notify()
+        async with condition:
+            await condition.wait()
+
+        server.close()
+        await server.wait_closed()
+        with suppress(asyncio.CancelledError):
+            await task
 
 
 def latch(port):
     """Connect to a port and wait for a reply before exiting"""
-    sock = socket.create_connection(("127.0.0.1", port))
-    sock.send(b"hola")
-    sock.recv(4)
+    with socket.create_connection(("127.0.0.1", port)) as sock:
+        sock.send(b"hola")
+        sock.recv(4)
 
 
 @pytest.mark.asyncio

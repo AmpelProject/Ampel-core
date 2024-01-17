@@ -8,8 +8,12 @@
 # Last Modified By  : jvs
 
 from typing import Any, Type
+
+from pydantic import model_validator
+
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.base.AuxUnitRegister import AuxUnitRegister
+from ampel.model.UnitModel import UnitModel
 
 
 class AuxAliasableModel(AmpelBaseModel):
@@ -17,11 +21,11 @@ class AuxAliasableModel(AmpelBaseModel):
 	A model that can be initialized from the name of an aux unit
 	"""
 
-	@classmethod
-	def validate(cls: Type["AuxAliasableModel"], value: Any) -> "AuxAliasableModel":
+	@model_validator(mode="before")
+	def resolve_alias(cls: Type["AuxAliasableModel"], value: Any) -> dict[str, Any]:
 		if isinstance(value, str):
 			if value in AuxUnitRegister._defs:
-				return AuxUnitRegister.get_aux_class(value).validate({})
+				return AuxUnitRegister.new_unit(model=UnitModel(unit=value), sub_type=cls).model_dump()
 			else:
 				raise ValueError(f"{cls.__name__} '{value}' not registered")
-		return super().validate(value)
+		return value

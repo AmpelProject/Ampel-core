@@ -9,6 +9,8 @@
 
 import ast
 
+from schedule import Job
+
 class ScheduleEvaluator(ast.NodeVisitor):
 	"""
 	Safely evaluate scheduling lines of the form\n
@@ -20,16 +22,19 @@ class ScheduleEvaluator(ast.NodeVisitor):
 	
 	Allows literal numbers, strings, calling member functions of schedule.Scheduler
 	"""
-	def __call__(self, scheduler, line):
+	def __call__(self, scheduler, line) -> Job:
 		self._scheduler = scheduler
 		elem = ast.parse(line).body[0]
-		return self.visit(elem)
+		try:
+			return self.visit(elem)
+		except Exception as err:
+			raise ValueError("Invalid schedule") from err
 
 	def generic_visit(self, node):
 		raise ValueError("Illegal operation {}".format(type(node)))
 	
 	def visit_Constant(self, node):
-		return node.n
+		return node.value
 	
 	def visit_Name(self, node):
 		return node.id

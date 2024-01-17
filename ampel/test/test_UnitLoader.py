@@ -23,6 +23,11 @@ def secrets():
         }
     )
 
+@pytest.fixture
+def secret_context(dev_context: DevAmpelContext, secrets, monkeypatch):
+    monkeypatch.setattr(dev_context.loader, "vault", AmpelVault(providers=[secrets]))
+    return dev_context
+
 
 @pytest.mark.parametrize(
     "expected_type,key", [(dict, "dict"), (str, "str"), (tuple, "tuple")]
@@ -36,7 +41,7 @@ def test_resolve_secrets_correct_type(
     ampel_logger,
 ):
     class Modelo(LogicalUnit):
-        seekrit: NamedSecret[expected_type] = NamedSecret(label=key)  # type: ignore[valid-type]
+        seekrit: NamedSecret[expected_type] = NamedSecret[expected_type](label=key)  # type: ignore[valid-type]
 
     dev_context.register_unit(Modelo)
     monkeypatch.setattr(dev_context.loader, "vault", AmpelVault(providers=[secrets]))
@@ -54,14 +59,34 @@ def test_resolve_secrets_wrong_type(
     secrets, dev_context: DevAmpelContext, monkeypatch, expected_type, key, ampel_logger
 ):
     class Modelo(LogicalUnit):
-        seekrit: NamedSecret[expected_type] = NamedSecret(label=key)  # type: ignore[valid-type]
+        seekrit: NamedSecret[expected_type] = NamedSecret[expected_type](label=key)  # type: ignore[valid-type]
 
     dev_context.register_unit(Modelo)
-    monkeypatch.setattr(dev_context.loader, "vault", AmpelVault(providers=[secrets]))
+    
+    vault = AmpelVault(providers=[secrets])
+    s = Modelo(logger=ampel_logger).seekrit
+    with pytest.raises(ValueError):
+        s.get()
+    assert vault.resolve_secret(s, expected_type) is False
+    
+    monkeypatch.setattr(dev_context.loader, "vault", vault)
     with pytest.raises(ValueError):
         dev_context.loader.new(
             UnitModel(unit="Modelo"), logger=ampel_logger, unit_type=Modelo
         )
+
+def test_resolve_secret_in_union(secret_context: DevAmpelContext, ampel_logger):
+    """UnitLoader can resolve secret in a union field"""
+
+    class Modelo(LogicalUnit):
+        maybe_secret: None | NamedSecret[str] = NamedSecret[str](label="str")
+    secret_context.register_unit(Modelo)
+
+    unit = secret_context.loader.new(
+        UnitModel(unit="Modelo"), logger=ampel_logger, unit_type=Modelo
+    )
+    assert unit.maybe_secret is not None
+    assert unit.maybe_secret.get() is not None
 
 
 def test_resolve_secret_from_superclass(
@@ -138,21 +163,25 @@ def test_use_secret_in_init(
     monkeypatch.setattr(dev_context.loader, "vault", AmpelVault(providers=[secrets]))
 
     class NeedsSecretInInit(LogicalUnit):
-        seekrit: NamedSecret[dict] = NamedSecret(label="dict")
+        seekrit: NamedSecret[dict] = NamedSecret[dict](label="dict")
 
         def __init__(self, **kwargs):
             super().__init__(**kwargs)
             assert (
                 self.seekrit.get() == secrets.store[self.seekrit.label]
             ), "secret is populated"
+    
+    with pytest.raises(ValueError):
+        NeedsSecretInInit(logger=ampel_logger).seekrit.get()
 
     dev_context.register_unit(NeedsSecretInInit)
     # secret field is populated
-    dev_context.loader.new(
+    unit = dev_context.loader.new(
         UnitModel(unit="NeedsSecretInInit", config=config),
         logger=ampel_logger,
         unit_type=NeedsSecretInInit,
     )
+    assert unit.seekrit.get() == secrets.store["dict"]
 
 
 def test_unit_validation(dev_context: DevAmpelContext):

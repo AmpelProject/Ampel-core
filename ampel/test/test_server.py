@@ -130,7 +130,8 @@ async def test_reload(
     section,
     proc,
 ):
-    config = yaml.safe_load(testing_config.open())
+    with testing_config.open() as f:
+        config = yaml.safe_load(f)
     config["process"][section][proc["name"]] = proc
     with open(tmp_path / "config.yml", "w") as f:
         yaml.dump(config, f)
@@ -256,9 +257,9 @@ async def test_config_reload(
             assert response.status_code == 500
         else:
             response.raise_for_status()
-            assert await remove.called_once()
+            remove.assert_called_once()
             assert len(remove.call_args[0][0]) == 0
-            assert await add.called_once()
+            add.assert_called_once()
             assert len(add.call_args[0][0]) == (
                 1 if config["process"]["t3"]["sleepy"].get("active", True) else 0
             )
@@ -304,7 +305,7 @@ async def test_event_query(test_client, mocker):
     m = mocker.patch("ampel.run.server.context.db")
     find = m.get_collection().find
     await test_client.get(
-        "/events", params={"after": 7200, "process": "InfantSNSummary"}
+        "/events", params={"after": 'PT2H', "process": "InfantSNSummary"}
     )
     assert isinstance(query := find.call_args.args[0], dict)
     assert isinstance(andlist := query["$and"], list)

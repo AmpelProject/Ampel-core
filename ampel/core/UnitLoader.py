@@ -12,7 +12,8 @@ from importlib import import_module
 from pathlib import Path
 from hashlib import blake2b
 from contextlib import contextmanager
-from typing import Any, TypeVar, overload, get_args, get_origin
+from types import UnionType
+from typing import Any, TypeVar, Union, overload, get_args, get_origin
 from collections.abc import Iterator, Mapping
 from copy import deepcopy
 
@@ -346,6 +347,9 @@ class UnitLoader:
 		unit_type.
 		"""
 		for k, annotation in unit_type._annots.items():
+			# for unions, consider the first member that is not NoneType
+			if get_origin(annotation) in (Union, UnionType):
+				annotation = next((f for f in get_args(annotation) if f is not type(None)), type(None))
 			field_type = get_origin(annotation) or annotation
 			if issubclass(type(field_type), type) and issubclass(field_type, Secret):
 				default = False
@@ -357,7 +361,9 @@ class UnitLoader:
 				else:
 					# missing required field; will be caught in validation later
 					continue
-				ValueType = args[0] if (args := get_args(annotation)) else object
+				ValueType = args[0] if (args := annotation.get_model_args()) else object
+				if args:
+					assert ValueType is not object
 				if not self.vault:
 					raise ValueError("No vault configured")
 				if not self.vault.resolve_secret(v, ValueType):
@@ -399,18 +405,19 @@ class UnitLoader:
 		""" Enable validation for UnitModel instances """
 		from ampel.abstract.AbsProcessController import AbsProcessController
 
-		def validating_init(slf, **kwargs):
-			super(UnitModel, slf).__init__(**kwargs)
-			Unit = self.get_class_by_name(slf.unit)
+		@staticmethod # type: ignore[misc]
+		def validate_unit(value: UnitModel) -> UnitModel:
+			Unit = self.get_class_by_name(value.unit)
 			if issubclass(Unit, AmpelUnit) and not issubclass(Unit, AbsProcessController):
-				Unit.validate(self.get_init_config(slf.config, slf.override))
-		legit_init = UnitModel.__init__
-		UnitModel.__init__ = validating_init # type: ignore
+				Unit.validate(self.get_init_config(value.config, value.override))
+			return value
+
+		UnitModel.post_validate_hook = validate_unit
 		AliasableModel._config = self.config
 		try:
 			yield
 		finally:
-			UnitModel.__init__ = legit_init # type: ignore
+			UnitModel.post_validate_hook = None
 			AliasableModel._config = None
 
 

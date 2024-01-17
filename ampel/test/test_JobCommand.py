@@ -1,13 +1,16 @@
 import sys, pytest, yaml
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 from pytest_mock import MockerFixture
 from contextlib import contextmanager
 
 from ampel.cli.main import main
 from ampel.cli.utils import get_vault
+from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.secret.AmpelVault import AmpelVault
+
+from ampel.test.dummy import DummyInputUnit
 
 
 @contextmanager
@@ -20,18 +23,19 @@ def argv_context(args: list[str]):
         sys.argv = argv
 
 
-def run(args: list[str]) -> None | int | str:
+def run(args: list[Any]) -> None | int | str:
     try:
-        with argv_context(args):
+        with argv_context([str(e) for e in args]):
             main()
         return None
     except SystemExit as se:
         return se.code
 
 
-def dump(payload, tmpdir, name) -> Path:
+def dump(payload, tmpdir, name: str) -> Path:
     f = Path(tmpdir) / name
-    yaml.dump(payload, f.open("w"))
+    with f.open("w") as fd:
+        yaml.dump(payload, fd)
     return f
 
 
@@ -87,7 +91,8 @@ def test_secrets(testing_config, vault: Path, schema: Path, mock_new_context_uni
                 "--schema",
                 str(schema),
             ]
-        ) is None
+        )
+        is None
     )
     assert mock_new_context_unit.call_count == 1
     loader_vault: Optional[AmpelVault] = mock_new_context_unit.call_args.kwargs[
@@ -104,7 +109,7 @@ def test_resources_from_env(
     vault: Path,
     schema: Path,
     mock_new_context_unit,
-    monkeypatch: pytest.MonkeyPatch
+    monkeypatch: pytest.MonkeyPatch,
 ):
     monkeypatch.setenv("AMPEL_CONFIG_resource.mongo", "flerp")
     monkeypatch.setenv("AMPEL_CONFIG_resource.herp", "37")
@@ -120,7 +125,8 @@ def test_resources_from_env(
                 "--schema",
                 str(schema),
             ]
-        ) is None
+        )
+        is None
     )
     config: AmpelConfig = mock_new_context_unit.call_args.kwargs["context"].config
     assert config.get("resource.mongo") == "flerp"
@@ -133,3 +139,28 @@ def test_dir_secrets(dir_secret_store, secrets):
         assert vault.get_named_secret(k).get() == v
 
     assert vault.get_named_secret("nonesuch") is None, "missing secrets skipped cleanly"
+
+
+def test_job_file(
+    testing_config: Path,
+    mock_context: DevAmpelContext,
+    mocker: MockerFixture,
+):
+    proceed = mocker.patch.object(
+        DummyInputUnit, "proceed", side_effect=DummyInputUnit.proceed, autospec=True
+    )
+    assert (
+        run(
+            [
+                "ampel",
+                "job",
+                "--config",
+                testing_config,
+                "--no-conf-check",
+                "--schema",
+                testing_config.parent / "jobs" / "template_job.yaml",
+            ]
+        )
+        is None
+    )
+    assert proceed.called

@@ -15,7 +15,7 @@ from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
 
 
-class AbsDocIngester(Generic[T], AmpelABC, AmpelBaseModel, abstract=True):
+class AbsDocIngester(AmpelABC, AmpelBaseModel, Generic[T], abstract=True):
 
 	updates_buffer: DBUpdatesBuffer
 

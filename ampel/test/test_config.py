@@ -2,6 +2,8 @@ from contextlib import nullcontext
 import io, pytest, yaml, subprocess, tempfile, os
 from pathlib import Path
 
+from pydantic import ValidationError
+
 from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.base.BadConfig import BadConfig
 from ampel.config.builder.ConfigChecker import ConfigChecker
@@ -95,7 +97,8 @@ def test_transform_config(doc, tmpdir):
     """Transform preserves objects that are not representable in JSON"""
     infile = Path(tmpdir / "in.yaml")
     outfile = Path(tmpdir / "out.yaml")
-    yaml.dump(doc, infile.open("w"))
+    with infile.open("w") as f:
+        yaml.dump(doc, f)
     assert (
         run(
             [
@@ -111,12 +114,13 @@ def test_transform_config(doc, tmpdir):
             ]
         ) is None
     )
-    transformed_doc = yaml.safe_load(outfile.open())
+    with outfile.open() as f:
+        transformed_doc = yaml.safe_load(f)
     assert transformed_doc == doc
 
 
 @pytest.mark.parametrize(
-    "patch,result", [({}, None), ({"channel.LONG_CHANNEL.purge": {}}, TypeError)]
+    "patch,result", [({}, None), ({"channel.LONG_CHANNEL.purge": {}}, ValidationError)]
 )
 def test_validate_config(testing_config, tmpdir, patch, result):
     """Validate validates config"""

@@ -9,10 +9,10 @@ from ampel.model.DPSelection import DPSelection
     [
         (None, 0),
         ("SimpleTagFilter", 5),
-        (UnitModel(unit="SimpleTagFilter", config={"require": ["good"]}), 2),
-        (UnitModel(unit="SimpleTagFilter", config={"forbid": ["bad"]}), 3),
+        (UnitModel[str](unit="SimpleTagFilter", config={"require": ["good"]}), 2),
+        (UnitModel[str](unit="SimpleTagFilter", config={"forbid": ["bad"]}), 3),
         (
-            UnitModel(
+            UnitModel[str](
                 unit="SimpleTagFilter", config={"require": ["good"], "forbid": ["bad"]}
             ),
             1,

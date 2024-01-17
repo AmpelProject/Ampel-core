@@ -1,0 +1,5 @@
+name: foo
+task:
+  - template: "dummy_processor"
+    value: foo
+    expected_value: foo
