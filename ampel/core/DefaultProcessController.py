@@ -36,6 +36,7 @@ class DefaultProcessController(AbsProcessController):
 	"""
 
 	isolate: bool = False
+	interval: float = 1.
 	mp_overlap: Literal['terminate', 'wait', 'ignore', 'skip'] = 'skip'
 	mp_join: int = 0
 
@@ -209,7 +210,7 @@ class DefaultProcessController(AbsProcessController):
 						await asyncio.gather(*self._pending_schedules)
 					if self.mp_join >= 2 and not self.scheduler.jobs:
 						break
-					await asyncio.sleep(1)
+					await asyncio.sleep(self.interval)
 					self.scheduler.run_pending()
 				except asyncio.CancelledError:
 					for t in self._pending_schedules:
