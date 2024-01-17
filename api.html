@@ -5,10 +5,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Ampel-core &#8212; ampel-core 0.9.1a0 documentation</title>
+    <title>Ampel-core &#8212; ampel-core 0.10.0a0 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
     <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css?v=d59dc883" />
-    <script src="_static/documentation_options.js?v=1a5dcacc"></script>
+    <script src="_static/documentation_options.js?v=3f8aba6c"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -28,7 +28,7 @@
         <li class="right" >
           <a href="structure.html" title="Structure"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.9.1a0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.10.0a0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Ampel-core</a></li> 
       </ul>
     </div>  
@@ -161,13 +161,13 @@ by returning EventCode.PRE_CHECK_EXIT (which avoids ‘burning’ a run id)</p>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="ampel.t3.T3Processor.T3Processor.supply">
-<span class="sig-name descname"><span class="pre">supply</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">Annotated</span></code><span class="pre">[</span><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.model.UnitModel.UnitModel" title="(in ampel-interface v0.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">UnitModel</span></code></a><span class="pre">]</span></em><a class="headerlink" href="#ampel.t3.T3Processor.T3Processor.supply" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">supply</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">Annotated</span></code><span class="pre">[</span><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.model.UnitModel.UnitModel" title="(in ampel-interface v0.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">UnitModel</span></code></a><span class="pre">]</span></em><a class="headerlink" href="#ampel.t3.T3Processor.T3Processor.supply" title="Link to this definition">¶</a></dt>
 <dd><p>Unit must be a subclass of AbsT3Supplier</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="ampel.t3.T3Processor.T3Processor.stage">
-<span class="sig-name descname"><span class="pre">stage</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">Annotated</span></code><span class="pre">[</span><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.model.UnitModel.UnitModel" title="(in ampel-interface v0.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">UnitModel</span></code></a><span class="pre">]</span></em><a class="headerlink" href="#ampel.t3.T3Processor.T3Processor.stage" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">stage</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">Annotated</span></code><span class="pre">[</span><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.model.UnitModel.UnitModel" title="(in ampel-interface v0.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">UnitModel</span></code></a><span class="pre">]</span></em><a class="headerlink" href="#ampel.t3.T3Processor.T3Processor.stage" title="Link to this definition">¶</a></dt>
 <dd><p>Unit must be a subclass of AbsT3Stager</p>
 </dd></dl>
 
@@ -209,7 +209,7 @@ of handling multiple AmpelConfig/AmpelDB instances</p>
 <blockquote>
 <div><p>whether to convert the elements contained of ampel config
 into immutable structures (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a> -&gt;
-<a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.view.ReadOnlyDict.ReadOnlyDict" title="(in ampel-interface v0.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReadOnlyDict</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> -&gt; <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>).
+<a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.view.ReadOnlyDict.ReadOnlyDict" title="(in ampel-interface v0.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReadOnlyDict</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> -&gt; <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>).
 Parameter does only apply if the config is loaded by this method, i.e if parameter ‘config’ is a str.</p>
 </div></blockquote>
 </dd></dl>
@@ -218,7 +218,7 @@ Parameter does only apply if the config is loaded by this method, i.e if paramet
 <dt class="sig sig-object py" id="ampel.core.AmpelContext.AmpelContext.build">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">build</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ignore_errors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pwd_file_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pwds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freeze_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/core/AmpelContext.html#AmpelContext.build"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.AmpelContext.AmpelContext.build" title="Link to this definition">¶</a></dt>
 <dd><p>Instantiates a new AmpelContext instance.</p>
-<p>The required underlying ampel configuration (<a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.config.AmpelConfig.AmpelConfig" title="(in ampel-interface v0.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelConfig</span></code></a>) is built from scratch,
+<p>The required underlying ampel configuration (<a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.config.AmpelConfig.AmpelConfig" title="(in ampel-interface v0.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelConfig</span></code></a>) is built from scratch,
 meaning all available configurations defined in the various ampel repositories available locally
 are collected, merged merged together and morphed the info into the final ampel config.
 This is a convenience method, do not use for production</p>
@@ -250,7 +250,7 @@ single process invocation. This ID is unique and monotonicaly increasing.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.config.AmpelConfig.AmpelConfig" title="(in ampel-interface v0.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelConfig</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.config.AmpelConfig.AmpelConfig" title="(in ampel-interface v0.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelConfig</span></code></a></span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -296,7 +296,7 @@ and the kwargs provided to this method (the latter having prevalance)
 :raises: ValueError is the unit defined in the model is unknown</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypeVar" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code></a>(<code class="docutils literal notranslate"><span class="pre">LT</span></code>, bound= <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.base.LogicalUnit.LogicalUnit" title="(in ampel-interface v0.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">LogicalUnit</span></code></a>), <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.base.LogicalUnit.LogicalUnit" title="(in ampel-interface v0.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">LogicalUnit</span></code></a>]</span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypeVar" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code></a>(<code class="docutils literal notranslate"><span class="pre">LT</span></code>, bound= <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.base.LogicalUnit.LogicalUnit" title="(in ampel-interface v0.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">LogicalUnit</span></code></a>), <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.base.LogicalUnit.LogicalUnit" title="(in ampel-interface v0.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">LogicalUnit</span></code></a>]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -307,7 +307,7 @@ and the kwargs provided to this method (the latter having prevalance)
 <dd><p>Returns a logical unit with dedicated logger containing no db handler</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypeVar" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code></a>(<code class="docutils literal notranslate"><span class="pre">LT</span></code>, bound= <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.base.LogicalUnit.LogicalUnit" title="(in ampel-interface v0.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">LogicalUnit</span></code></a>)</span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypeVar" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code></a>(<code class="docutils literal notranslate"><span class="pre">LT</span></code>, bound= <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.base.LogicalUnit.LogicalUnit" title="(in ampel-interface v0.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">LogicalUnit</span></code></a>)</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -428,27 +428,69 @@ unit_type.</p>
 <dd><p>Select items by logical OR</p>
 </dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.operator.AnyOf.AnyOf.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[ConfigDict]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'arbitrary_types_allowed':</span> <span class="pre">True,</span> <span class="pre">'extra':</span> <span class="pre">'forbid',</span> <span class="pre">'populate_by_name':</span> <span class="pre">True,</span> <span class="pre">'validate_default':</span> <span class="pre">True}</span></em><a class="headerlink" href="#ampel.model.operator.AnyOf.AnyOf.model_config" title="Link to this definition">¶</a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.operator.AnyOf.AnyOf.model_fields">
+<span class="sig-name descname"><span class="pre">model_fields</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[dict[str,</span> <span class="pre">FieldInfo]]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'any_of':</span> <span class="pre">FieldInfo(annotation=list[Union[~T,</span> <span class="pre">AllOf]],</span> <span class="pre">required=True)}</span></em><a class="headerlink" href="#ampel.model.operator.AnyOf.AnyOf.model_fields" title="Link to this definition">¶</a></dt>
+<dd><p>Metadata about the fields defined on the model,
+mapping of field names to [<cite>FieldInfo</cite>][pydantic.fields.FieldInfo].</p>
+<p>This replaces <cite>Model.__fields__</cite> from Pydantic V1.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="ampel.model.operator.AllOf.AllOf">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.model.operator.AllOf.</span></span><span class="sig-name descname"><span class="pre">AllOf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/operator/AllOf.html#AllOf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.operator.AllOf.AllOf" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.model.operator.AllOf.</span></span><span class="sig-name descname"><span class="pre">AllOf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/operator/AllOf.html#AllOf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.operator.AllOf.AllOf" title="Link to this definition">¶</a></dt>
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="ampel.model.operator.AllOf.AllOf.all_of">
 <span class="sig-name descname"><span class="pre">all_of</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a><span class="pre">[</span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypeVar" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code></a><span class="pre">(</span><code class="docutils literal notranslate"><span class="pre">T</span></code><span class="pre">)]</span></em><a class="headerlink" href="#ampel.model.operator.AllOf.AllOf.all_of" title="Link to this definition">¶</a></dt>
 <dd><p>Select items by logical AND</p>
 </dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.operator.AllOf.AllOf.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[ConfigDict]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'arbitrary_types_allowed':</span> <span class="pre">True,</span> <span class="pre">'extra':</span> <span class="pre">'forbid',</span> <span class="pre">'populate_by_name':</span> <span class="pre">True,</span> <span class="pre">'validate_default':</span> <span class="pre">True}</span></em><a class="headerlink" href="#ampel.model.operator.AllOf.AllOf.model_config" title="Link to this definition">¶</a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.operator.AllOf.AllOf.model_fields">
+<span class="sig-name descname"><span class="pre">model_fields</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[dict[str,</span> <span class="pre">FieldInfo]]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'all_of':</span> <span class="pre">FieldInfo(annotation=list[~T],</span> <span class="pre">required=True)}</span></em><a class="headerlink" href="#ampel.model.operator.AllOf.AllOf.model_fields" title="Link to this definition">¶</a></dt>
+<dd><p>Metadata about the fields defined on the model,
+mapping of field names to [<cite>FieldInfo</cite>][pydantic.fields.FieldInfo].</p>
+<p>This replaces <cite>Model.__fields__</cite> from Pydantic V1.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="ampel.model.operator.OneOf.OneOf">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.model.operator.OneOf.</span></span><span class="sig-name descname"><span class="pre">OneOf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/operator/OneOf.html#OneOf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.operator.OneOf.OneOf" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.model.operator.OneOf.</span></span><span class="sig-name descname"><span class="pre">OneOf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/operator/OneOf.html#OneOf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.operator.OneOf.OneOf" title="Link to this definition">¶</a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.operator.OneOf.OneOf.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[ConfigDict]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'arbitrary_types_allowed':</span> <span class="pre">True,</span> <span class="pre">'extra':</span> <span class="pre">'forbid',</span> <span class="pre">'populate_by_name':</span> <span class="pre">True,</span> <span class="pre">'validate_default':</span> <span class="pre">True}</span></em><a class="headerlink" href="#ampel.model.operator.OneOf.OneOf.model_config" title="Link to this definition">¶</a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.operator.OneOf.OneOf.model_fields">
+<span class="sig-name descname"><span class="pre">model_fields</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[dict[str,</span> <span class="pre">FieldInfo]]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'one_of':</span> <span class="pre">FieldInfo(annotation=list[~T],</span> <span class="pre">required=True)}</span></em><a class="headerlink" href="#ampel.model.operator.OneOf.OneOf.model_fields" title="Link to this definition">¶</a></dt>
+<dd><p>Metadata about the fields defined on the model,
+mapping of field names to [<cite>FieldInfo</cite>][pydantic.fields.FieldInfo].</p>
+<p>This replaces <cite>Model.__fields__</cite> from Pydantic V1.</p>
+</dd></dl>
+
+</dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="ampel.model.time.TimeConstraintModel.TimeConstraintModel">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.model.time.TimeConstraintModel.</span></span><span class="sig-name descname"><span class="pre">TimeConstraintModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/time/TimeConstraintModel.html#TimeConstraintModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.time.TimeConstraintModel.TimeConstraintModel" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.model.time.TimeConstraintModel.</span></span><span class="sig-name descname"><span class="pre">TimeConstraintModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/time/TimeConstraintModel.html#TimeConstraintModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.time.TimeConstraintModel.TimeConstraintModel" title="Link to this definition">¶</a></dt>
 <dd><p>Examples:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">TimeConstraintModel</span><span class="p">(</span>
     <span class="o">**</span><span class="p">{</span>
@@ -501,11 +543,25 @@ if your time constraint is based on TimeLastRunModel</p>
 </dl>
 </dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.time.TimeConstraintModel.TimeConstraintModel.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[ConfigDict]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'arbitrary_types_allowed':</span> <span class="pre">True,</span> <span class="pre">'extra':</span> <span class="pre">'forbid',</span> <span class="pre">'populate_by_name':</span> <span class="pre">True,</span> <span class="pre">'validate_default':</span> <span class="pre">True}</span></em><a class="headerlink" href="#ampel.model.time.TimeConstraintModel.TimeConstraintModel.model_config" title="Link to this definition">¶</a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.time.TimeConstraintModel.TimeConstraintModel.model_fields">
+<span class="sig-name descname"><span class="pre">model_fields</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[dict[str,</span> <span class="pre">FieldInfo]]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'after':</span> <span class="pre">FieldInfo(annotation=Union[NoneType,</span> <span class="pre">TimeDeltaModel,</span> <span class="pre">TimeLastRunModel,</span> <span class="pre">TimeStringModel,</span> <span class="pre">UnixTimeModel],</span> <span class="pre">required=False),</span> <span class="pre">'before':</span> <span class="pre">FieldInfo(annotation=Union[NoneType,</span> <span class="pre">TimeDeltaModel,</span> <span class="pre">TimeLastRunModel,</span> <span class="pre">TimeStringModel,</span> <span class="pre">UnixTimeModel],</span> <span class="pre">required=False)}</span></em><a class="headerlink" href="#ampel.model.time.TimeConstraintModel.TimeConstraintModel.model_fields" title="Link to this definition">¶</a></dt>
+<dd><p>Metadata about the fields defined on the model,
+mapping of field names to [<cite>FieldInfo</cite>][pydantic.fields.FieldInfo].</p>
+<p>This replaces <cite>Model.__fields__</cite> from Pydantic V1.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="ampel.model.time.TimeDeltaModel.TimeDeltaModel">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.model.time.TimeDeltaModel.</span></span><span class="sig-name descname"><span class="pre">TimeDeltaModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/time/TimeDeltaModel.html#TimeDeltaModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.time.TimeDeltaModel.TimeDeltaModel" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.model.time.TimeDeltaModel.</span></span><span class="sig-name descname"><span class="pre">TimeDeltaModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/time/TimeDeltaModel.html#TimeDeltaModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.time.TimeDeltaModel.TimeDeltaModel" title="Link to this definition">¶</a></dt>
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="ampel.model.time.TimeDeltaModel.TimeDeltaModel.match_type">
 <span class="sig-name descname"><span class="pre">match_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code></a><span class="pre">[</span><code class="docutils literal notranslate"><span class="pre">'time_delta'</span></code><span class="pre">]</span></em><a class="headerlink" href="#ampel.model.time.TimeDeltaModel.TimeDeltaModel.match_type" title="Link to this definition">¶</a></dt>
@@ -556,11 +612,25 @@ if your time constraint is based on TimeLastRunModel</p>
 </dl>
 </dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.time.TimeDeltaModel.TimeDeltaModel.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[ConfigDict]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'arbitrary_types_allowed':</span> <span class="pre">True,</span> <span class="pre">'extra':</span> <span class="pre">'forbid',</span> <span class="pre">'populate_by_name':</span> <span class="pre">True,</span> <span class="pre">'validate_default':</span> <span class="pre">True}</span></em><a class="headerlink" href="#ampel.model.time.TimeDeltaModel.TimeDeltaModel.model_config" title="Link to this definition">¶</a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.time.TimeDeltaModel.TimeDeltaModel.model_fields">
+<span class="sig-name descname"><span class="pre">model_fields</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[dict[str,</span> <span class="pre">FieldInfo]]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'days':</span> <span class="pre">FieldInfo(annotation=int,</span> <span class="pre">required=False,</span> <span class="pre">default=0),</span> <span class="pre">'hours':</span> <span class="pre">FieldInfo(annotation=int,</span> <span class="pre">required=False,</span> <span class="pre">default=0),</span> <span class="pre">'match_type':</span> <span class="pre">FieldInfo(annotation=Literal['time_delta'],</span> <span class="pre">required=True),</span> <span class="pre">'microseconds':</span> <span class="pre">FieldInfo(annotation=int,</span> <span class="pre">required=False,</span> <span class="pre">default=0),</span> <span class="pre">'milliseconds':</span> <span class="pre">FieldInfo(annotation=int,</span> <span class="pre">required=False,</span> <span class="pre">default=0),</span> <span class="pre">'minutes':</span> <span class="pre">FieldInfo(annotation=int,</span> <span class="pre">required=False,</span> <span class="pre">default=0),</span> <span class="pre">'seconds':</span> <span class="pre">FieldInfo(annotation=int,</span> <span class="pre">required=False,</span> <span class="pre">default=0),</span> <span class="pre">'weeks':</span> <span class="pre">FieldInfo(annotation=int,</span> <span class="pre">required=False,</span> <span class="pre">default=0)}</span></em><a class="headerlink" href="#ampel.model.time.TimeDeltaModel.TimeDeltaModel.model_fields" title="Link to this definition">¶</a></dt>
+<dd><p>Metadata about the fields defined on the model,
+mapping of field names to [<cite>FieldInfo</cite>][pydantic.fields.FieldInfo].</p>
+<p>This replaces <cite>Model.__fields__</cite> from Pydantic V1.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="ampel.model.time.TimeLastRunModel.TimeLastRunModel">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.model.time.TimeLastRunModel.</span></span><span class="sig-name descname"><span class="pre">TimeLastRunModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/time/TimeLastRunModel.html#TimeLastRunModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.time.TimeLastRunModel.TimeLastRunModel" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.model.time.TimeLastRunModel.</span></span><span class="sig-name descname"><span class="pre">TimeLastRunModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/time/TimeLastRunModel.html#TimeLastRunModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.time.TimeLastRunModel.TimeLastRunModel" title="Link to this definition">¶</a></dt>
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="ampel.model.time.TimeLastRunModel.TimeLastRunModel.match_type">
 <span class="sig-name descname"><span class="pre">match_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code></a><span class="pre">[</span><code class="docutils literal notranslate"><span class="pre">'time_last_run'</span></code><span class="pre">]</span></em><a class="headerlink" href="#ampel.model.time.TimeLastRunModel.TimeLastRunModel.match_type" title="Link to this definition">¶</a></dt>
@@ -591,11 +661,25 @@ if your time constraint is based on TimeLastRunModel</p>
 </dl>
 </dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.time.TimeLastRunModel.TimeLastRunModel.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[ConfigDict]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'arbitrary_types_allowed':</span> <span class="pre">True,</span> <span class="pre">'extra':</span> <span class="pre">'forbid',</span> <span class="pre">'populate_by_name':</span> <span class="pre">True,</span> <span class="pre">'validate_default':</span> <span class="pre">True}</span></em><a class="headerlink" href="#ampel.model.time.TimeLastRunModel.TimeLastRunModel.model_config" title="Link to this definition">¶</a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.time.TimeLastRunModel.TimeLastRunModel.model_fields">
+<span class="sig-name descname"><span class="pre">model_fields</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[dict[str,</span> <span class="pre">FieldInfo]]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'fallback':</span> <span class="pre">FieldInfo(annotation=Union[NoneType,</span> <span class="pre">dict],</span> <span class="pre">required=False,</span> <span class="pre">default={'days':</span> <span class="pre">-1}),</span> <span class="pre">'match_type':</span> <span class="pre">FieldInfo(annotation=Literal['time_last_run'],</span> <span class="pre">required=True),</span> <span class="pre">'process_name':</span> <span class="pre">FieldInfo(annotation=str,</span> <span class="pre">required=True),</span> <span class="pre">'require_success':</span> <span class="pre">FieldInfo(annotation=bool,</span> <span class="pre">required=False,</span> <span class="pre">default=True)}</span></em><a class="headerlink" href="#ampel.model.time.TimeLastRunModel.TimeLastRunModel.model_fields" title="Link to this definition">¶</a></dt>
+<dd><p>Metadata about the fields defined on the model,
+mapping of field names to [<cite>FieldInfo</cite>][pydantic.fields.FieldInfo].</p>
+<p>This replaces <cite>Model.__fields__</cite> from Pydantic V1.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="ampel.model.time.TimeStringModel.TimeStringModel">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.model.time.TimeStringModel.</span></span><span class="sig-name descname"><span class="pre">TimeStringModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/time/TimeStringModel.html#TimeStringModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.time.TimeStringModel.TimeStringModel" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.model.time.TimeStringModel.</span></span><span class="sig-name descname"><span class="pre">TimeStringModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/time/TimeStringModel.html#TimeStringModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.time.TimeStringModel.TimeStringModel" title="Link to this definition">¶</a></dt>
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="ampel.model.time.TimeStringModel.TimeStringModel.match_type">
 <span class="sig-name descname"><span class="pre">match_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code></a><span class="pre">[</span><code class="docutils literal notranslate"><span class="pre">'time_string'</span></code><span class="pre">]</span></em><a class="headerlink" href="#ampel.model.time.TimeStringModel.TimeStringModel.match_type" title="Link to this definition">¶</a></dt>
@@ -621,11 +705,25 @@ if your time constraint is based on TimeLastRunModel</p>
 </dl>
 </dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.time.TimeStringModel.TimeStringModel.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[ConfigDict]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'arbitrary_types_allowed':</span> <span class="pre">True,</span> <span class="pre">'extra':</span> <span class="pre">'forbid',</span> <span class="pre">'populate_by_name':</span> <span class="pre">True,</span> <span class="pre">'validate_default':</span> <span class="pre">True}</span></em><a class="headerlink" href="#ampel.model.time.TimeStringModel.TimeStringModel.model_config" title="Link to this definition">¶</a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.time.TimeStringModel.TimeStringModel.model_fields">
+<span class="sig-name descname"><span class="pre">model_fields</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[dict[str,</span> <span class="pre">FieldInfo]]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'dateTimeFormat':</span> <span class="pre">FieldInfo(annotation=str,</span> <span class="pre">required=True),</span> <span class="pre">'dateTimeStr':</span> <span class="pre">FieldInfo(annotation=str,</span> <span class="pre">required=True),</span> <span class="pre">'match_type':</span> <span class="pre">FieldInfo(annotation=Literal['time_string'],</span> <span class="pre">required=True)}</span></em><a class="headerlink" href="#ampel.model.time.TimeStringModel.TimeStringModel.model_fields" title="Link to this definition">¶</a></dt>
+<dd><p>Metadata about the fields defined on the model,
+mapping of field names to [<cite>FieldInfo</cite>][pydantic.fields.FieldInfo].</p>
+<p>This replaces <cite>Model.__fields__</cite> from Pydantic V1.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="ampel.model.time.UnixTimeModel.UnixTimeModel">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.model.time.UnixTimeModel.</span></span><span class="sig-name descname"><span class="pre">UnixTimeModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/time/UnixTimeModel.html#UnixTimeModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.time.UnixTimeModel.UnixTimeModel" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.model.time.UnixTimeModel.</span></span><span class="sig-name descname"><span class="pre">UnixTimeModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/time/UnixTimeModel.html#UnixTimeModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.time.UnixTimeModel.UnixTimeModel" title="Link to this definition">¶</a></dt>
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="ampel.model.time.UnixTimeModel.UnixTimeModel.match_type">
 <span class="sig-name descname"><span class="pre">match_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code></a><span class="pre">[</span><code class="docutils literal notranslate"><span class="pre">'unix_time'</span></code><span class="pre">]</span></em><a class="headerlink" href="#ampel.model.time.UnixTimeModel.UnixTimeModel.match_type" title="Link to this definition">¶</a></dt>
@@ -646,11 +744,25 @@ if your time constraint is based on TimeLastRunModel</p>
 </dl>
 </dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.time.UnixTimeModel.UnixTimeModel.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[ConfigDict]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'arbitrary_types_allowed':</span> <span class="pre">True,</span> <span class="pre">'extra':</span> <span class="pre">'forbid',</span> <span class="pre">'populate_by_name':</span> <span class="pre">True,</span> <span class="pre">'validate_default':</span> <span class="pre">True}</span></em><a class="headerlink" href="#ampel.model.time.UnixTimeModel.UnixTimeModel.model_config" title="Link to this definition">¶</a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.time.UnixTimeModel.UnixTimeModel.model_fields">
+<span class="sig-name descname"><span class="pre">model_fields</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[dict[str,</span> <span class="pre">FieldInfo]]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'match_type':</span> <span class="pre">FieldInfo(annotation=Literal['unix_time'],</span> <span class="pre">required=True),</span> <span class="pre">'value':</span> <span class="pre">FieldInfo(annotation=int,</span> <span class="pre">required=True)}</span></em><a class="headerlink" href="#ampel.model.time.UnixTimeModel.UnixTimeModel.model_fields" title="Link to this definition">¶</a></dt>
+<dd><p>Metadata about the fields defined on the model,
+mapping of field names to [<cite>FieldInfo</cite>][pydantic.fields.FieldInfo].</p>
+<p>This replaces <cite>Model.__fields__</cite> from Pydantic V1.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="ampel.model.t3.LoaderDirective.LoaderDirective">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.model.t3.LoaderDirective.</span></span><span class="sig-name descname"><span class="pre">LoaderDirective</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">col</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.12)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'stock'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'t0'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'t1'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'t2'</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.12)"><span class="pre">type</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">query_complement</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.12)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolve_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">excluding_query</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/t3/LoaderDirective.html#LoaderDirective"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.t3.LoaderDirective.LoaderDirective" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.model.t3.LoaderDirective.</span></span><span class="sig-name descname"><span class="pre">LoaderDirective</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/t3/LoaderDirective.html#LoaderDirective"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.t3.LoaderDirective.LoaderDirective" title="Link to this definition">¶</a></dt>
 <dd><p>Specification of documents to load</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="ampel.model.t3.LoaderDirective.LoaderDirective.col">
@@ -676,11 +788,25 @@ if your time constraint is based on TimeLastRunModel</p>
 <dd><p>whether an emtpy find() result should discard entirely the associated stock for further processing</p>
 </dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.t3.LoaderDirective.LoaderDirective.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[ConfigDict]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'arbitrary_types_allowed':</span> <span class="pre">True,</span> <span class="pre">'extra':</span> <span class="pre">'forbid',</span> <span class="pre">'populate_by_name':</span> <span class="pre">True,</span> <span class="pre">'validate_default':</span> <span class="pre">True}</span></em><a class="headerlink" href="#ampel.model.t3.LoaderDirective.LoaderDirective.model_config" title="Link to this definition">¶</a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.t3.LoaderDirective.LoaderDirective.model_fields">
+<span class="sig-name descname"><span class="pre">model_fields</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[dict[str,</span> <span class="pre">FieldInfo]]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'col':</span> <span class="pre">FieldInfo(annotation=Literal['stock',</span> <span class="pre">'t0',</span> <span class="pre">'t1',</span> <span class="pre">'t2'],</span> <span class="pre">required=True),</span> <span class="pre">'excluding_query':</span> <span class="pre">FieldInfo(annotation=bool,</span> <span class="pre">required=False,</span> <span class="pre">default=False),</span> <span class="pre">'query_complement':</span> <span class="pre">FieldInfo(annotation=Union[NoneType,</span> <span class="pre">dict[str,</span> <span class="pre">Any]],</span> <span class="pre">required=False),</span> <span class="pre">'resolve_config':</span> <span class="pre">FieldInfo(annotation=bool,</span> <span class="pre">required=False,</span> <span class="pre">default=False)}</span></em><a class="headerlink" href="#ampel.model.t3.LoaderDirective.LoaderDirective.model_fields" title="Link to this definition">¶</a></dt>
+<dd><p>Metadata about the fields defined on the model,
+mapping of field names to [<cite>FieldInfo</cite>][pydantic.fields.FieldInfo].</p>
+<p>This replaces <cite>Model.__fields__</cite> from Pydantic V1.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="ampel.model.t3.T2FilterModel.T2FilterModel">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.model.t3.T2FilterModel.</span></span><span class="sig-name descname"><span class="pre">T2FilterModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/t3/T2FilterModel.html#T2FilterModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.t3.T2FilterModel.T2FilterModel" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.model.t3.T2FilterModel.</span></span><span class="sig-name descname"><span class="pre">T2FilterModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/t3/T2FilterModel.html#T2FilterModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.t3.T2FilterModel.T2FilterModel" title="Link to this definition">¶</a></dt>
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="ampel.model.t3.T2FilterModel.T2FilterModel.unit">
 <span class="sig-name descname"><span class="pre">unit</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></em><a class="headerlink" href="#ampel.model.t3.T2FilterModel.T2FilterModel.unit" title="Link to this definition">¶</a></dt>
@@ -693,11 +819,25 @@ if your time constraint is based on TimeLastRunModel</p>
 <dd><p>Mongo match expression to apply to most recent result</p>
 </dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.t3.T2FilterModel.T2FilterModel.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[ConfigDict]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'arbitrary_types_allowed':</span> <span class="pre">True,</span> <span class="pre">'extra':</span> <span class="pre">'forbid',</span> <span class="pre">'populate_by_name':</span> <span class="pre">True,</span> <span class="pre">'validate_default':</span> <span class="pre">True}</span></em><a class="headerlink" href="#ampel.model.t3.T2FilterModel.T2FilterModel.model_config" title="Link to this definition">¶</a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.t3.T2FilterModel.T2FilterModel.model_fields">
+<span class="sig-name descname"><span class="pre">model_fields</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[dict[str,</span> <span class="pre">FieldInfo]]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'match':</span> <span class="pre">FieldInfo(annotation=dict[str,</span> <span class="pre">Any],</span> <span class="pre">required=True),</span> <span class="pre">'unit':</span> <span class="pre">FieldInfo(annotation=str,</span> <span class="pre">required=True)}</span></em><a class="headerlink" href="#ampel.model.t3.T2FilterModel.T2FilterModel.model_fields" title="Link to this definition">¶</a></dt>
+<dd><p>Metadata about the fields defined on the model,
+mapping of field names to [<cite>FieldInfo</cite>][pydantic.fields.FieldInfo].</p>
+<p>This replaces <cite>Model.__fields__</cite> from Pydantic V1.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="ampel.model.ingest.IngestDirective.IngestDirective">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.model.ingest.IngestDirective.</span></span><span class="sig-name descname"><span class="pre">IngestDirective</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/ingest/IngestDirective.html#IngestDirective"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.ingest.IngestDirective.IngestDirective" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.model.ingest.IngestDirective.</span></span><span class="sig-name descname"><span class="pre">IngestDirective</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/ingest/IngestDirective.html#IngestDirective"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.ingest.IngestDirective.IngestDirective" title="Link to this definition">¶</a></dt>
 <dd><p>channel
 filter
 ingest</p>
@@ -730,6 +870,20 @@ point_t2    &lt;- same</p>
 <dt class="sig sig-object py" id="ampel.model.ingest.IngestDirective.IngestDirective.filter">
 <span class="sig-name descname"><span class="pre">filter</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">FilterModel</span></code><span class="pre">]</span></em><a class="headerlink" href="#ampel.model.ingest.IngestDirective.IngestDirective.filter" title="Link to this definition">¶</a></dt>
 <dd><p>Potientially filter input datapoints</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.ingest.IngestDirective.IngestDirective.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[ConfigDict]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'arbitrary_types_allowed':</span> <span class="pre">True,</span> <span class="pre">'extra':</span> <span class="pre">'forbid',</span> <span class="pre">'populate_by_name':</span> <span class="pre">True,</span> <span class="pre">'validate_default':</span> <span class="pre">True}</span></em><a class="headerlink" href="#ampel.model.ingest.IngestDirective.IngestDirective.model_config" title="Link to this definition">¶</a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.model.ingest.IngestDirective.IngestDirective.model_fields">
+<span class="sig-name descname"><span class="pre">model_fields</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[dict[str,</span> <span class="pre">FieldInfo]]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'channel':</span> <span class="pre">FieldInfo(annotation=Union[int,</span> <span class="pre">str],</span> <span class="pre">required=True),</span> <span class="pre">'filter':</span> <span class="pre">FieldInfo(annotation=Union[NoneType,</span> <span class="pre">FilterModel],</span> <span class="pre">required=False),</span> <span class="pre">'ingest':</span> <span class="pre">FieldInfo(annotation=IngestBody,</span> <span class="pre">required=False,</span> <span class="pre">default=IngestBody(stock_t2=None,</span> <span class="pre">point_t2=None,</span> <span class="pre">combine=None,</span> <span class="pre">mux=None))}</span></em><a class="headerlink" href="#ampel.model.ingest.IngestDirective.IngestDirective.model_fields" title="Link to this definition">¶</a></dt>
+<dd><p>Metadata about the fields defined on the model,
+mapping of field names to [<cite>FieldInfo</cite>][pydantic.fields.FieldInfo].</p>
+<p>This replaces <cite>Model.__fields__</cite> from Pydantic V1.</p>
 </dd></dl>
 
 </dd></dl>
@@ -1099,7 +1253,7 @@ Ex: BaseAlertRegister adds the current run id</p>
         <li class="right" >
           <a href="structure.html" title="Structure"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.9.1a0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.10.0a0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Ampel-core</a></li> 
       </ul>
     </div>

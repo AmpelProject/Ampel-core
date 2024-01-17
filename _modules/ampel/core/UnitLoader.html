@@ -4,10 +4,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ampel.core.UnitLoader &#8212; ampel-core 0.9.1a0 documentation</title>
+    <title>ampel.core.UnitLoader &#8212; ampel-core 0.10.0a0 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
     <link rel="stylesheet" type="text/css" href="../../../_static/sphinxdoc.css?v=d59dc883" />
-    <script src="../../../_static/documentation_options.js?v=1a5dcacc"></script>
+    <script src="../../../_static/documentation_options.js?v=3f8aba6c"></script>
     <script src="../../../_static/doctools.js?v=888ff710"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
@@ -19,7 +19,7 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.9.1a0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.10.0a0 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">ampel.core.UnitLoader</a></li> 
       </ul>
@@ -45,7 +45,8 @@
 <span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">from</span> <span class="nn">hashlib</span> <span class="kn">import</span> <span class="n">blake2b</span>
 <span class="kn">from</span> <span class="nn">contextlib</span> <span class="kn">import</span> <span class="n">contextmanager</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">TypeVar</span><span class="p">,</span> <span class="n">overload</span><span class="p">,</span> <span class="n">get_args</span><span class="p">,</span> <span class="n">get_origin</span>
+<span class="kn">from</span> <span class="nn">types</span> <span class="kn">import</span> <span class="n">UnionType</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">TypeVar</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">overload</span><span class="p">,</span> <span class="n">get_args</span><span class="p">,</span> <span class="n">get_origin</span>
 <span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Mapping</span>
 <span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
 
@@ -404,6 +405,9 @@
 <span class="sd">		unit_type.</span>
 <span class="sd">		&quot;&quot;&quot;</span>
 		<span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">annotation</span> <span class="ow">in</span> <span class="n">unit_type</span><span class="o">.</span><span class="n">_annots</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+			<span class="c1"># for unions, consider the first member that is not NoneType</span>
+			<span class="k">if</span> <span class="n">get_origin</span><span class="p">(</span><span class="n">annotation</span><span class="p">)</span> <span class="ow">in</span> <span class="p">(</span><span class="n">Union</span><span class="p">,</span> <span class="n">UnionType</span><span class="p">):</span>
+				<span class="n">annotation</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">get_args</span><span class="p">(</span><span class="n">annotation</span><span class="p">)</span> <span class="k">if</span> <span class="n">f</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)),</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">))</span>
 			<span class="n">field_type</span> <span class="o">=</span> <span class="n">get_origin</span><span class="p">(</span><span class="n">annotation</span><span class="p">)</span> <span class="ow">or</span> <span class="n">annotation</span>
 			<span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">field_type</span><span class="p">),</span> <span class="nb">type</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">field_type</span><span class="p">,</span> <span class="n">Secret</span><span class="p">):</span>
 				<span class="n">default</span> <span class="o">=</span> <span class="kc">False</span>
@@ -415,7 +419,9 @@
 				<span class="k">else</span><span class="p">:</span>
 					<span class="c1"># missing required field; will be caught in validation later</span>
 					<span class="k">continue</span>
-				<span class="n">ValueType</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="p">(</span><span class="n">args</span> <span class="o">:=</span> <span class="n">get_args</span><span class="p">(</span><span class="n">annotation</span><span class="p">))</span> <span class="k">else</span> <span class="nb">object</span>
+				<span class="n">ValueType</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="p">(</span><span class="n">args</span> <span class="o">:=</span> <span class="n">annotation</span><span class="o">.</span><span class="n">get_model_args</span><span class="p">())</span> <span class="k">else</span> <span class="nb">object</span>
+				<span class="k">if</span> <span class="n">args</span><span class="p">:</span>
+					<span class="k">assert</span> <span class="n">ValueType</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">object</span>
 				<span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">vault</span><span class="p">:</span>
 					<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No vault configured&quot;</span><span class="p">)</span>
 				<span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">vault</span><span class="o">.</span><span class="n">resolve_secret</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">ValueType</span><span class="p">):</span>
@@ -463,18 +469,19 @@
 <span class="w">		</span><span class="sd">&quot;&quot;&quot; Enable validation for UnitModel instances &quot;&quot;&quot;</span>
 		<span class="kn">from</span> <span class="nn">ampel.abstract.AbsProcessController</span> <span class="kn">import</span> <span class="n">AbsProcessController</span>
 
-		<span class="k">def</span> <span class="nf">validating_init</span><span class="p">(</span><span class="n">slf</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-			<span class="nb">super</span><span class="p">(</span><span class="n">UnitModel</span><span class="p">,</span> <span class="n">slf</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-			<span class="n">Unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_class_by_name</span><span class="p">(</span><span class="n">slf</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
+		<span class="nd">@staticmethod</span> <span class="c1"># type: ignore[misc]</span>
+		<span class="k">def</span> <span class="nf">validate_unit</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">UnitModel</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UnitModel</span><span class="p">:</span>
+			<span class="n">Unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_class_by_name</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
 			<span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">Unit</span><span class="p">,</span> <span class="n">AmpelUnit</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">Unit</span><span class="p">,</span> <span class="n">AbsProcessController</span><span class="p">):</span>
-				<span class="n">Unit</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_init_config</span><span class="p">(</span><span class="n">slf</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">slf</span><span class="o">.</span><span class="n">override</span><span class="p">))</span>
-		<span class="n">legit_init</span> <span class="o">=</span> <span class="n">UnitModel</span><span class="o">.</span><span class="fm">__init__</span>
-		<span class="n">UnitModel</span><span class="o">.</span><span class="fm">__init__</span> <span class="o">=</span> <span class="n">validating_init</span> <span class="c1"># type: ignore</span>
+				<span class="n">Unit</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_init_config</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">value</span><span class="o">.</span><span class="n">override</span><span class="p">))</span>
+			<span class="k">return</span> <span class="n">value</span>
+
+		<span class="n">UnitModel</span><span class="o">.</span><span class="n">post_validate_hook</span> <span class="o">=</span> <span class="n">validate_unit</span>
 		<span class="n">AliasableModel</span><span class="o">.</span><span class="n">_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span>
 		<span class="k">try</span><span class="p">:</span>
 			<span class="k">yield</span>
 		<span class="k">finally</span><span class="p">:</span>
-			<span class="n">UnitModel</span><span class="o">.</span><span class="fm">__init__</span> <span class="o">=</span> <span class="n">legit_init</span> <span class="c1"># type: ignore</span>
+			<span class="n">UnitModel</span><span class="o">.</span><span class="n">post_validate_hook</span> <span class="o">=</span> <span class="kc">None</span>
 			<span class="n">AliasableModel</span><span class="o">.</span><span class="n">_config</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
@@ -548,7 +555,7 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              >index</a></li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.9.1a0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.10.0a0 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">ampel.core.UnitLoader</a></li> 
       </ul>
