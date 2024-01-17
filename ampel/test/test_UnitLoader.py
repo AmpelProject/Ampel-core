@@ -23,6 +23,11 @@ def secrets():
         }
     )
 
+@pytest.fixture
+def secret_context(dev_context: DevAmpelContext, secrets, monkeypatch):
+    monkeypatch.setattr(dev_context.loader, "vault", AmpelVault(providers=[secrets]))
+    return dev_context
+
 
 @pytest.mark.parametrize(
     "expected_type,key", [(dict, "dict"), (str, "str"), (tuple, "tuple")]
@@ -69,6 +74,19 @@ def test_resolve_secrets_wrong_type(
         dev_context.loader.new(
             UnitModel(unit="Modelo"), logger=ampel_logger, unit_type=Modelo
         )
+
+def test_resolve_secret_in_union(secret_context: DevAmpelContext, ampel_logger):
+    """UnitLoader can resolve secret in a union field"""
+
+    class Modelo(LogicalUnit):
+        maybe_secret: None | NamedSecret[str] = NamedSecret[str](label="str")
+    secret_context.register_unit(Modelo)
+
+    unit = secret_context.loader.new(
+        UnitModel(unit="Modelo"), logger=ampel_logger, unit_type=Modelo
+    )
+    assert unit.maybe_secret is not None
+    assert unit.maybe_secret.get() is not None
 
 
 def test_resolve_secret_from_superclass(
