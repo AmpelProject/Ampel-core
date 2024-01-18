@@ -96,9 +96,9 @@ from asyncio import (
     get_running_loop,
     sleep,
 )
-from collections.abc import Iterator
+from collections.abc import AsyncIterator, Iterator
 from contextlib import asynccontextmanager, contextmanager
-from typing import Any, AsyncIterator
+from typing import Any
 
 __pdoc__ = {} # type: ignore
 

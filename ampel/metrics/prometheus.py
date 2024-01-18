@@ -32,7 +32,7 @@
 import glob
 import os
 import tempfile
-from typing import Collection
+from collections.abc import Collection
 
 from prometheus_client import (
     CollectorRegistry,

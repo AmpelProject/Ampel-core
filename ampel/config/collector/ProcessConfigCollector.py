@@ -46,6 +46,6 @@ class ProcessConfigCollector(AbsDictConfigCollector):
 			proc_name, dist_name, version, register_file,
 			section_detail = f"{arg['tier']}.process"
 		):
-			return
+			return None
 
 		self.__setitem__(proc_name, arg)

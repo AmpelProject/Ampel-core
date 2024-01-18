@@ -68,7 +68,7 @@ def txt_export(
 				fd.write('\n]\n')
 				if logger:
 					logger.info("Abording")
-				return None
+				return
 
 			for el in data:
 
@@ -85,7 +85,7 @@ def txt_export(
 					fd.write('\n]\n')
 					if logger:
 						logger.info("Abording")
-					return None
+					return
 
 		fd.write('\n]\n')
 

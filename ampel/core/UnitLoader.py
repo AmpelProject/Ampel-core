@@ -133,7 +133,7 @@ class UnitLoader:
 			sub_type = unit_type
 		)
 
-		setattr(unit, '_buf_hdlr', buf_hdlr) # Shortcut
+		setattr(unit, '_buf_hdlr', buf_hdlr) # noqa: B010
 		return unit
 
 
@@ -371,7 +371,7 @@ class UnitLoader:
 				if not self.vault.resolve_secret(v, ValueType):
 					raise ValueError(
 						f"Could not resolve {unit_type.__name__}.{k} as {getattr(ValueType, '__name__', '<untyped>')}"
-						f" using {'default' if default else 'configured'} value {repr(v)}"
+						f" using {'default' if default else 'configured'} value {v!r}"
 					)
 				init_kwargs[k] = v
 

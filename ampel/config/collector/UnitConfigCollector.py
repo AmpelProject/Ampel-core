@@ -150,7 +150,7 @@ class UnitConfigCollector(AbsDictConfigCollector):
 		Note: we here assume the ampel convention that module name equals class name
 		(i.e that we have one class per module)
 		"""
-		return re.sub(r'.*\.', '', fqn) # noqa
+		return re.sub(r'.*\.', '', fqn)
 
 
 	def get_mro(self, module_fqn: str, class_name: str) -> None | tuple[int, list[str]]:

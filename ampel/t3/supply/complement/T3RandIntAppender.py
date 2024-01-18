@@ -7,8 +7,8 @@
 # Last Modified Date:  14.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+from collections.abc import Iterable
 from random import randint
-from typing import Iterable
 
 from ampel.abstract.AbsBufferComplement import AbsBufferComplement
 from ampel.struct.AmpelBuffer import AmpelBuffer

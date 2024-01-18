@@ -12,11 +12,11 @@ import os
 import shutil
 import subprocess
 from argparse import ArgumentParser, FileType
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from io import StringIO, UnsupportedOperation
 from pathlib import Path
 from time import time
-from typing import Any, Iterable, TextIO
+from typing import Any, TextIO
 
 import yaml
 
@@ -286,7 +286,7 @@ class ConfigCommand(AbsCoreCommand):
 			if not os.path.exists(conf_path):
 				logger.info(f'Config with path {conf_path} not found')
 				return
-			with open(conf_path, 'r') as f:
+			with open(conf_path) as f:
 				if args['json']:
 					if args['pretty']:
 						print(prettyjson(yaml.safe_load(f.read())))

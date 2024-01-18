@@ -288,7 +288,7 @@ class MongoStockUpdater:
 
 			if self.logger.verbose > 1:
 				for el in jupds:
-					self.logger.log(VERBOSE, f"Journal update: {str(el)}")
+					self.logger.log(VERBOSE, f"Journal update: {el!s}")
 
 			self.col_stock.bulk_write(jupds)
 
@@ -301,8 +301,8 @@ class MongoStockUpdater:
 
 			if self.raise_exc:
 				if isinstance(e, BulkWriteError):
-					raise ValueError(f"Journal update error: {e.details}")
-				raise ValueError("Journal update error")
+					raise ValueError(f"Journal update error: {e.details}") from e
+				raise ValueError("Journal update error") from e
 
 			info: dict[str, Any] = {
 				'process': self.process_name,

@@ -7,9 +7,9 @@
 # Last Modified Date:  04.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from collections.abc import Sequence
+from collections.abc import Generator, Sequence
 from time import time
-from typing import Annotated, Any, Generator
+from typing import Annotated, Any
 
 from ampel.abstract.AbsT4ControlUnit import AbsT4ControlUnit
 from ampel.abstract.AbsT4Unit import AbsT4Unit
@@ -41,7 +41,7 @@ class T4RunTimeContextUpdater(AbsT4ControlUnit, DocBuilder):
 			if ret := t4_unit.do():
 				if not isinstance(ret, dict):
 					raise ValueError(f'Invalid {um.unit} return value, dict expected')
-				for k, v in ret.items():
+				for k in ret:
 					if not k[0] == '%' == k[1]:
 						raise ValueError(
 							f'Invalid run time alias returned by {um.unit}, '

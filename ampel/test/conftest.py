@@ -47,7 +47,7 @@ def pytest_addoption(parser):
 @pytest.fixture(scope="session")
 def mongod(pytestconfig):
     if port := environ.get("MONGO_PORT"):
-        yield "mongodb://localhost:{}".format(port)
+        yield f"mongodb://localhost:{port}"
         return
 
     if not pytestconfig.getoption("--integration"):
@@ -70,7 +70,7 @@ def mongod(pytestconfig):
         subprocess.check_call(["docker", "stop", container])
 
 
-@pytest.fixture
+@pytest.fixture()
 def patch_mongo(monkeypatch):
     monkeypatch.setattr("ampel.core.AmpelDB.MongoClient", mongomock.MongoClient)
     # ignore codec_options in DataLoader
@@ -93,12 +93,12 @@ def core_config():
     return cb.build_config(config_validator=None, get_unit_env=False)
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_context(patch_mongo, testing_config: PosixPath):
     return DevAmpelContext.load(config=str(testing_config), purge_db=True)
 
 
-@pytest.fixture
+@pytest.fixture()
 def integration_context(mongod, testing_config: PosixPath):
     return DevAmpelContext.load(
         config=str(testing_config),
@@ -110,15 +110,15 @@ def integration_context(mongod, testing_config: PosixPath):
 # metafixture as suggested in https://github.com/pytest-dev/pytest/issues/349#issuecomment-189370273
 @pytest.fixture(params=["mock_context", "integration_context"])
 def dev_context(request):
-    yield request.getfixturevalue(request.param)
+    return request.getfixturevalue(request.param)
 
 
-@pytest.fixture
+@pytest.fixture()
 def ampel_logger():
     return AmpelLogger.get_logger()
 
 
-@pytest.fixture
+@pytest.fixture()
 def ingest_stock(integration_context, ampel_logger):
     run_id = 0
     updates_buffer = DBUpdatesBuffer(integration_context.db, run_id=run_id, logger=ampel_logger)
@@ -139,7 +139,7 @@ def ingest_stock(integration_context, ampel_logger):
     assert integration_context.db.get_collection("stock").count_documents({}) == 1
 
 
-@pytest.fixture
+@pytest.fixture()
 def ingest_stock_t2(integration_context: DevAmpelContext, ampel_logger):
     run_id = 0
     updates_buffer = DBUpdatesBuffer(integration_context.db, run_id=run_id, logger=ampel_logger)

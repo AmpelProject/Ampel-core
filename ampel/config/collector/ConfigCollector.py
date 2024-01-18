@@ -17,21 +17,21 @@ class ConfigCollector(dict):
 
 	def __init__(self,
 		conf_section: str,
-		options: DisplayOptions = DisplayOptions(),
+		options: None | DisplayOptions = None,
 		content: None | dict = None,
 		logger: None | AmpelLogger = None,
 		tier: None | Literal[0, 1, 2, 3, "ops"] = None
 	) -> None:
 
 		super().__init__(**content if content else {})
-		self.options = options
-		self.verbose = options.verbose
+		self.options = options or DisplayOptions()
+		self.verbose = self.options.verbose
 		self.has_error = False
 		self.conf_section = conf_section
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
 		self.tier = f'T{tier}' if tier is not None else 'general'
 
-		if options.debug:
+		if self.options.debug:
 			self.logger.info(
 				f'Creating {self.__class__.__name__} '
 				f'for {self.tier} config section "{conf_section}"'

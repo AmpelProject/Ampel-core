@@ -12,9 +12,10 @@ import os
 import signal
 import traceback
 from argparse import ArgumentParser
+from collections.abc import Generator, Sequence
 from contextlib import contextmanager
 from time import time
-from typing import Any, Generator, Optional, Sequence, Union
+from typing import Any, Optional, Union
 
 import yaml
 
@@ -178,7 +179,7 @@ class ProcessCommand(AbsCoreCommand):
 
         logger.info(f"Running task {args['name']}")
 
-        with open(args["schema"], "r") as f:
+        with open(args["schema"]) as f:
             unit_model = UnitModel(**yaml.safe_load(f))
         # always raise exceptions
         unit_model.override = (unit_model.override or {}) | {

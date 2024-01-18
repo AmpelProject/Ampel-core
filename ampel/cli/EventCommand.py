@@ -8,9 +8,9 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from argparse import ArgumentParser
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from datetime import datetime
-from typing import Any, Callable
+from typing import Any
 
 import yaml
 from bson.objectid import ObjectId
@@ -142,7 +142,7 @@ class EventCommand(AbsCoreCommand):
 
 		if args['resolve_jobs']:
 			jcol = ctx.db.get_collection('job', mode='r')
-			def resolve_jobs(d): # noqa
+			def resolve_jobs(d):
 				if jobd := next(jcol.find({'_id': d.get('jobid')}), None):
 					d['job'] = jobd
 					del d['jobid']

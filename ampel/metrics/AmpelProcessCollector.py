@@ -1,3 +1,4 @@
+from contextlib import suppress
 from dataclasses import dataclass
 
 import psutil
@@ -45,17 +46,12 @@ class AmpelProcessCollector:
             labels=("process", "replica"),
         )
 
-        try:
-            for labels, pid in self.get_pids():
-                try:
-                    p = psutil.Process(pid)
-                    with p.oneshot():
-                        rss.add_metric(labels, p.memory_info().rss)
-                        cpu.add_metric(
-                            labels, (p.cpu_times().user + p.cpu_times().user)
-                        )
-                except psutil.NoSuchProcess:
-                    ...
-        except:
-            ...
+        for labels, pid in self.get_pids():
+            with suppress(psutil.NoSuchProcess):
+                p = psutil.Process(pid)
+                with p.oneshot():
+                    rss.add_metric(labels, p.memory_info().rss)
+                    cpu.add_metric(
+                        labels, (p.cpu_times().user + p.cpu_times().user)
+                    )
         return [rss, cpu]

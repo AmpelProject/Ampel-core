@@ -82,7 +82,7 @@ class AmpelExceptionPublisher(AbsOpsUnit):
             elif "errDict" in doc:
                 text += "```\n{}```".format(repr(doc["errDict"]))
         else:
-            text = "Unknown exception type. Doc keys are: ```{}```".format(doc.keys())
+            text = f"Unknown exception type. Doc keys are: ```{doc.keys()}```"
 
         attachment = {
             "fields": fields,
@@ -114,13 +114,13 @@ class AmpelExceptionPublisher(AbsOpsUnit):
                 break
 
         if dt.days > 3:
-            time_range = "{} days".format(dt.days)
+            time_range = f"{dt.days} days"
         elif dt.days > 0 or dt.seconds > 2 * 3600:
-            time_range = "{} hours".format(int(dt.days * 24 + dt.seconds / 3600))
+            time_range = f"{int(dt.days * 24 + dt.seconds / 3600)} hours"
         elif dt.seconds > 2 * 60:
-            time_range = "{} minutes".format(int(dt.seconds / 60))
+            time_range = f"{int(dt.seconds / 60)} minutes"
         else:
-            time_range = "{} seconds".format(int(dt.seconds))
+            time_range = f"{int(dt.seconds)} seconds"
 
         count = len(docs)
         if len(attachments) < count:

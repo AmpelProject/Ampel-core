@@ -7,8 +7,7 @@
 # Last Modified Date:  17.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from collections.abc import Generator
-from typing import Iterable
+from collections.abc import Generator, Iterable
 
 from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
@@ -29,5 +28,4 @@ class NoViewGenerator(BaseViewGenerator[T]):
 		self.View = unit._View
 
 	def __iter__(self) -> Generator[T, T3Send, None]:
-		for ab in self.buffers:
-			yield ab # type: ignore
+		yield from self.buffers # type: ignore

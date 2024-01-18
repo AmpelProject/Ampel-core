@@ -4,7 +4,7 @@ from prometheus_client.metrics import MetricWrapperBase
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry, reset_registry
 
 
-@pytest.fixture
+@pytest.fixture()
 def empty_registry():
     prev = AmpelMetricsRegistry._registry
     AmpelMetricsRegistry._registry = None

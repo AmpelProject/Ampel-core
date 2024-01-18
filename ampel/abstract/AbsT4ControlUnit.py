@@ -7,7 +7,7 @@
 # Last Modified Date:  04.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Generator
+from collections.abc import Generator
 
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod

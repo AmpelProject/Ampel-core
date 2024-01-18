@@ -79,10 +79,10 @@ class QueryMatchModel(AmpelBaseModel):
 		#print("QueryMatchModel: kwargs: %s" % kwargs)
 		#print("QueryMatchModel: values: %s" % values)
 
-		if type(v) is str:
+		if isinstance(v, str):
 			return {'anyOf': [v]}
 
-		if type(v) is list:
+		if isinstance(v, list):
 			if not check_seq_inner_type(v, str):
 				raise ValueError(
 					"QueryMatchModel error\n" +
@@ -90,7 +90,7 @@ class QueryMatchModel(AmpelBaseModel):
 				)
 			return {'anyOf': v}
 
-		if type(v) is dict:
+		if isinstance(v, dict):
 
 			if len(v) != 1:
 				raise ValueError(

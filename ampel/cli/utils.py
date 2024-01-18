@@ -9,7 +9,7 @@
 
 import os
 from enum import IntEnum
-from typing import Any, Literal, Type, overload
+from typing import Any, Literal, overload
 
 from ampel.abstract.AbsIdMapper import AbsIdMapper
 from ampel.abstract.AbsSecretProvider import AbsSecretProvider
@@ -53,7 +53,7 @@ def get_db(
 				require_existing_db if isinstance(require_existing_db, str) else
 				config.get('mongo.prefix', str, raise_exc=True)
 			) + " do not exist"
-			raise SystemExit("\n" + "="*len(s) + "\n" + s + "\n" + "="*len(s) + "\n")
+			raise SystemExit("\n" + "="*len(s) + "\n" + s + "\n" + "="*len(s) + "\n") from e
 		raise e
 
 
@@ -89,16 +89,16 @@ def maybe_load_idmapper(args: dict[str, Any]) -> None:
 
 
 @overload
-def maybe_resolve_enum(value: int | str, enum: Type[IntEnum]) -> int:
+def maybe_resolve_enum(value: int | str, enum: type[IntEnum]) -> int:
 	...
 
 
 @overload
-def maybe_resolve_enum(value: list[int|str], enum: Type[IntEnum]) -> list[int]:
+def maybe_resolve_enum(value: list[int|str], enum: type[IntEnum]) -> list[int]:
 	...
 
 
-def maybe_resolve_enum(value: int | str | list[int|str], enum: Type[IntEnum]) -> int | list[int]:
+def maybe_resolve_enum(value: int | str | list[int|str], enum: type[IntEnum]) -> int | list[int]:
 	"""
 	Replace enum member names with their values
 	"""

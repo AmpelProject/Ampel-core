@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# ruff: noqa: B904
+
 import asyncio
 import enum
 import logging

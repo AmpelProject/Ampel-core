@@ -181,7 +181,7 @@ class T3AdaptativeStager(T3ThreadedStager):
 				q.put(None) # type: ignore[arg-type]
 
 			for async_res, generator, t3_unit in zip(
-				self.async_results, self.generators, list(self.queues.keys())
+				self.async_results, self.generators, list(self.queues.keys()), strict=False
 			):
 				# potential T3Record to be included in the T3Document
 				if (t3_unit_result := async_res.get()):

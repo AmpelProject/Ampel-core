@@ -28,7 +28,7 @@ class DemoT3Unit(AbsT3Unit[SnapView]):
 
 		self.logger.info(f"DemoT3Unit output (parameter={self.parameter}):")
 
-		for i, v in enumerate(gen, 1):
+		for v in gen:
 
 			self.logger.info("id: " + str(v.id))
 			gen.send(

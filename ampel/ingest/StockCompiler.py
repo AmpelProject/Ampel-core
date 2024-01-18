@@ -85,7 +85,7 @@ class StockCompiler(AbsCompiler):
 		Note that we let the ingester handle 'tied' and 'upd' time values
 		"""
 
-		for k, v in self.register.items():
+		for v in self.register.values():
 
 			d: StockDocument = {
 				'stock': v['stock'],

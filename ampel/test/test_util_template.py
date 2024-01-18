@@ -48,7 +48,7 @@ def test_misconfigured_dependency(first_pass_config: dict[str, Any]):
     with pytest.raises(ValueError):
         check_tied_units(units, first_pass_config)
 
-@pytest.fixture
+@pytest.fixture()
 def all_units(first_pass_config: dict[str, Any]) -> list[UnitModel]:
     return [UnitModel(unit=name) for name in first_pass_config["unit"].keys()]
 

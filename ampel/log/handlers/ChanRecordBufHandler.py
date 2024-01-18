@@ -72,7 +72,7 @@ class ChanRecordBufHandler(RecordBufferingHandler):
 						rec.extra = self._extra # type: ignore[union-attr]
 
 				if self._unit:
-					setattr(rec, 'unit', self._unit)
+					rec.unit = self._unit
 
 				target.handle(rec) # type: ignore
 

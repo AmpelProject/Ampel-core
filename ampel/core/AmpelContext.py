@@ -19,7 +19,7 @@ from ampel.secret.AmpelVault import AmpelVault
 # Avoid cyclic import issues
 if TYPE_CHECKING:
 	from ampel.core.AmpelDB import AmpelDB
-	from ampel.core.UnitLoader import UnitLoader  # noqa
+	from ampel.core.UnitLoader import UnitLoader
 
 
 class AmpelContext:
@@ -94,7 +94,7 @@ class AmpelContext:
 				AESecretProvider(pwds)
 			)
 		elif pwd_file_path:
-			with open(pwd_file_path, "r") as f:
+			with open(pwd_file_path) as f:
 				vault.providers.append(
 					AESecretProvider([l.strip() for l in f.readlines()])
 				)
@@ -127,7 +127,7 @@ class AmpelContext:
 		"""
 
 		if pwd_file_path:
-			with open(pwd_file_path, "r") as f:
+			with open(pwd_file_path) as f:
 				pwds = [l.strip() for l in f.readlines()]
 
 		# Import here to avoid cyclic import error

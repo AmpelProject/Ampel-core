@@ -122,7 +122,7 @@ class DBCommand(AbsCoreCommand):
 		elif sub_op == 'index':
 
 			for col_name, col_model in ctx.db.col_config.items():
-				if args['col'] and not col_name in args['col']:
+				if args['col'] and col_name not in args['col']:
 					continue
 				col = ctx.db.get_collection(col_name)
 				ctx.db.set_col_index(col, col_model, logger, force_overwrite=args['force'])

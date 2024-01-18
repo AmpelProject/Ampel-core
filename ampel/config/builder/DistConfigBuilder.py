@@ -89,7 +89,7 @@ class DistConfigBuilder(ConfigBuilder):
 		try:
 
 			distrib = pkg_resources.get_distribution(dist_name)
-			all_conf_files = get_files(dist_name, conf_dir, re.compile(rf".*\.{ext}$")) # noqa
+			all_conf_files = get_files(dist_name, conf_dir, re.compile(rf".*\.{ext}$"))
 
 			if all_conf_files and self.verbose:
 				self.logger.log(VERBOSE, "Following conf files will be parsed:")

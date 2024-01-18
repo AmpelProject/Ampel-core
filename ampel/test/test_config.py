@@ -34,7 +34,7 @@ def test_build_config():
             ]
         )
     )
-    with open(tmp_file, "r") as f:
+    with open(tmp_file) as f:
         config = yaml.safe_load(f)
     assert ConfigValidator(config).validate() == config
 

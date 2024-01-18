@@ -20,7 +20,7 @@ from argparse import ArgumentParser
 from collections.abc import Sequence
 from multiprocessing import Process, Queue
 from time import sleep, time
-from typing import Any, Type
+from typing import Any
 
 import pkg_resources
 import psutil
@@ -218,7 +218,7 @@ class JobCommand(AbsCoreCommand):
 		if args.get('edit') == 'raw':
 
 			if schema_paths:
-				for sfile in list(schema_paths):
+				for sfile in schema_paths:
 					_, fname = tempfile.mkstemp(suffix='.yml', text=True)
 					shutil.copyfile(sfile, fname)
 					edit_job(fname)
@@ -251,7 +251,7 @@ class JobCommand(AbsCoreCommand):
 		if args.get('edit') == 'parsed':
 			fd, fname = tempfile.mkstemp(suffix='.yml')
 			# Seems fd does not work with yaml.dump(), unsure why
-			with open(fname, 'wt') as f:
+			with open(fname, "w") as f:
 				yaml.dump(
 					ujson.loads(job.json(exclude_unset=True)), f,
 					sort_keys=False, default_flow_style=None
@@ -410,11 +410,11 @@ class JobCommand(AbsCoreCommand):
 		if args.get('edit') == 'model':
 			fd, fname = tempfile.mkstemp(suffix='.yml')
 			# Seems fd does not work with yaml.dump(), unsure why
-			with open(fname, 'wt') as f:
+			with open(fname, "w") as f:
 				yaml.dump(job_dict, f, sort_keys=False, default_flow_style=None)
 			edit_job(fname)
 			tmp_files.append(fname)
-			with open(fname, 'rt') as f:
+			with open(fname) as f:
 				job_dict = yaml.safe_load(f)
 			jtasks = job_dict['task']
 
@@ -521,7 +521,7 @@ class JobCommand(AbsCoreCommand):
 					signal.signal(signal.SIGINT, signal_handler)
 					signal.signal(signal.SIGTERM, signal_handler)
 
-					for item in range(multiplier):
+					for _ in range(multiplier):
 						result_queue: Queue = Queue()
 						p = Process(
 							target = run_mp_process,
@@ -532,7 +532,7 @@ class JobCommand(AbsCoreCommand):
 						process_queues.append(p)
 						result_queues.append(result_queue)
 					
-					for i, (p, r1) in enumerate(zip(process_queues, result_queues)):
+					for i, (p, r1) in enumerate(zip(process_queues, result_queues, strict=False)):
 						p.join()
 						if (m := r1.get()):
 							logger.info(f'{taskd["unit"]}#{i} return value: {m}')
@@ -633,7 +633,7 @@ class JobCommand(AbsCoreCommand):
 		schema_paths: None | Sequence[str] = None,
 		schema_content: None | str = None,
 		compute_sig: bool = True,
-		Model: Type = JobModel
+		Model: type = JobModel
 	) -> tuple[None, None] | tuple[JobModel, int]:
 
 		if not (schema_paths or schema_content):
@@ -641,13 +641,13 @@ class JobCommand(AbsCoreCommand):
 
 		if schema_paths:
 			content = io.StringIO()
-			for i, job_fname in enumerate(schema_paths):
+			for _, job_fname in enumerate(schema_paths):
 
 				if not os.path.exists(job_fname):
 					with out_stack():
 						raise FileNotFoundError(f'Job file not found: "{job_fname}"\n')
 
-				with open(job_fname, 'r') as f:
+				with open(job_fname) as f:
 					content.write('\n'.join(f.readlines()))
 
 			content.seek(0)

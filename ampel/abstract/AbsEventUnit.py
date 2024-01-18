@@ -121,7 +121,7 @@ class AbsEventUnit(AmpelABC, ContextUnit, abstract=True):
 		except Exception as e:
 			if self.raise_exc:
 				raise e
-			event_hdlr.code == EventCode.EXCEPTION
+			event_hdlr.code = EventCode.EXCEPTION
 
 		# Set default event code if sub-class didn't customize it
 		if event_hdlr.code is None:

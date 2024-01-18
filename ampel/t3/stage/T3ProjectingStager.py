@@ -253,7 +253,7 @@ class T3ProjectingStager(T3ThreadedStager):
 					for q in queues.values():
 						q.put(None) # type: ignore[arg-type]
 
-					for async_res, generator, t3_unit in zip(async_results, generators, all_units):
+					for async_res, generator, t3_unit in zip(async_results, generators, all_units, strict=False):
 
 						# potential T3Record to be included in the T3Document
 						if (t3_unit_result := async_res.get()):

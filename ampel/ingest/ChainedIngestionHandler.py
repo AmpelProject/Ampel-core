@@ -298,7 +298,7 @@ class ChainedIngestionHandler:
 				)
 
 				# Shortcut to avoid muxer.logger.handlers[?]
-				setattr(muxer, '_buf_hdlr', buf_hdlr)
+				setattr(muxer, '_buf_hdlr', buf_hdlr) # noqa: B010
 
 			muxb.unit = muxer
 			muxb.trace_id = muxer._trace_id
@@ -388,7 +388,7 @@ class ChainedIngestionHandler:
 			)
 
 			# Shortcut to avoid t1_unit.logger.handlers[?]
-			setattr(t1_unit, '_buf_hdlr', buf_hdlr)
+			setattr(t1_unit, '_buf_hdlr', buf_hdlr) # noqa: B010
 			self._t1_combine_units_cache[t1b.trace_id] = t1_unit
 
 		t1b.unit = t1_unit

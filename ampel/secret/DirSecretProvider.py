@@ -1,7 +1,6 @@
 import os
 import pathlib
 from typing import (  # type: ignore[attr-defined]
-    Type,
     _GenericAlias,
     get_args,
 )
@@ -24,7 +23,7 @@ class DirSecretProvider(AbsSecretProvider):
         if not os.access(self._dir, os.R_OK):
             raise PermissionError(path)
 
-    def tell(self, arg: Secret, ValueType: Type) -> bool:
+    def tell(self, arg: Secret, ValueType: type) -> bool:
         """
         Potentially update an initialized Secret instance with
         the actual sensitive information associable with it.

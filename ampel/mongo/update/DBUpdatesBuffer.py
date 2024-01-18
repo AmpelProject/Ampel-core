@@ -7,11 +7,11 @@
 # Last Modified Date:  22.04.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from collections.abc import Callable, Iterable, Iterator
+from collections.abc import Callable, Generator, Iterable, Iterator, Mapping
 from contextlib import contextmanager
 from multiprocessing.pool import ThreadPool
 from time import time
-from typing import Any, Generator, Literal, Mapping, Union
+from typing import Any, Literal, Union
 
 from pymongo import InsertOne, UpdateMany, UpdateOne
 from pymongo.collection import Collection

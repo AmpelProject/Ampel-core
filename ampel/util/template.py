@@ -10,7 +10,7 @@
 from collections.abc import Sequence
 from functools import cache
 from importlib import import_module
-from typing import Any, Type
+from typing import Any
 
 from ampel.abstract.AbsConfigMorpher import AbsConfigMorpher
 from ampel.abstract.AbsConfigUpdater import AbsConfigUpdater
@@ -61,7 +61,7 @@ def check_tied_units(
 				override=t2_dep.get("override")
 			)
 			candidates = [as_unitmodel(unit) for unit in all_t2_units if unit.unit == dependency_config.unit]
-			if not any((c.dict() == dependency_config.dict() for c in candidates)):
+			if not any(c.dict() == dependency_config.dict() for c in candidates):
 				raise ValueError(
 					f"Unit {tied_unit.unit} depends on unit {dependency_config.dict()}, "
 					f"which was not configured. Possible matches are: "
@@ -94,7 +94,7 @@ def resolve_shortcut(unit: str | JDict) -> JDict:
 	return unit if isinstance(unit, dict) else {'unit': unit}
 
 
-def load_tpl_class(fqn) -> Type:
+def load_tpl_class(fqn) -> type:
 	if ':' in fqn:
 		fqn, class_name = fqn.split(':')
 	else:

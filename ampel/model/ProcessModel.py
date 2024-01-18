@@ -50,5 +50,5 @@ class ProcessModel(AmpelBaseModel):
 				if evaluator is None:
 					evaluator = ScheduleEvaluator()
 				evaluator(sched.Scheduler(), el).do(lambda x: None)
-			except Exception:
-				raise ValueError("Incorrect 'schedule' parameter")
+			except Exception as exc:
+				raise ValueError("Incorrect 'schedule' parameter") from exc

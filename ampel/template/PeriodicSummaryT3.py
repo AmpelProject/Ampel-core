@@ -174,6 +174,6 @@ class PeriodicSummaryT3(AbsConfigMorpher):
         """
         Get channel if single channel, otherwise None
         """
-        if isinstance(self.channel, str) or isinstance(self.channel, int):
+        if isinstance(self.channel, int | str):
             return self.channel
         return None

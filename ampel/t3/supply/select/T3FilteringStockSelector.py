@@ -56,7 +56,7 @@ class T3FilteringStockSelector(T3StockSelector):
 		output_count = 0
 		while (stock_ids := [doc['stock'] for doc in islice(cursor, self.chunk_size)]):
 			count = 0
-			for count, doc in enumerate(
+			for count, doc in enumerate( # noqa: B007
 				self.context.db.get_collection('t2').aggregate(
 					self._t2_filter_pipeline(stock_ids),
 				),

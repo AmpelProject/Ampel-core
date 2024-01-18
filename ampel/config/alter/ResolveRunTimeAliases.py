@@ -35,7 +35,7 @@ class ResolveRunTimeAliases(AbsConfigUpdater):
 		# print(f"# path: {path}\n# d: {d}\n")
 		for k, v in current_d.items():
 			if isinstance(v, str) and v[0] == '%' == v[1]:
-				for rt_key, rt_val in kwargs['run_time_aliases'].items():
+				for rt_key in kwargs['run_time_aliases']:
 					if v == rt_key:
 						if kwargs['logger'].verbose:
 							kwargs['logger'].info(

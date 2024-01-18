@@ -43,7 +43,7 @@ class DataLoader:
 		channel: None | ChannelId | AllOf[ChannelId] | AnyOf[ChannelId] | OneOf[ChannelId] = None,
 		tag: None | dict[Literal['with', 'without'], Tag | dict | AllOf[Tag] | AnyOf[Tag] | OneOf[Tag]] = None,
 		auto_project: bool = True,
-		codec_options: None | CodecOptions = CodecOptions(document_class=FrozenValuesDict),
+		codec_options: None | CodecOptions = CodecOptions(document_class=FrozenValuesDict), # noqa: B008
 		logger: None | AmpelLogger = None
 	) -> Iterable[AmpelBuffer]:
 		"""
@@ -119,13 +119,13 @@ class DataLoader:
 
 			if directive.col == "t1":
 				count = 0
-				for count, res in enumerate(cursor, 1):
+				for count, res in enumerate(cursor, 1): # noqa: B007
 					register[res['stock']][directive.col].append(res) # type: ignore[union-attr]
 				inc(count)
 
 			elif directive.col == "stock":
 				count = 0
-				for count, res in enumerate(cursor, 1):
+				for count, res in enumerate(cursor, 1): # noqa: B007
 					register[res['stock']]['stock'] = res
 				inc(count)
 
@@ -133,7 +133,7 @@ class DataLoader:
 			elif directive.col == "t0":
 
 				count = 0
-				for count, res in enumerate(cursor, 1):
+				for count, res in enumerate(cursor, 1): # noqa: B007
 
 					# Upper limits can be attached to multiple transients
 					for sid in res['stock']:

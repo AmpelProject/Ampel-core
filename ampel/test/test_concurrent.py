@@ -50,47 +50,47 @@ def sleepy(dt, stubborn=False):
     return dt
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_launch():
     p = _Process(target=echo, args=(42,))
     result = await p.launch()
     assert result == 42
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_abort():
     p = _Process(target=abort)
     with pytest.raises(RuntimeError):
         await p.launch()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_raise():
     p = _Process(target=throw)
     with pytest.raises(NotImplementedError):
         await p.launch()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_too_many_arguments():
     p = _Process(target=throw, args=("borkybork",))
     with pytest.raises(TypeError):
         await p.launch()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_unpicklable_return():
     p = _Process(target=return_unpicklable)
-    with pytest.raises(NotImplementedError) as excinfo:
+    with pytest.raises(NotImplementedError):
         await p.launch()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_decorator():
     assert (await decorated(42)) == 42
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_cancel():
     task = sleepy(5)
     await asyncio.sleep(1)
@@ -99,7 +99,7 @@ async def test_cancel():
         await task
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_kill():
     task = sleepy(10, stubborn=True)
     await asyncio.sleep(1)
@@ -111,7 +111,7 @@ async def test_kill():
     assert dt < 1, "task killed before exiting"
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_multilaunch():
     launch = lambda: asyncio.create_task(_Process(target=echo, args=(42,)).launch())
     count = 0
@@ -147,7 +147,7 @@ def set_counter(value, process=None):
     return value
 
 
-@pytest.fixture
+@pytest.fixture()
 def prometheus_multiproc_dir(monkeypatch, tmpdir):
     """
     Ensure that Prometheus multiprocessing mode is enabled
@@ -159,12 +159,12 @@ def prometheus_multiproc_dir(monkeypatch, tmpdir):
     try:
         c = MultiProcessCollector(r)
         yield tmpdir
+    finally:
         r.unregister(c)
-    except:
-        yield
 
 
-@pytest.mark.asyncio
+
+@pytest.mark.asyncio()
 async def test_multiprocess_metrics(prometheus_multiproc_dir):
 
     sample = lambda: {
@@ -203,7 +203,7 @@ async def test_multiprocess_metrics(prometheus_multiproc_dir):
         assert hist_after[k] == hist_before[k] or hist_after[k] == 2 * hist_before[k]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_multiprocess_metrics_deduplication(prometheus_multiproc_dir):
     """
     Metrics are not duplicated in multiprocess mode
@@ -225,7 +225,7 @@ async def test_multiprocess_metrics_deduplication(prometheus_multiproc_dir):
     assert len(set(helps)) == len(helps), "no duplicated HELP lines"
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_implicit_labels(prometheus_multiproc_dir):
     """
     Implicit labels are added if there is a dict argument with a key "name"
@@ -299,7 +299,7 @@ def latch(port):
         sock.recv(4)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_process_collector(unused_tcp_port):
     for metric in AmpelProcessCollector().collect():
         assert not metric.samples
@@ -323,7 +323,7 @@ async def test_process_collector(unused_tcp_port):
     await asyncio.wait_for(proc, 3)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_replica_numbering():
     launch = lambda: _Process(target=echo, args=(42,), name="echo").launch()
     assert not _Process._active

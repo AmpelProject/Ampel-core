@@ -32,7 +32,7 @@ class ScheduleEvaluator(ast.NodeVisitor):
 			raise ValueError("Invalid schedule") from err
 
 	def generic_visit(self, node):
-		raise ValueError("Illegal operation {}".format(type(node)))
+		raise ValueError(f"Illegal operation {type(node)}")
 	
 	def visit_Constant(self, node):
 		return node.value

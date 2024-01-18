@@ -86,9 +86,9 @@ class AmpelStreamHandler:
 		elif density == "compacter":
 			self.log_sep = ''
 			self.fields_check = ['extra', 'stock', 'channel']
-			self.handle = getattr(self, f"handle_compacter") # type: ignore[assignment]
+			self.handle = self.handle_compacter # type: ignore[assignment]
 		elif density == "headerless":
-			self.handle = getattr(self, f"handle_headerless") # type: ignore[assignment]
+			self.handle = self.handle_headerless # type: ignore[assignment]
 
 
 	def handle(self, rec: LightLogRecord) -> None:
@@ -126,7 +126,7 @@ class AmpelStreamHandler:
 			self.stream.write(rec.msg)
 		if rec.extra:
 			if rec.msg:
-				self.stream.write(f" ")
+				self.stream.write(" ")
 			self.stream.write(str(rec.extra))
 		self.stream.write(self.nl)
 

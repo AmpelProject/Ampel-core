@@ -14,7 +14,7 @@ from ampel.secret.NamedSecret import NamedSecret
 from ampel.secret.Secret import Secret
 
 
-@pytest.fixture
+@pytest.fixture()
 def secrets():
     return DictSecretProvider(
         {
@@ -24,7 +24,7 @@ def secrets():
         }
     )
 
-@pytest.fixture
+@pytest.fixture()
 def secret_context(dev_context: DevAmpelContext, secrets, monkeypatch):
     monkeypatch.setattr(dev_context.loader, "vault", AmpelVault(providers=[secrets]))
     return dev_context

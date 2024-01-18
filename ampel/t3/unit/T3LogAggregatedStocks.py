@@ -35,4 +35,3 @@ class T3LogAggregatedStocks(AbsT3Unit):
 			}
 		)
 
-		return None

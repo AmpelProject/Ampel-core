@@ -28,8 +28,8 @@ from multiprocessing.context import set_spawning_popen
 from subprocess import _args_from_interpreter_flags  # type: ignore
 from typing import Any
 
-import ampel.vendor.aiopipe as aiopipe  # type: ignore
 from ampel.metrics.prometheus import prometheus_cleanup_worker, prometheus_setup_worker
+from ampel.vendor import aiopipe  # type: ignore
 
 
 def process(function=None, **kwargs):

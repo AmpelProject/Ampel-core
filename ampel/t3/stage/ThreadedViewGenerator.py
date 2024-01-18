@@ -7,8 +7,8 @@
 # Last Modified Date:  26.11.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+from collections.abc import Generator
 from multiprocessing import JoinableQueue
-from typing import Generator
 
 from ampel.abstract.AbsT3Unit import T, T3Send
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater

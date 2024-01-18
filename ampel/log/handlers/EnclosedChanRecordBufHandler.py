@@ -54,7 +54,7 @@ class EnclosedChanRecordBufHandler(RecordBufferingHandler):
 						rec.extra = extra # type: ignore
 
 				if self._unit:
-					setattr(rec, 'unit', self._unit)
+					rec.unit = self._unit
 
 				target.handle(rec) # type: ignore
 

@@ -9,7 +9,7 @@ from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.t3.stage.project.T3ChannelProjector import T3ChannelProjector
 
 
-@pytest.fixture
+@pytest.fixture()
 def stock_doc() -> StockDocument:
     with open(Path(__file__).parent / "test-data" / "ZTF20abxvcrk.pkl", "rb") as f:
         doc = pickle.load(f)
@@ -26,7 +26,7 @@ def stock_doc() -> StockDocument:
     return doc
 
 
-@pytest.fixture
+@pytest.fixture()
 def logger():
     return AmpelLogger.get_logger(console={"level": DEBUG})
 
@@ -61,7 +61,7 @@ def test_single_channel(stock_doc: StockDocument, logger):
         if "channel" in jentry:
             assert jentry["channel"] == target
 
-    for jentry, stripped in zip(input_stock_doc["journal"], before_no_channel):
+    for jentry, stripped in zip(input_stock_doc["journal"], before_no_channel, strict=False):
         if "channel" in jentry:
             try:
                 after_no_channel.index(
@@ -104,7 +104,7 @@ def test_multi_channel(stock_doc, logger, logic_op):
             assert len(channel) > 1
             assert set(channel).issubset(target)
 
-    for jentry, stripped in zip(before["stock"]["journal"], before_no_channel):
+    for jentry, stripped in zip(before["stock"]["journal"], before_no_channel, strict=False):
         if (channel := jentry.get("channel")) is None:
             continue
         try:

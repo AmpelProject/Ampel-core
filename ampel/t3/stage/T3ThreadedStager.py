@@ -88,7 +88,7 @@ class T3ThreadedStager(T3BaseStager, abstract=True):
 						q.put(None) # type: ignore[arg-type]
 
 					# Collect potential unit results
-					for async_res, generator, t3_unit in zip(async_results, generators, t3_units):
+					for async_res, generator, t3_unit in zip(async_results, generators, t3_units, strict=False):
 
 						# potential T3Document to be included in the T3Document
 						if (t3_unit_result := async_res.get()):

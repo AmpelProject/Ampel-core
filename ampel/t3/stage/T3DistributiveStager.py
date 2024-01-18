@@ -75,7 +75,7 @@ class T3DistributiveStager(T3ThreadedStager):
 				for q in qs:
 					q.put(None) # type: ignore[arg-type]
 
-				for i, (async_res, generator, t3_unit) in enumerate(zip(async_results, generators, self.t3_units)):
+				for i, (async_res, generator, t3_unit) in enumerate(zip(async_results, generators, self.t3_units, strict=False)):
 
 					# potential T3Record to be included in the T3Document
 					if (t3_unit_result := async_res.get()):

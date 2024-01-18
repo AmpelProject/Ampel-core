@@ -7,8 +7,7 @@
 # Last Modified Date:  21.04.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from collections.abc import Iterable
-from typing import Sequence
+from collections.abc import Iterable, Sequence
 
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.AmpelUnit import AmpelUnit

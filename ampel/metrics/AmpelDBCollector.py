@@ -8,8 +8,8 @@
 # Last Modified By:    jvs
 
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence
 
 from prometheus_client.metrics_core import GaugeMetricFamily, Metric  # type: ignore
 

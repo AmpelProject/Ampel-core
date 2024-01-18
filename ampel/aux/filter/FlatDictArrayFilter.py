@@ -7,8 +7,7 @@
 # Last Modified Date:  18.06.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from collections.abc import Mapping, Sequence
-from typing import MutableMapping
+from collections.abc import Mapping, MutableMapping, Sequence
 
 from ampel.aux.filter.AbsLogicOperatorFilter import AbsLogicOperatorFilter
 from ampel.aux.filter.SimpleDictArrayFilter import SimpleDictArrayFilter

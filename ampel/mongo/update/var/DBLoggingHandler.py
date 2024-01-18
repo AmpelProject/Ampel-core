@@ -180,7 +180,7 @@ class DBLoggingHandler(AmpelUnit):
 				if record.filename and (record.levelno > self.warn_lvl or self.log_provenance):
 					ldict['p'] = [record.filename.replace('.py', ''), record.lineno]
 
-				if getattr(record, 'unit'):
+				if hasattr(record, 'unit'):
 					ldict['u'] = record.unit # type: ignore[union-attr]
 
 				if record.msg:

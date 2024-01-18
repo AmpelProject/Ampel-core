@@ -41,13 +41,13 @@ async def test_client(dev_context, monkeypatch):
         yield client
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_metrics(test_client):
     response = await test_client.get("/metrics")
     assert response.status_code == 200
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_get_config(dev_context: AmpelContext, test_client: AsyncClient):
     response = await test_client.get("/config/")
     assert response.status_code == 200
@@ -63,7 +63,7 @@ async def test_get_config(dev_context: AmpelContext, test_client: AsyncClient):
     assert response.status_code == 404
 
 
-@pytest.fixture
+@pytest.fixture()
 def db_collector(dev_context):
     c = AmpelDBCollector(dev_context.db)
     AmpelMetricsRegistry.register_collector(c)
@@ -71,7 +71,7 @@ def db_collector(dev_context):
     AmpelMetricsRegistry.deregister_collector(c)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_db_metrics(test_client, db_collector, dev_context):
     async def check_metric(name, value):
         response = await test_client.get("/metrics")
@@ -122,7 +122,7 @@ async def test_db_metrics(test_client, db_collector, dev_context):
         ),
     ],
 )
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_reload(
     test_client,
     dev_context,
@@ -149,7 +149,7 @@ async def test_reload(
     assert procs[0].processor.unit == proc["processor"]["unit"]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_processes(test_client):
     response = await test_client.get("/processes")
     assert response.status_code == 200
@@ -157,7 +157,7 @@ async def test_processes(test_client):
     assert len(processes) == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_processes_start(test_client):
     dict.__setitem__(
         server.context.config._config["process"]["t2"],
@@ -198,7 +198,7 @@ async def test_processes_start(test_client):
         ({"active": False, "processor.config": {"nonexistant_param": True}}, False),
     ],
 )
-@pytest.fixture
+@pytest.fixture()
 def config_in_env(monkeypatch, tmp_path, dev_context, patches, should_raise):
     config = recursive_unfreeze(dev_context.config.get())
     config["process"]["t3"]["sleepy"] = {
@@ -228,7 +228,7 @@ def config_in_env(monkeypatch, tmp_path, dev_context, patches, should_raise):
         ({"active": False, "processor.config": {"nonexistant_param": True}}, False),
     ],
 )
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_config_reload(
     test_client, monkeypatch, tmp_path, dev_context, patches, should_raise, mocker
 ):
@@ -270,7 +270,7 @@ async def test_config_reload(
         await server.task_manager.shutdown()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_process_stop(test_client):
     dict.__setitem__(
         server.context.config._config["process"]["t2"],
@@ -303,7 +303,7 @@ async def test_process_stop(test_client):
         await server.task_manager.shutdown()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_event_query(test_client, mocker):
     m = mocker.patch("ampel.run.server.context.db")
     find = m.get_collection().find

@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from datetime import datetime
-from typing import Literal, Type, TypeVar
+from typing import Literal, TypeVar
 
 from ampel.abstract.AbsUnitResultAdapter import AbsUnitResultAdapter
 from ampel.base.AmpelUnit import AmpelUnit
@@ -76,7 +76,7 @@ class DocBuilder(ContextUnit):
 		unit: AmpelUnit,
 		res: None | UBson | UnitResult,
 		ts: float,
-		doc_type: Type[T]
+		doc_type: type[T]
 	) -> T:
 
 		d: T = {'process': event_hdlr.process_name} # type: ignore[typeddict-item]

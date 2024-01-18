@@ -179,7 +179,7 @@ class AmpelDB(AmpelUnit):
 			role = MongoClientRoleModel(r='logger', w='logger')
 		)
 
-		self.databases = list(self.databases) + [db_config]
+		self.databases = [*self.databases, db_config]
 
 		for col in db_config.collections:
 			self.col_config[col.name] = col
@@ -242,7 +242,7 @@ class AmpelDB(AmpelUnit):
 				self.mongo_clients[role] = MongoClient(self.mongo_uri, **kwargs)
 			except ConfigurationError as exc:
 				# hint at error source
-				raise ConfigurationError(exc.args[0] + f' (from secret {key})', *exc.args[1:])
+				raise ConfigurationError(exc.args[0] + f' (from secret {key})', *exc.args[1:]) from exc
 
 		return self.mongo_clients[role].get_database(
 			f"{self.prefix}_{db_name}" if (db_name and not self.one_db) else self.prefix

@@ -10,9 +10,10 @@
 import contextlib
 import sys
 import traceback
+from collections.abc import Generator
 from datetime import datetime
 from math import log2
-from typing import Generator, overload
+from typing import overload
 
 from bson import ObjectId
 from pymongo import WriteConcern
@@ -221,7 +222,7 @@ def insert_trouble(
 		)
 
 		logger.error(
-			msg = f"Unpublished 'troubles' document: {str(trouble)}",
+			msg = f"Unpublished 'troubles' document: {trouble!s}",
 			exc_info=e
 		)
 
@@ -231,7 +232,7 @@ def safe_query_dict(
 	update: None | JDict = None,
 	dict_key: None | str = 'query'
 ) -> JDict:
-	u"""
+	"""
 	| Builds a dict that can be passed as "extra" parameter to instances of AmpelLogger.
 	| Returned dict has the following structure:
 

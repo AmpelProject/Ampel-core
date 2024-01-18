@@ -7,8 +7,7 @@
 # Last Modified Date:  09.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from collections.abc import Generator
-from typing import Iterable
+from collections.abc import Generator, Iterable
 
 from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.config.AmpelConfig import AmpelConfig

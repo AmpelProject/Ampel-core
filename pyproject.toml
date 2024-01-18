@@ -126,9 +126,41 @@ ignore_missing_imports = true
 
 [tool.ruff]
 target-version = "py310"
+exclude = [
+    "docs",
+]
 
 [tool.ruff.lint]
 select = [
-    "F401", # unused import
-    "I001", # unsorted imports
+    "E4",
+    "E7",
+    "E9",
+    "F",
+    "I",
+    # "UP",
+    "B",
+    # "DTZ",
+    # "T20",
+    # "PT",
+    # "RET",
+    # "SLF",
+    # "SIM",
+    # # "ARG", # sometimes your arguments have to conform to an interface
+    # # "ERA", # seems to prohibit all comments, that's bad
+    # "PL",
+    # "PERF",
+    "RUF",
 ]
+ignore = [
+    "E741", # ambiguous variable name
+    "E731", # Do not assign to a lambda
+    "UP009", # UTF-8 encoding declaration is unnecessary
+    "PLR09", # too many (arguments|branches)
+    "PLR2004", # Magic value used in comparison
+    "B006", # mutable defaults
+    "RUF012", # mutable class properties (are harmless everywhere BaseModel is used)
+]
+
+[tool.ruff.lint.flake8-bugbear]
+# Allow default arguments like, e.g., `data: List[str] = fastapi.Query(None)`.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]

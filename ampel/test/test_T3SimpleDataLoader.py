@@ -15,5 +15,5 @@ def test_instantiate(core_config, patch_mongo, ampel_logger):
             directives=[k[1:] for k in aliases.keys()]
         ).directives
     ) == len(aliases)
-    for d, value in zip(directives, aliases.values()):
+    for d, value in zip(directives, aliases.values(), strict=False):
         assert d.dict(exclude_defaults=True) == value

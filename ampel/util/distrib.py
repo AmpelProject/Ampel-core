@@ -62,7 +62,7 @@ def get_files(
 
 			fname = pth if os.path.isfile(pth) else distrib.get_resource_filename(__name__, pth)
 			# 2) Manually look for files in referenced folder
-			with open(fname, "r") as f:
+			with open(fname) as f:
 				return list(
 					walk_dir(
 						f.read().strip(),
@@ -114,7 +114,7 @@ def walk_dir(
 	lookup_dir: None | str = None,
 	pattern: None | re.Pattern = None
 ) -> Generator[str, None, None]:
-	for root, dirs, files in os.walk(f"{path}/{lookup_dir}" if lookup_dir else f"{path}"):
+	for root, _, files in os.walk(f"{path}/{lookup_dir}" if lookup_dir else f"{path}"):
 		for fname in files:
 			if pattern and not pattern.match(fname):
 				continue

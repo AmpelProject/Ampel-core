@@ -45,10 +45,10 @@ class DefaultRecordBufferingHandler(RecordBufferingHandler):
 				continue
 
 			if channel:
-				setattr(rec, 'channel', channel)
+				rec.channel = channel
 
 			if stock:
-				setattr(rec, 'stock', stock)
+				rec.stock = stock
 
 			if extra:
 				if hasattr(rec, 'extra') and rec.extra: # type: ignore[union-attr]
@@ -63,7 +63,7 @@ class DefaultRecordBufferingHandler(RecordBufferingHandler):
 					rec.extra = self._extra # type: ignore[union-attr]
 
 			if self._unit:
-				setattr(rec, 'unit', self._unit)
+				rec.unit = self._unit
 
 			target.handle(rec) # type: ignore
 

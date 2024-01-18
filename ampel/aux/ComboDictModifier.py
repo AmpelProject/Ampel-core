@@ -143,9 +143,9 @@ class ComboDictModifier(AbsApplicable):
 				keys = f.key.split(".")
 				d = self._nested_ko
 				for k in keys[:-1]:
-					if kk not in d:
-						d[kk] = {}
-					d = d[kk]
+					if k not in d:
+						d[k] = {}
+					d = d[k]
 				d[keys[-1]] = to_set(f.keep)
 
 			elif isinstance(f, (self.ClassModifyModel, self.FuncModifyModel)):
@@ -172,9 +172,9 @@ class ComboDictModifier(AbsApplicable):
 				keys = f.key.split(".")
 				d = self._nested_mods
 				for k in keys[:-1]:
-					if kk not in d:
-						d[kk] = {}
-					d = d[kk]
+					if k not in d:
+						d[k] = {}
+					d = d[k]
 				if keys[-1] not in d:
 					d[keys[-1]] = []
 				d[keys[-1]].append(func)
@@ -342,12 +342,12 @@ class ComboDictModifier(AbsApplicable):
 
 		dsi = dict.__setitem__
 
-		for k, mod in (modifications or self._nested_mods).items():
+		for k, mods in (modifications or self._nested_mods).items():
 			if k in d:
-				if isinstance(mod, dict):
-					dsi(d, k, self.apply_modify(d[k], mod))
+				if isinstance(mods, dict):
+					dsi(d, k, self.apply_modify(d[k], mods))
 				else:
-					for mod in mod:
+					for mod in mods:
 						dsi(d, k, mod(d[k]))
 
 		return ReadOnlyDict(d) if self.freeze else d

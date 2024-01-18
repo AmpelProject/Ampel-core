@@ -372,7 +372,7 @@ class ConfigBuilder:
 					)
 
 		if ext_resource:
-			with open(ext_resource, "r") as f:
+			with open(ext_resource) as f:
 				out['resource'].update(
 					yaml.safe_load(f)
 				)
@@ -499,7 +499,7 @@ class ConfigBuilder:
 				path = path.rename(path.with_stem(f"{path.stem}_{h}"))
 
 			self.logger.break_aggregation()
-			with open(path, "r") as file:
+			with open(path) as file:
 				self.logger.info(f'Config file saved as {path} [{len(file.readlines())} lines]')
 
 		return d

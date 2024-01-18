@@ -125,7 +125,7 @@ def test_slow_dependency(
     """
     Simulate a race conditions between parallel T2 workers
     """
-    assert (num_dps := integration_context.db.get_collection("t0").count_documents({}))
+    assert integration_context.db.get_collection("t0").count_documents({})
     t2 = T2Worker(
         context=integration_context,
         raise_exc=True,

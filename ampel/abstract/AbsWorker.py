@@ -10,11 +10,12 @@
 import gc
 import random
 import signal
+from collections.abc import Generator, Sequence
 from contextlib import contextmanager
 from math import ceil
 from threading import Event
 from time import time
-from typing import Any, ClassVar, Generator, Generic, Literal, Sequence, TypeVar
+from typing import Any, ClassVar, Generic, Literal, TypeVar
 
 from pymongo.read_concern import ReadConcern
 from pymongo.write_concern import WriteConcern
@@ -401,7 +402,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		run_id: int,
 		unit_trace_id: None | int,
 		duration: int | float,
-		action_code: MetaActionCode = MetaActionCode(0)
+		action_code: MetaActionCode = MetaActionCode(0) # noqa: B008
 	) -> MetaRecord:
 
 		d: MetaRecord = {

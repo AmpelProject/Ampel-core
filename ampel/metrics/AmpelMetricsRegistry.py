@@ -13,7 +13,6 @@ from prometheus_client import (
 from prometheus_client.context_managers import Timer
 from prometheus_client.metrics import MetricWrapperBase
 from prometheus_client.multiprocess import MultiProcessCollector
-from prometheus_client.registry import CollectorRegistry
 
 
 def reset_metric(metric: MetricWrapperBase) -> None:
