@@ -9,6 +9,7 @@
 
 from typing import Any
 from ampel.mongo.model.AmpelDBModel import AmpelDBModel
+from ampel.mongo.model.MongoClientRoleModel import MongoClientRoleModel
 from ampel.config.collector.ConfigCollector import ConfigCollector
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 from ampel.log import VERBOSE
@@ -61,7 +62,7 @@ class DBConfigCollector(AbsDictConfigCollector):
 			else:
 				for db in dbs:
 					if db['name'] == m.name:
-						if db['role'] != m.role:
+						if MongoClientRoleModel(**db['role']) != m.role:
 							raise ValueError(
 								f"Incompatible database configurations for {m.name} (role mismatch)"
 							)
