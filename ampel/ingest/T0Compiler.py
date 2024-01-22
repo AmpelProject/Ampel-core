@@ -7,6 +7,7 @@
 # Last Modified Date:  25.11.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+import datetime
 from typing import Any
 from ampel.content.MetaRecord import MetaRecord
 from ampel.types import ChannelId, DataPointId
@@ -31,16 +32,20 @@ class T0Compiler(AbsCompiler):
 			tuple[
 				DataPoint,
 				set[ChannelId],
+				None | datetime.timedelta, # ttl
 				None | int,           # trace id
 				None | dict[str, Any] # meta extra
 			]
 		] = {}
+
+		self.retained: dict[DataPointId, datetime.timedelta] = {}
 
 
 	# Override
 	def add(self, # type: ignore[override]
 		dps: list[DataPoint],
 		channel: ChannelId,
+		ttl: None | datetime.timedelta,
 		trace_id: None | int,
 		extra: None | dict[str, Any] = None
 	) -> None:
@@ -50,9 +55,16 @@ class T0Compiler(AbsCompiler):
 			dpid = dp['id']
 			if dpid in r:
 				r[dpid][1].add(channel)
+				if ttl is not None and ((prev := r[dpid][2]) is None or ttl > prev):
+					r[dpid] = r[dpid][:2] + (ttl,) + r[dpid][3:]
 			else:
-				r[dpid] = dp, {channel}, trace_id, extra
+				r[dpid] = dp, {channel}, ttl, trace_id, extra
 
+
+	def retain(self, dps: list[DataPoint], ttl: datetime.timedelta) -> None:
+		for dp in dps:
+			if dp['id'] not in self.retained or ttl > self.retained[dp['id']]:
+					self.retained[dp['id']] = ttl
 
 	# Override
 	def commit(self, ingester: AbsDocIngester[DataPoint], now: int | float, **kwargs) -> None:
@@ -60,7 +72,7 @@ class T0Compiler(AbsCompiler):
 		Note that we let the ingester handle 'ts' and 'updated' values
 		"""
 
-		for dp, channel_sets, trace_id, extra in self.register.values():
+		for dp, channel_sets, ttl, trace_id, extra in self.register.values():
 
 			lchans = list(channel_sets)
 			meta: MetaRecord = {'ts': now, 'run': self.run_id}
@@ -89,6 +101,19 @@ class T0Compiler(AbsCompiler):
 			else:
 				dp['meta'] = [meta]
 
+			if ttl is not None:
+				dp['expiry'] = datetime.datetime.fromtimestamp(
+					now, tz=datetime.timezone.utc
+				) + ttl
+
 			ingester.ingest(dp)
 
+		# Retain datapoints that were not explicitly ingested
+		if retained := set(self.retained).difference(self.register.keys()):
+			nowdt = datetime.datetime.fromtimestamp(
+				now, tz=datetime.timezone.utc
+			)
+			ingester.update_expiry({k: nowdt + v for k, v in self.retained.items()})  # type: ignore[attr-defined]
+
 		self.register.clear()
+		self.retained.clear()

@@ -46,6 +46,7 @@ class MongoT2Ingester(AbsDocIngester[T2Document]):
 				{
 					'$setOnInsert': set_on_insert,
 					'$addToSet': add_to_set,
+					'$max': {'expiry': doc['expiry']} if 'expiry' in doc else {},
 					'$push': {'meta': maybe_use_each(doc['meta'])} # meta must be set by compiler
 				},
 				upsert=True

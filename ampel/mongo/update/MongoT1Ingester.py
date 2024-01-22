@@ -21,6 +21,7 @@ class MongoT1Ingester(AbsDocIngester[T1Document]):
 		# Note: $setOnInsert does not retain key order
 		set_on_insert: dict[str, Any] = {'dps': doc['dps']}
 		add_to_set: dict[str, Any] = {'channel': maybe_use_each(doc['channel'])}
+
 		match: dict[str, Any] = {
 			'stock': doc['stock'],
 			'link': doc['link']
@@ -48,8 +49,9 @@ class MongoT1Ingester(AbsDocIngester[T1Document]):
 				{
 					'$setOnInsert': set_on_insert,
 					'$addToSet': add_to_set,
+					'$max': {'expiry': doc['expiry']} if 'expiry' in doc else {},
 					 # meta must be set by compiler
-					'$push': {'meta': maybe_use_each(doc['meta'])}
+					'$push': {'meta': maybe_use_each(doc['meta'])},
 				},
 				upsert=True
 			)

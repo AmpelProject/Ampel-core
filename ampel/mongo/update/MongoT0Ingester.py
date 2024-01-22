@@ -7,11 +7,14 @@
 # Last Modified Date:  14.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from pymongo import UpdateOne
+from collections import defaultdict
+from datetime import datetime
+from pymongo import UpdateOne, UpdateMany
 from typing import Any, Literal
 from ampel.mongo.utils import maybe_use_each
 from ampel.content.DataPoint import DataPoint
 from ampel.abstract.AbsDocIngester import AbsDocIngester
+from ampel.types import DataPointId
 
 
 class MongoT0Ingester(AbsDocIngester[DataPoint]):
@@ -21,6 +24,7 @@ class MongoT0Ingester(AbsDocIngester[DataPoint]):
 	#: 1: partial check is performed (compatible with potential muxer projection)
 	#: 2: strict check is performed
 	extended_match: Literal[0, 1, 2] = 0
+	update_ttl: bool = False
 
 	def ingest(self, doc: DataPoint) -> None:
 
@@ -53,6 +57,21 @@ class MongoT0Ingester(AbsDocIngester[DataPoint]):
 			upd['$addToSet']['stock'] = doc['stock'] if isinstance(doc['stock'], (int, bytes, str)) \
 				else maybe_use_each(doc['stock'])
 
+		if 'expiry' in doc:
+			upd['$max'] = {'expiry': doc['expiry']}
+
 		self.updates_buffer.add_t0_update(
 			UpdateOne(match, upd, upsert=True)
 		)
+
+	def update_expiry(self, dps: dict[DataPointId, datetime]) -> None:
+		by_ttl: dict[datetime, list[DataPointId]] = defaultdict(list)
+		for k, v in dps.items():
+			by_ttl[v].append(k)
+		for expires, ids in by_ttl.items():
+			self.updates_buffer.add_t0_update(
+				UpdateMany(
+					{'id': {'$in': ids}},
+					{'$max': {'expiry': expires}}
+				)
+			)

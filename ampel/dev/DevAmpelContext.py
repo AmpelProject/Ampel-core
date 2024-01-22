@@ -8,6 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
+from ampel.base.AmpelUnit import AmpelUnit
 from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.base.LogicalUnit import LogicalUnit
 from ampel.core.ContextUnit import ContextUnit
@@ -63,12 +64,12 @@ class DevAmpelContext(AmpelContext):
 		self._set_new_conf(conf)
 
 
-	def register_units(self, *Classes: type[LogicalUnit]) -> None:
+	def register_units(self, *Classes: type[AmpelUnit]) -> None:
 		for Class in Classes:
 			self.register_unit(Class)
 
 
-	def register_unit(self, Class: type[LogicalUnit]) -> None:
+	def register_unit(self, Class: type[AmpelUnit]) -> None:
 
 		dict.__setitem__(
 			self.config._config['unit'],

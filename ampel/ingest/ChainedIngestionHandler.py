@@ -7,9 +7,11 @@
 # Last Modified Date:  24.11.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+from datetime import timedelta
 from time import time
 from typing import Literal, Any
 from collections.abc import Callable, Sequence
+from ampel.model.ChannelModel import ChannelModel
 from ampel.types import StockId, ChannelId, UnitId, DataPointId, UBson, Tag
 from ampel.abstract.AbsT0Muxer import AbsT0Muxer
 from ampel.abstract.AbsDocIngester import AbsDocIngester
@@ -71,11 +73,12 @@ class T1ComputeBlock:
 
 
 class T1CombineBlock:
-	__slots__ = 'unit', 'trace_id', 'compute', 'channel', 'group', 'state_t2', 'point_t2'
+	__slots__ = 'unit', 'trace_id', 'compute', 'channel', 'ttl', 'group', 'state_t2', 'point_t2'
 	unit: AbsT1CombineUnit | AbsT1RetroCombineUnit
 	trace_id: None | int
 	compute: T1ComputeBlock
 	channel: ChannelId
+	ttl: None | timedelta
 	group: None | Sequence[int]
 	state_t2: None | list[T2Block]
 	point_t2: None | list[T2Block]
@@ -91,8 +94,9 @@ class T0MuxBlock:
 
 
 class IngestBlock:
-	__slots__ = 'channel', 'mux', 'combine', 'combine', 'point_t2', 'stock_t2'
+	__slots__ = 'channel', 'ttl', 'mux', 'combine', 'combine', 'point_t2', 'stock_t2'
 	channel: ChannelId
+	ttl: None | timedelta
 	mux: None | T0MuxBlock
 	combine: None | list[T1CombineBlock] # combine blocks
 	point_t2: None | list[T2Block] # point t2
@@ -235,7 +239,7 @@ class ChainedIngestionHandler:
 			return ib, ib
 
 		else:
-			ValueError("Unknown directive type")
+			raise TypeError("Unknown directive type")
 			
 
 	def _new_ingest_block(self,
@@ -251,6 +255,17 @@ class ChainedIngestionHandler:
 		ib.stock_t2 = None
 		ib.point_t2 = None
 		ib.channel = channel
+
+		ib.ttl = (
+			ChannelModel(
+				**self.context.config.get(
+					f'channel.{channel}',
+					dict,
+					raise_exc=True
+				)
+			)
+			.purge.content.delay.timedelta()
+		)
 
 		if directive.mux:
 
@@ -289,7 +304,7 @@ class ChainedIngestionHandler:
 
 				# States, and T2s based thereon
 				muxb.combine = [
-					self._setup_t1_combine(channel, t1_combine)
+					self._setup_t1_combine(channel, ib.ttl, t1_combine)
 					for t1_combine in directive.mux.combine
 				]
 
@@ -303,7 +318,7 @@ class ChainedIngestionHandler:
 
 			# States, and T2s based thereon
 			ib.combine = [
-				self._setup_t1_combine(channel, t1_combine)
+				self._setup_t1_combine(channel, ib.ttl, t1_combine)
 				for t1_combine in directive.combine
 			]
 
@@ -320,6 +335,7 @@ class ChainedIngestionHandler:
 
 	def _setup_t1_combine(self,
 		channel: ChannelId,
+		ttl: None | timedelta,
 		t1_combine: T1Combine | T1CombineCompute | T1CombineComputeNow
 	) -> T1CombineBlock:
 		"""
@@ -333,6 +349,7 @@ class ChainedIngestionHandler:
 		t1b = T1CombineBlock()
 		t1b.trace_id = 0
 		t1b.channel = channel
+		t1b.ttl = ttl
 		t1b.group = None
 		t1b.state_t2 = None
 		t1b.point_t2 = None
@@ -541,9 +558,13 @@ class ChainedIngestionHandler:
 						]:
 							dps_insert = (dps_insert + x) if dps_insert else x
 
+						# Retain datapoints that will not be explicitly upserted
+						if ib.ttl is not None:
+							self.t0_compiler.retain(dps_combine, ib.ttl)
+
 					if dps_insert:
 
-						self.t0_compiler.add(dps_insert, ib.channel, self.shaper_trace_id, jm_extra)
+						self.t0_compiler.add(dps_insert, ib.channel, ib.ttl, self.shaper_trace_id, jm_extra)
 
 						# TODO: make this addition optional (a stock with a million dps would create pblms)
 						jentry['upsert'] = [el['id'] for el in dps_insert]
@@ -552,7 +573,7 @@ class ChainedIngestionHandler:
 						if mux.point_t2:
 							jentry['action'] |= JournalActionCode.T2_ADD_CHANNEL
 							self.ingest_point_t2s(
-								dps_insert, fres, stock_id, ib.channel, mux.point_t2, add_other_tag,
+								dps_insert, fres, stock_id, ib.channel, ib.ttl, mux.point_t2, add_other_tag,
 								jm_extra if self.include_extra_meta > 1 else None
 							)
 
@@ -565,7 +586,7 @@ class ChainedIngestionHandler:
 						)
 
 				else:
-					self.t0_compiler.add(dps, ib.channel, self.shaper_trace_id)
+					self.t0_compiler.add(dps, ib.channel, ib.ttl, self.shaper_trace_id)
 
 				# Non-muxed T1 and associated T2 ingestions
 				if ib.combine:
@@ -577,7 +598,7 @@ class ChainedIngestionHandler:
 				# Non-muxed point T2s
 				if ib.point_t2:
 					self.ingest_point_t2s(
-						dps, fres, stock_id, ib.channel, ib.point_t2, add_other_tag,
+						dps, fres, stock_id, ib.channel, ib.ttl, ib.point_t2, add_other_tag,
 						jm_extra if self.include_extra_meta > 1 else None
 					)
 
@@ -586,7 +607,7 @@ class ChainedIngestionHandler:
 					for t2b in ib.stock_t2:
 						self.stock_t2_compiler.add(
 							t2b.unit, t2b.config, stock_id, stock_id,
-							ib.channel, self.base_trace_id, add_other_tag,
+							ib.channel, ib.ttl, self.base_trace_id, add_other_tag,
 							jm_extra if self.include_extra_meta else None
 						)
 
@@ -639,6 +660,7 @@ class ChainedIngestionHandler:
 		fres: bool | int,
 		stock_id: StockId,
 		channel: ChannelId,
+		ttl: None | timedelta,
 		state_t2: list[T2Block],
 		add_other_tag: None | MetaActivity = None,
 		meta_extra: None | dict[str, Any] = None
@@ -665,12 +687,12 @@ class ChainedIngestionHandler:
 				for el in f:
 					self.point_t2_compiler.add(
 						t2b.unit, t2b.config, stock_id, el['id'], channel,
-						self.base_trace_id, add_other_tag, meta_extra
+						ttl, self.base_trace_id, add_other_tag, meta_extra
 					)
 			else:
 				self.point_t2_compiler.add(
 					t2b.unit, t2b.config, stock_id, f['id'], channel,
-					self.base_trace_id, add_other_tag, meta_extra
+					ttl, self.base_trace_id, add_other_tag, meta_extra
 				)
 
 
@@ -808,6 +830,7 @@ class ChainedIngestionHandler:
 				link = self.t1_compiler.add(
 					t1_dps,
 					t1b.channel,
+					t1b.ttl,
 					tid,
 					stock_id,
 					meta_extra = mx,
@@ -840,6 +863,7 @@ class ChainedIngestionHandler:
 							stock_id,
 							link,
 							t1b.channel,
+							t1b.ttl,
 							tid,
 							add_other_tag,
 							meta_extra if self.include_extra_meta else None
@@ -850,6 +874,6 @@ class ChainedIngestionHandler:
 					jentry['action'] |= JournalActionCode.T2_ADD_CHANNEL
 					self.ingest_point_t2s(
 						[el for el in dps if el['id'] in t1_dps],
-						fres, stock_id, t1b.channel, t1b.point_t2, add_other_tag,
+						fres, stock_id, t1b.channel, t1b.ttl, t1b.point_t2, add_other_tag,
 						meta_extra if self.include_extra_meta > 1 else None
 					)
