@@ -9,7 +9,7 @@
 
 from collections.abc import Sequence
 from ampel.base.AmpelBaseModel import AmpelBaseModel
-#from ampel.model.purge.PurgeModel import PurgeModel
+from ampel.model.purge.PurgeModel import PurgeModel
 #from ampel.model.ViewModel import ViewModel
 
 
