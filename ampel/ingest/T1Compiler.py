@@ -7,15 +7,15 @@
 # Last Modified Date:  21.11.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+import datetime
 import xxhash
 from struct import pack
-from typing import Any
+from typing import Any, NamedTuple
 from ampel.types import ChannelId, DataPointId, StockId, UnitId, UBson
 from ampel.content.T1Document import T1Document
 from ampel.content.MetaActivity import MetaActivity
 from ampel.abstract.AbsDocIngester import AbsDocIngester
 from ampel.abstract.AbsCompiler import AbsCompiler, ActivityRegister
-
 
 class T1Compiler(AbsCompiler):
 	"""
@@ -43,6 +43,26 @@ class T1Compiler(AbsCompiler):
 	#: Change this only if you know what you're doing
 	seed: int = 0
 
+	class UnitKey(NamedTuple):
+		unit: None | UnitId
+		config: None | int
+		stock: StockId
+		dps: tuple[DataPointId, ...]
+
+	class LinkTarget(NamedTuple):
+		link: int
+		channels: set[ChannelId]
+		ttl: None | datetime.timedelta
+		body: UBson
+		code: None | int
+		meta: dict[
+			frozenset[tuple[str, Any]], # key: traceid
+			tuple[
+				ActivityRegister,
+				dict[str, Any]  # meta extra
+			]
+		]
+
 
 	def __init__(self, **kwargs) -> None:
 
@@ -50,32 +70,13 @@ class T1Compiler(AbsCompiler):
 		self.hasher = getattr(xxhash, f'xxh{abs(self.hash_size)}_intdigest')
 
 		# Internal structure used for compiling documents
-		self.t1s: dict[
-			tuple[
-				None | UnitId,          # unit
-				None | int,             # config
-				StockId,                # stock
-				tuple[DataPointId, ...] # tuple(dps) [will be hashed into link]
-			],
-			tuple[
-				int, 	                # link
-				set[ChannelId],         # channels (doc)
-				UBson,                  # body
-				None | int,             # code
-				dict[
-					frozenset[tuple[str, Any]], # key: traceid
-					tuple[
-						ActivityRegister,
-						dict[str, Any]  # meta extra
-					]
-				],
-			]
-		] = {}
+		self.t1s: dict[T1Compiler.UnitKey, T1Compiler.LinkTarget] = {}
 
 
 	def add(self, # type: ignore[override]
 		dps: list[DataPointId],
 		channel: ChannelId,
+		ttl: None | datetime.timedelta,
 		traceid: dict[str, Any],
 		stock: StockId = 0,
 		activity: None | MetaActivity | list[MetaActivity] = None,
@@ -98,27 +99,31 @@ class T1Compiler(AbsCompiler):
 			# hashing of single dp ids will be required if bytes is used rather than int
 			dps = sorted(dps)
 
-		k = (unit, config, stock, tuple(dps))
+		k = T1Compiler.UnitKey(unit, config, stock, tuple(dps))
 		tid = frozenset(traceid.items())
 
 		# a: (link, {channels}, body, code, dict[traceid, (ActivityRegister, meta extra)])
 		# a: ( 0  ,     1     ,  2  ,  3  ,                   4                        )])
 		if a := self.t1s.get(k):
 
-			a[1].add(channel)
+			a.channels.add(channel)
 
 			# One meta record will be created for each unique trace id
 			# (the present compiler could be used by multiple handlers configured differently)
 			# activity can contain channel-based dps exclusions (excl: [1232, 3232])
-			if tid in a[4]:
+			if tid in a.meta:
 
 				# (activity register, meta_extra)
-				b = a[4][tid]
+				b = a.meta[tid]
 
 				# update internal register
 				self.register_meta_info(b[0], b[1], channel, activity, meta_extra)
 			else:
-				a[4][tid] = self.new_meta_info(channel, activity, meta_extra)
+				a.meta[tid] = self.new_meta_info(channel, activity, meta_extra)
+
+			# Update ttl if necessary
+			if ttl is not None and (a.ttl is None or ttl > a.ttl):
+				self.t1s[k] = T1Compiler.LinkTarget(a.link, a.channels, ttl, a.body, a.code, a.meta)
 
 		else:
 
@@ -131,12 +136,12 @@ class T1Compiler(AbsCompiler):
 			if self.hash_size < 0 and i & (1 << (-self.hash_size-1)):
 				i -= 2**-self.hash_size
 
-			a = self.t1s[k] = (
-				i, {channel}, body, code,
+			a = self.t1s[k] = T1Compiler.LinkTarget(
+				i, {channel}, ttl, body, code,
 				{tid: self.new_meta_info(channel, activity, meta_extra)}
 			)
 
-		return a[0]
+		return a.link
 
 
 	def commit(self, ingester: AbsDocIngester[T1Document], now: int | float, **kwargs) -> None:
@@ -147,32 +152,37 @@ class T1Compiler(AbsCompiler):
 		for t1, t2 in self.t1s.items():
 
 			# Note: mongodb maintains key order
-			d: T1Document = {'link': t2[0]} # type: ignore[typeddict-item]
+			d: T1Document = {'link': t2.link} # type: ignore[typeddict-item]
 
-			if t1[0]:
-				d['unit'] = t1[0]
+			if t1.unit:
+				d['unit'] = t1.unit
 
-			if t1[1]:
-				d['config'] = t1[1]
+			if t1.config is not None:
+				d['config'] = t1.config
 
-			d['stock'] = t1[2]
+			d['stock'] = t1.stock
 
 			if self.origin:
 				d['origin'] = self.origin
 
-			d['channel'] = list(t2[1])
-			d['dps'] = list(t1[3])
+			d['channel'] = list(t2.channels)
+			d['dps'] = list(t1.dps)
 
-			d['meta'], tags = self.build_meta(t2[4], now)
+			d['meta'], tags = self.build_meta(t2.meta, now)
 
 			if tags:
 				d['tag'] = tags
 
-			if t2[2]:
-				d['body'] = [t2[2]]
+			if t2.body is not None:
+				d['body'] = [t2.body]
 
-			if t2[3] is not None:
-				d['code'] = t2[3]
+			if t2.code is not None:
+				d['code'] = t2.code
+
+			if t2.ttl is not None:
+				d['expiry'] = datetime.datetime.fromtimestamp(
+					now, tz=datetime.timezone.utc
+				) + t2.ttl
 
 			ingester.ingest(d)
 

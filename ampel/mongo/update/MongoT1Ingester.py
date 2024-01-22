@@ -12,10 +12,9 @@ from typing import Any
 from ampel.mongo.utils import maybe_use_each
 from ampel.content.T1Document import T1Document
 from ampel.abstract.AbsDocIngester import AbsDocIngester
-from ampel.mongo.update.MongoTTLBase import MongoTTLBase
 
 
-class MongoT1Ingester(AbsDocIngester[T1Document], MongoTTLBase):
+class MongoT1Ingester(AbsDocIngester[T1Document]):
 
 	def ingest(self, doc: T1Document) -> None:
 
@@ -50,7 +49,7 @@ class MongoT1Ingester(AbsDocIngester[T1Document], MongoTTLBase):
 				{
 					'$setOnInsert': set_on_insert,
 					'$addToSet': add_to_set,
-					'$max': self.expire_at(doc),
+					'$max': {'expiry': doc['expiry']} if 'expiry' in doc else {},
 					 # meta must be set by compiler
 					'$push': {'meta': maybe_use_each(doc['meta'])},
 				},

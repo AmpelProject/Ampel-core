@@ -13,10 +13,9 @@ from ampel.enum.DocumentCode import DocumentCode
 from ampel.content.T2Document import T2Document
 from ampel.mongo.utils import maybe_use_each
 from ampel.abstract.AbsDocIngester import AbsDocIngester
-from ampel.mongo.update.MongoTTLBase import MongoTTLBase
 
 
-class MongoT2Ingester(AbsDocIngester[T2Document], MongoTTLBase):
+class MongoT2Ingester(AbsDocIngester[T2Document]):
 
 	def ingest(self, doc: T2Document) -> None:
 
@@ -47,7 +46,7 @@ class MongoT2Ingester(AbsDocIngester[T2Document], MongoTTLBase):
 				{
 					'$setOnInsert': set_on_insert,
 					'$addToSet': add_to_set,
-					'$max': self.expire_at(doc),
+					'$max': {'expiry': doc['expiry']} if 'expiry' in doc else {},
 					'$push': {'meta': maybe_use_each(doc['meta'])} # meta must be set by compiler
 				},
 				upsert=True
