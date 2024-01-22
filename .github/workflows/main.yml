@@ -6,12 +6,14 @@ on:
       - master
       - renovate/*
       - dev/*
+      - stable/*
     tags:
       - v*
   pull_request:
     branches:
       - master
       - dev/*
+      - stable/*
 
 jobs:
   test:
