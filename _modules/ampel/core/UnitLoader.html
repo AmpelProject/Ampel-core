@@ -4,10 +4,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ampel.core.UnitLoader &#8212; ampel-core 0.10.0a2 documentation</title>
+    <title>ampel.core.UnitLoader &#8212; ampel-core 0.10.0a3 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
     <link rel="stylesheet" type="text/css" href="../../../_static/sphinxdoc.css?v=d59dc883" />
-    <script src="../../../_static/documentation_options.js?v=ac0ab41f"></script>
+    <script src="../../../_static/documentation_options.js?v=08723006"></script>
     <script src="../../../_static/doctools.js?v=888ff710"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
@@ -19,7 +19,7 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.10.0a2 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.10.0a3 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">ampel.core.UnitLoader</a></li> 
       </ul>
@@ -107,7 +107,7 @@
 		<span class="bp">self</span><span class="o">.</span><span class="n">provenance</span> <span class="o">=</span> <span class="n">provenance</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">unit_defs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s1">&#39;unit&#39;</span><span class="p">]</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">aliases</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">config</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s1">&#39;alias&#39;</span><span class="p">][</span><span class="sa">f</span><span class="s2">&quot;t</span><span class="si">{</span><span class="n">el</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)]</span>
-		<span class="bp">self</span><span class="o">.</span><span class="n">_dyn_register</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">type</span><span class="p">[</span><span class="n">LogicalUnit</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span> <span class="c1"># potentially updated by DevAmpelContext</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_dyn_register</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">type</span><span class="p">[</span><span class="n">LogicalUnit</span><span class="p">]</span> <span class="o">|</span> <span class="nb">type</span><span class="p">[</span><span class="n">ContextUnit</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span> <span class="c1"># potentially updated by DevAmpelContext</span>
 
 
 	<span class="nd">@overload</span>
@@ -555,7 +555,7 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              >index</a></li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.10.0a2 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.10.0a3 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">ampel.core.UnitLoader</a></li> 
       </ul>
