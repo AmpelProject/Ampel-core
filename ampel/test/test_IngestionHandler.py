@@ -356,11 +356,11 @@ def test_duplicate_t0_id(
     integration_context: DevAmpelContext,
     datapoints: list[DataPoint],
 ):
-    def run():
+    def run() -> None:
         handler = get_handler(
             integration_context, [IngestDirective(channel="TEST_CHANNEL")]
         )
-        handler.t0_compiler.add(datapoints, "SOME_CHANNEL", trace_id=0)
+        handler.t0_compiler.add(datapoints, "SOME_CHANNEL", ttl=None, trace_id=0)
         handler.t0_compiler.commit(handler.t0_ingester, 0)
         handler.updates_buffer.push_updates(force=True)
 
