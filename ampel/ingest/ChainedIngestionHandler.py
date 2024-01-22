@@ -235,7 +235,7 @@ class ChainedIngestionHandler:
 			return ib, ib
 
 		else:
-			ValueError("Unknown directive type")
+			raise TypeError("Unknown directive type")
 			
 
 	def _new_ingest_block(self,
@@ -540,6 +540,9 @@ class ChainedIngestionHandler:
 							if 'channel' in dp and ib.channel not in dp['channel']
 						]:
 							dps_insert = (dps_insert + x) if dps_insert else x
+
+						# Retain datapoints that will not be explicitly inserted
+						self.t0_compiler.retain(dps_combine)
 
 					if dps_insert:
 

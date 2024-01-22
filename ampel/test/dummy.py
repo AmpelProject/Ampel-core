@@ -12,6 +12,7 @@ import time
 from collections.abc import Sequence
 from typing import Any
 from ampel.abstract.AbsConfigMorpher import AbsConfigMorpher
+from ampel.abstract.AbsUnitResultAdapter import AbsUnitResultAdapter
 from ampel.core.EventHandler import EventHandler
 from ampel.log.AmpelLogger import AmpelLogger
 
@@ -49,7 +50,6 @@ class Sleepy(AbsEventUnit):
 
 
 class DummyMuxer(AbsT0Muxer):
-
     #: number of points to add to provided list
     points_to_insert: int = 5
 
@@ -71,6 +71,22 @@ class DummyMuxer(AbsT0Muxer):
         return new_dps + dps, new_dps + dps
 
 
+class DummyHistoryMuxer(AbsT0Muxer):
+    def process(
+        self, dps: list[DataPoint], stock_id: StockId | None = None
+    ) -> tuple[list[DataPoint] | None, list[DataPoint] | None]:
+        dps_db = {
+            d["id"]: d
+            for d in self.context.db.get_collection("t0").find({"stock": stock_id})
+        }
+        dps_alert = {d["id"]: d for d in dps}
+        dps_to_insert = [d for d in dps if d["id"] not in dps_db]
+        dps_to_combine = [
+            dps_db[k] if k in dps_db else dps_alert[k] for k in set(dps_db).union(dps_alert)
+        ]
+        return dps_to_insert, dps_to_combine
+
+
 class DummyStockT2Unit(AbsStockT2Unit):
     def process(self, stock_doc):
         return {"id": stock_doc["stock"]}
@@ -82,7 +98,6 @@ class DummyPointT2Unit(AbsPointT2Unit):
 
 
 class DummyStateT2Unit(AbsStateT2Unit):
-
     foo: int = 42
 
     def process(self, compound, datapoints):
@@ -90,7 +105,6 @@ class DummyStateT2Unit(AbsStateT2Unit):
 
 
 class DummyTiedStateT2Unit(AbsTiedStateT2Unit):
-
     t2_dependency = [StateT2Dependency(unit="DummyStateT2Unit")]  # type: ignore
 
     def process(
@@ -116,7 +130,6 @@ class DummyCompilerOptions(CompilerOptions):
 
 
 class DummyOutputUnit(AbsEventUnit):
-
     value: str
     path: pathlib.Path
 
@@ -125,7 +138,6 @@ class DummyOutputUnit(AbsEventUnit):
 
 
 class DummyInputUnit(AbsEventUnit):
-
     value: str
     expected_value: str
 
@@ -134,7 +146,6 @@ class DummyInputUnit(AbsEventUnit):
 
 
 class DummyResourceInputUnit(DummyInputUnit):
-
     # add an extra level of indirection via resources
     def proceed(self, event_hdlr: EventHandler) -> Any:
         assert event_hdlr.resources
@@ -157,3 +168,8 @@ class DummyProcessorTemplate(AbsConfigMorpher):
 
     def morph(self, config: dict[str, Any], logger: AmpelLogger) -> dict[str, Any]:
         return {'unit': "DummyInputUnit", 'config': self.dict(exclude={'template'})}
+
+
+class DummyUnitResultAdapter(AbsUnitResultAdapter):
+    def handle(self, ur: UnitResult) -> UnitResult:
+        return ur

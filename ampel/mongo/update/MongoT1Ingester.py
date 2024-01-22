@@ -12,15 +12,17 @@ from typing import Any
 from ampel.mongo.utils import maybe_use_each
 from ampel.content.T1Document import T1Document
 from ampel.abstract.AbsDocIngester import AbsDocIngester
+from ampel.mongo.update.MongoTTLBase import MongoTTLBase
 
 
-class MongoT1Ingester(AbsDocIngester[T1Document]):
+class MongoT1Ingester(AbsDocIngester[T1Document], MongoTTLBase):
 
 	def ingest(self, doc: T1Document) -> None:
 
 		# Note: $setOnInsert does not retain key order
 		set_on_insert: dict[str, Any] = {'dps': doc['dps']}
 		add_to_set: dict[str, Any] = {'channel': maybe_use_each(doc['channel'])}
+
 		match: dict[str, Any] = {
 			'stock': doc['stock'],
 			'link': doc['link']
@@ -48,8 +50,9 @@ class MongoT1Ingester(AbsDocIngester[T1Document]):
 				{
 					'$setOnInsert': set_on_insert,
 					'$addToSet': add_to_set,
+					'$max': self.expire_at(doc),
 					 # meta must be set by compiler
-					'$push': {'meta': maybe_use_each(doc['meta'])}
+					'$push': {'meta': maybe_use_each(doc['meta'])},
 				},
 				upsert=True
 			)

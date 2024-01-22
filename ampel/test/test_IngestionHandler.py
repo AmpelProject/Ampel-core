@@ -1,4 +1,7 @@
 import contextlib, pytest
+import datetime
+
+from itertools import count
 from typing import Any
 from collections import defaultdict
 from collections.abc import Generator
@@ -7,6 +10,7 @@ from ampel.content.MetaRecord import MetaRecord
 from ampel.enum.MetaActionCode import MetaActionCode
 from ampel.util.freeze import recursive_unfreeze
 from pymongo.errors import DuplicateKeyError
+from pytest_mock import MockFixture
 
 from ampel.content.DataPoint import DataPoint
 from ampel.dev.DevAmpelContext import DevAmpelContext
@@ -25,6 +29,7 @@ from ampel.mongo.update.MongoT1Ingester import MongoT1Ingester
 from ampel.mongo.update.MongoT2Ingester import MongoT2Ingester
 from ampel.test.dummy import (
     DummyMuxer,
+    DummyHistoryMuxer,
     DummyPointT2Unit,
     DummyStateT2Unit,
     DummyStockT2Unit,
@@ -33,25 +38,30 @@ from ampel.test.dummy import (
 
 @pytest.fixture
 def dummy_units(dev_context: DevAmpelContext):
-    for unit in (DummyStockT2Unit, DummyPointT2Unit, DummyStateT2Unit, DummyMuxer):
-        dev_context.register_unit(unit) # type: ignore
+    for unit in (
+        DummyStockT2Unit,
+        DummyPointT2Unit,
+        DummyStateT2Unit,
+        DummyMuxer,
+        DummyHistoryMuxer,
+    ):
+        dev_context.register_unit(unit)  # type: ignore
 
 
 @pytest.fixture(params=["T1SimpleCombiner", "T1SimpleRetroCombiner"])
 def single_source_directive(
     dev_context: DevAmpelContext, dummy_units, request
 ) -> IngestDirective:
-
     return IngestDirective(
         channel="TEST_CHANNEL",
         ingest=IngestBody(
             # https://github.com/python/mypy/issues/13421
-            stock_t2=[T2Compute(unit="DummyStockT2Unit")], # type: ignore[arg-type]
-            point_t2=[T2Compute(unit="DummyPointT2Unit")], # type: ignore[arg-type]
+            stock_t2=[T2Compute(unit="DummyStockT2Unit")],  # type: ignore[arg-type]
+            point_t2=[T2Compute(unit="DummyPointT2Unit")],  # type: ignore[arg-type]
             combine=[
                 T1Combine(
                     unit=request.param,
-                    state_t2=[T2Compute(unit="DummyStateT2Unit")], # type: ignore[arg-type]
+                    state_t2=[T2Compute(unit="DummyStateT2Unit")],  # type: ignore[arg-type]
                 )
             ],
         ),
@@ -62,18 +72,17 @@ def single_source_directive(
 def multiplex_directive(
     dev_context: DevAmpelContext, dummy_units, request
 ) -> IngestDirective:
-
     return IngestDirective(
         channel="TEST_CHANNEL",
         ingest=IngestBody(
-            stock_t2=[T2Compute(unit="DummyStockT2Unit")], # type: ignore[arg-type]
+            stock_t2=[T2Compute(unit="DummyStockT2Unit")],  # type: ignore[arg-type]
             mux=MuxModel(
                 unit="DummyMuxer",  # type: ignore[arg-type]
-                insert={"point_t2": [T2Compute(unit="DummyPointT2Unit")]}, # type: ignore[arg-type]
+                insert={"point_t2": [T2Compute(unit="DummyPointT2Unit")]},  # type: ignore[arg-type]
                 combine=[
                     T1Combine(
                         unit=request.param,
-                        state_t2=[T2Compute(unit="DummyStateT2Unit")], # type: ignore[arg-type]
+                        state_t2=[T2Compute(unit="DummyStateT2Unit")],  # type: ignore[arg-type]
                     )
                 ],
             ),
@@ -108,12 +117,14 @@ def test_no_directive(dev_context):
 @pytest.fixture
 def datapoints() -> list[DataPoint]:
     return [
-        {"id": i, "stock": "stockystock", "body": {"thing": i}} # type: ignore[typeddict-item]
+        {"id": i, "stock": "stockystock", "body": {"thing": i}}  # type: ignore[typeddict-item]
         for i in range(3)
     ]
 
 
-def test_minimal_directive(dev_context: DevAmpelContext, datapoints: list[dict[str, Any]]):
+def test_minimal_directive(
+    dev_context: DevAmpelContext, datapoints: list[dict[str, Any]]
+):
     """
     Minimal directive creates stock + t0 docs
     """
@@ -333,7 +344,7 @@ def test_t0_meta_append(
 @contextlib.contextmanager
 def unfreeze_config(context: DevAmpelContext) -> Generator[dict, None, None]:
     config = context.config
-    writable_config = recursive_unfreeze(config.get()) # type: ignore[arg-type]
+    writable_config = recursive_unfreeze(config.get())  # type: ignore[arg-type]
     context.config = AmpelConfig(writable_config, freeze=False)
     yield writable_config
     context.config = config
@@ -344,7 +355,9 @@ def test_duplicate_t0_id(
     datapoints: list[DataPoint],
 ):
     def run():
-        handler = get_handler(integration_context, [IngestDirective(channel="TEST_CHANNEL")])
+        handler = get_handler(
+            integration_context, [IngestDirective(channel="TEST_CHANNEL")]
+        )
         handler.t0_compiler.add(datapoints, "SOME_CHANNEL", trace_id=0)
         handler.t0_compiler.commit(handler.t0_ingester, 0)
         handler.updates_buffer.push_updates(force=True)
@@ -367,3 +380,75 @@ def test_duplicate_t0_id(
 
     # with id check disabled, no exception is raised
     run()
+
+
+def test_t0_ttl(
+    mock_context: DevAmpelContext,
+    datapoints: list[DataPoint],
+    mocker: MockFixture,
+):
+    """
+    Previously inserted datapoint ttls are updated when used by a muxer
+    """
+    time = mocker.patch(
+        "ampel.ingest.ChainedIngestionHandler.time", side_effect=count().__next__
+    )
+    mock_context.register_units(DummyHistoryMuxer)
+
+    ttl = datetime.timedelta(seconds=300)
+    with unfreeze_config(mock_context) as config:
+        for tier in range(3):
+            config["mongo"]["ingest"][f"t{tier}"] = {
+                "unit": f"MongoT{tier}Ingester",
+                "config": {"ttl": ttl.total_seconds()},
+            }
+        config["mongo"]["ingest"]["t0"]["config"]["update_ttl"] = True
+        handler = get_handler(
+            mock_context,
+            [
+                IngestDirective(
+                    channel="TEST_CHANNEL",
+                    ingest={
+                        "mux": {
+                            "unit": "DummyHistoryMuxer",
+                            "combine": [
+                                {
+                                    "unit": "T1SimpleCombiner",
+                                    "state_t2": [{"unit": "DummyStateT2Unit"}],
+                                }
+                            ],
+                        }
+                    },
+                )
+            ],
+        )
+
+    def ingest(datapoints: list[DataPoint]):
+        handler.ingest(datapoints, [(0, True)], stock_id="stockystock")
+        handler.updates_buffer.push_updates(force=True)
+
+    def get_meta_time(dp: DataPoint) -> datetime.datetime:
+        return datetime.datetime.fromtimestamp(
+            dp["meta"][-1]["ts"], tz=datetime.timezone.utc
+        )
+
+    def get_expire_time(dp: DataPoint):
+        # NB: mongo datetimes are implicitly utc, so reattach tzinfo
+        return dp["_expire_at"].replace(tzinfo=datetime.timezone.utc)
+
+    ingest(datapoints[:1])
+    for tier in range(3):
+        assert (
+            collection := mock_context.db.get_collection(f"t{tier}")
+        ).count_documents({}) == 1, f"t{tier} document inserted"
+        assert (
+            get_expire_time(doc := collection.find_one()) == get_meta_time(doc) + ttl
+        ), f"ttl set on t{tier} document"
+
+    # ingest remaining datapoints
+    ingest(datapoints)
+    assert (
+        get_expire_time(dp := mock_context.db.get_collection("t0").find_one({"id": 0}))
+        > get_meta_time(dp) + ttl
+    ), "ttl updated"
+    assert len(dp["meta"]) == 1, "no extra meta entries added"
