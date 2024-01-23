@@ -10,6 +10,7 @@
 import collections, ujson
 from bson.codec_options import CodecOptions
 from collections.abc import Iterable, Iterator
+from typing import ClassVar
 
 from ampel.types import StockId, StrictIterable
 from ampel.abstract.AbsT3Loader import AbsT3Loader
@@ -38,7 +39,7 @@ class T3LatestStateDataLoader(AbsT3Loader):
 	    for notes on how compounds are selected from other tiers
 	"""
 
-	codec_options: None | CodecOptions = CodecOptions(document_class=FrozenValuesDict)
+	codec_options: ClassVar[None | CodecOptions] = CodecOptions(document_class=FrozenValuesDict)
 
 
 	def __init__(self, **kwargs):
