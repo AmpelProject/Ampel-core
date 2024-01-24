@@ -69,7 +69,7 @@ mongomock = "^4.1.2"
 httpx = "^0.25.0"
 types-setuptools = "^65.1.0"
 types-PyYAML = "^6.0.12"
-Sphinx = {version = ">=6.1.2,<6.2.0"}
+Sphinx = {version = ">=7.2.6,<7.2.7"}
 sphinx-press-theme = {version = ">=0.5.1,<0.9.0"}
 sphinx-autodoc-typehints = {version = "^1.11.1"}
 tomlkit = {version = "^0.11.0"}
