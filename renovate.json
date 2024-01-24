@@ -3,10 +3,6 @@
     {
       "matchPackagePatterns": ["^ampel-.*"],
       "allowedVersions": "<0.9"
-    },
-    {
-      "matchPackageNames": ["conda-forge/python"],
-      "allowedVersions": "<3.12"
     }
   ]
 }
