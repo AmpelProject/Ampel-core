@@ -1,5 +1,13 @@
 {
-  "extends": ["github>AmpelProject/renovate-config"],
-  "enabledManagers": ["github-actions", "poetry"],
-  "baseBranches": ["master", "v0.8.x"]
+  "extends": [
+    "github>AmpelProject/renovate-config",
+    "github>AmpelProject/renovate-config//regexManagers/githubActionsVersions"
+  ],
+  "baseBranches": ["master", "stable/v0.8"],
+  "packageRules": [
+    {
+      "matchPackagePatterns": ["^ampel-.*"],
+      "allowedVersions": "<0.11"
+    }
+  ]
 }
