@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import asyncio
+from contextlib import asynccontextmanager
 import enum
 import logging
 import operator
@@ -70,20 +71,6 @@ class TaskDescription(AmpelBaseModel):
 class TaskDescriptionCollection(AmpelBaseModel):
     tasks: list[TaskDescription]
 
-
-app = FastAPI()
-origins = [
-    "http://localhost",
-    "http://localhost:8080",
-]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 log = logging.getLogger("ampel.run.server")
 context: AmpelContext = None  # type: ignore[assignment]
@@ -239,7 +226,6 @@ class task_manager:
         await asyncio.gather(*tasks, return_exceptions=True)
 
 
-@app.on_event("startup")
 async def init():
     if type(asyncio.get_event_loop()).__module__ == "uvloop":
         raise RuntimeError(
@@ -257,8 +243,27 @@ async def init():
     AmpelMetricsRegistry.register_collector(AmpelProcessCollector(name="server"))
 
 
-app.on_event("shutdown")(task_manager.shutdown)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await init()
+    yield
+    await task_manager.shutdown()
 
+
+app = FastAPI(lifespan=lifespan)
+origins = [
+    "http://localhost",
+    "http://localhost:8080",
+]
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.post("/config/reload")
 async def reload_config() -> TaskDescriptionCollection:
