@@ -79,10 +79,10 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=origins, #  type: ignore[arg-type]
+    allow_credentials=True, #  type: ignore[arg-type]
+    allow_methods=["*"], #  type: ignore[arg-type]
+    allow_headers=["*"], #  type: ignore[arg-type]
 )
 
 log = logging.getLogger("ampel.run.server")
