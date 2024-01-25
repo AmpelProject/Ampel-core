@@ -62,7 +62,7 @@ slack-sdk = {version = "^3.18.1", optional = true}
 [tool.poetry.dev-dependencies]
 pytest = "^7.4.2"
 pytest-cov = "^4.1.0"
-mypy = "~1.6"
+mypy = "~1.5"
 pytest-asyncio = "^0.21.1"
 pytest-mock = "^3.11.1"
 mongomock = "^4.1.2"
