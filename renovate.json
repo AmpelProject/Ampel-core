@@ -3,6 +3,10 @@
     {
       "matchPackagePatterns": ["^ampel-.*"],
       "allowedVersions": "<0.9"
+    },
+    {
+      "matchManagers": ["poetry"],
+      "rangeStrategy": "in-range-only"
     }
   ]
 }
