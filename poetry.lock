@@ -1716,4 +1716,4 @@ slack = ["slack-sdk"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "05a2338cd24483231b8800c8fdc1cc5471765d1fff2f23755b543c8fc69013f6"
+content-hash = "0352118a5e61668bf8c1534f08a04edb48dacb7bf2c4a083296ff392eb3cbbb7"
