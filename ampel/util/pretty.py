@@ -207,7 +207,7 @@ def out_stack():
 	sys.tracebacklimit = default_value
 
 
-def human_format(num, precision=2, suffixes=['', 'K', 'M', 'G', 'T', 'P']):
+def human_format(num, precision=2, suffixes=('', 'K', 'M', 'G', 'T', 'P')):
 	"""
 	In []: human_format(1000000, precision=0)
 	Out[]: '1M'

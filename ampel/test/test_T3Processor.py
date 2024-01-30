@@ -35,7 +35,7 @@ class Mutineer(AbsT3Unit):
             raise ValueError
 
 
-def mutineer_process(config={}):
+def mutineer_process(config=None):
 
     return {
         "supply": {
@@ -53,7 +53,7 @@ def mutineer_process(config={}):
         "stage": {
             "unit": "T3SimpleStager",
             "config": {
-                "execute": [{"unit": "Mutineer", "config": config}]
+                "execute": [{"unit": "Mutineer", "config": config or {}}]
             }
         }
     }

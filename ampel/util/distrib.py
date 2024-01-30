@@ -9,7 +9,7 @@
 
 import os
 import re
-from collections.abc import Generator
+from collections.abc import Generator, Sequence
 
 from pkg_resources import (  # type: ignore[attr-defined]
 	AvailableDistributions,
@@ -19,7 +19,7 @@ from pkg_resources import (  # type: ignore[attr-defined]
 )
 
 
-def get_dist_names(distrib_prefixes: list[str] = ["ampel-", "pyampel-"]) -> list[str]:
+def get_dist_names(distrib_prefixes: Sequence[str] = ("ampel-", "pyampel-")) -> list[str]:
 	""" Get all installed distributions whose names start with the provided prefix """
 	# ensure that at least interface and core are found
 	prefixes = {"ampel-interface", "ampel-core"}.union(distrib_prefixes)

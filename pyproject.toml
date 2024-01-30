@@ -157,7 +157,6 @@ ignore = [
     "UP009", # UTF-8 encoding declaration is unnecessary
     "PLR09", # too many (arguments|branches)
     "PLR2004", # Magic value used in comparison
-    "B006", # mutable defaults
     "RUF012", # mutable class properties (are harmless everywhere BaseModel is used)
 ]
 

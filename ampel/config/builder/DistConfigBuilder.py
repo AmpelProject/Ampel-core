@@ -10,7 +10,7 @@
 import json
 import os
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from functools import partial
 from typing import Any
 
@@ -33,9 +33,9 @@ class DistConfigBuilder(ConfigBuilder):
 	"""
 
 	def load_distributions(self,
-		prefixes: list[str] = ["pyampel-", "ampel-"],
-		conf_dirs: list[str] = ["conf"],
-		exts: list[str] = ["json", "yaml", "yml"],
+		prefixes: Sequence[str] = ("pyampel-", "ampel-"),
+		conf_dirs: Sequence[str] = ("conf",),
+		exts: Sequence[str] = ("json", "yaml", "yml"),
 		raise_exc: bool = True,
 		exclude: None | list[str] = None
 	) -> None:

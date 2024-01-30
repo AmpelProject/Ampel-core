@@ -25,11 +25,11 @@ class ChannelModel(AmpelBaseModel):
 	)
 	# view: str = "MongoChannelView"
 	active: bool = True
-	hash: None | int
-	distrib: None | str
-	source: None | str
-	contact: None | str
+	hash: None | int = None
+	distrib: None | str = None
+	source: None | str = None
+	contact: None | str = None
 	access: Sequence[str] = []
 	#: Identities allowed to access data associated with this channel
-	members: None | Sequence[str]
+	members: None | Sequence[str] = None
 	policy: Sequence[str] = []

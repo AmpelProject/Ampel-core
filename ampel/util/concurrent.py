@@ -134,7 +134,7 @@ class _Process:
     #: Replica ids that can be recycled
     _expired: dict[str, set[int]] = {}
 
-    def __init__(self, target=None, name=None, timeout=3.0, args=(), kwargs={}):
+    def __init__(self, target=None, name=None, timeout=3.0, args=(), kwargs=None):
         self._target = target
         count = next(self._counter)
         # infer the process name from a ProcessModel-like dict
@@ -149,7 +149,7 @@ class _Process:
             self._name = name
         self._timeout = timeout
         self._args = tuple(args)
-        self._kwargs = dict(kwargs)
+        self._kwargs = dict(kwargs) if kwargs else {}
 
     def __call__(self):
         return self._target(*self._args, **self._kwargs) if self._target else None

@@ -66,7 +66,7 @@ class ConfigChecker(BaseConfigChecker):
 		tier: str, proc: str, load_callable: Any,
 		model_args: dict[str, Any], raise_exc: bool = False,
 		ignore_ressource_not_avail: bool = False,
-		load_args: dict[str, Any] = {}
+		load_args: None | dict[str, Any] = None
 	) -> bool:
 		"""
 		:param proc: super process name
@@ -77,7 +77,7 @@ class ConfigChecker(BaseConfigChecker):
 			# block potential "Offending value..." print from AmpelBaseModel
 			# since we pretty print the input values in case of errors
 			sys.stdout = open(os.devnull, 'w') # noqa: SIM115
-			load_callable(**(model_args | load_args))
+			load_callable(**(model_args | load_args if load_args else model_args))
 	
 		except Exception as e:
 

@@ -7,6 +7,7 @@
 # Last Modified Date:  01.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+from collections.abc import Sequence
 from typing import Any
 
 from ampel.base.AmpelUnit import AmpelUnit
@@ -57,8 +58,8 @@ class DevAmpelContext(AmpelContext):
 			dict.__setitem__(self.config._config["confid"], confid, stored_conf)  # noqa: SLF001
 
 
-	def add_channel(self, name: int | str, access: list[str] = []):
-		cm = ChannelModel(channel=name, access=access, version=0) # type: ignore[call-arg]
+	def add_channel(self, name: int | str, access: Sequence[str] = ()):
+		cm = ChannelModel(channel=name, access=access, version=0)
 		conf = self._get_unprotected_conf()
 		for k, v in cm.__dict__.items():
 			set_by_path(conf, f"channel.{name}.{k}", v)
