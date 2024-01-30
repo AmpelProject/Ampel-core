@@ -27,7 +27,6 @@ include = [
 
 [tool.poetry.scripts]
 ampel-controller = 'ampel.core.AmpelController:AmpelController.main'
-ampel-db = 'ampel.db.AmpelDB:main'
 ampel = 'ampel.cli.main:main'
 
 [tool.poetry.plugins.cli]
