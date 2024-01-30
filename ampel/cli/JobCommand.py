@@ -504,7 +504,7 @@ class JobCommand(AbsCoreCommand):
 			process_name = f'{job.name or schema_descr}#{i}'
 
 			if isinstance(taskd.get('template', None), dict) and 'live' in taskd['template']:
-				taskd = apply_templates(ctx, taskd['template']['live'], taskd, logger)
+				taskd = apply_templates(ctx, taskd['template']['live'], taskd, logger)  # noqa: PLW2901
 				del taskd['template']
 
 			if 'title' in taskd:
@@ -535,10 +535,10 @@ class JobCommand(AbsCoreCommand):
 						process_queues.append(p)
 						result_queues.append(result_queue)
 					
-					for i, (p, r1) in enumerate(zip(process_queues, result_queues, strict=False)):
+					for replica, (p, r1) in enumerate(zip(process_queues, result_queues, strict=False)):
 						p.join()
 						if (m := r1.get()):
-							logger.info(f'{taskd["unit"]}#{i} return value: {m}')
+							logger.info(f'{taskd["unit"]}#{replica} return value: {m}')
 
 				except KeyboardInterrupt:
 					sys.exit(1)

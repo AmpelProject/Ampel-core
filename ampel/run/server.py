@@ -95,7 +95,6 @@ class task_manager:
         under the same name. If the process requests a new controller
         configuration, a new task will be spawned.
         """
-        global context
         groups: dict[str, list[ProcessModel]] = {}
         for pm in processes:
             if not pm.active:
@@ -158,7 +157,6 @@ class task_manager:
         """
         Remove the named process from the active set.
         """
-        global context
         to_remove: dict[str, list[str]] = {}
         for name in names:
             if (config_id := cls.process_name_to_controller_id.get(name)) is None:
@@ -223,7 +221,7 @@ async def init():
         raise RuntimeError(
             "uvloop does not work with OS pipes (https://github.com/MagicStack/uvloop/issues/317). start uvicorn with --loop asyncio."
         )
-    global context
+    global context  # noqa: PLW0603
     context = AmpelContext.load(
         os.environ.get("AMPEL_CONFIG", "config.yml"),
         vault=AmpelVault(providers=[DictSecretProvider.load(os.environ["AMPEL_SECRETS"])])
@@ -287,7 +285,7 @@ async def reload_config() -> TaskDescriptionCollection:
     )
 
     # update global context
-    global context
+    global context  # noqa: PLW0603
     context = AmpelContext(config, db, loader)
 
     # update processes currently in the active set
@@ -442,8 +440,7 @@ async def get_process(process: str) -> ProcessModel:
         except Exception:
             continue
         return ProcessModel(**doc)
-    else:
-        raise HTTPException(status_code=404, detail=f"{process} not found")
+    raise HTTPException(status_code=404, detail=f"{process} not found")
 
 
 @app.post("/process/{process}/start")

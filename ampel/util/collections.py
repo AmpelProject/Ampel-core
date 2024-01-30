@@ -164,9 +164,8 @@ def has_nested_type(obj: StrictIterable, target_type: type, strict: bool = True)
 		# pylint: disable=unidiomatic-typecheck
 		if type(obj) is target_type:
 			return True
-	else:
-		if isinstance(obj, target_type):
-			return True
+	elif isinstance(obj, target_type):
+		return True
 
 	if isinstance(obj, dict):
 		for el in obj.values():

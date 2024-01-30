@@ -23,10 +23,10 @@ def yes_no(question: str) -> bool:
 		print('\nAbording...\n\n')
 		raise e
 
-	if c == 'y' or c == 'yes':
+	if c in ('y', 'yes'):
 		return True
 
-	if c == 'n' or c == 'no':
+	if c in ('n', 'no'):
 		return False
 
 	raise ValueError(f"Unsupported response (expected y or n): {c}")

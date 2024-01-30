@@ -58,9 +58,8 @@ def latest_fast_query(
 	if isinstance(stock, Sequence):
 		if not check_seq_inner_type(stock, type_stock_id):
 			raise ValueError("Elements in stock must be of type str or int or Int64 (bson)")
-	else:
-		if not isinstance(stock, type_stock_id):
-			raise ValueError("stock must be of type str or int or Int64 (or sequence of these types)")
+	elif not isinstance(stock, type_stock_id):
+		raise ValueError("stock must be of type str or int or Int64 (or sequence of these types)")
 
 	query = {
 		'stock': stock if isinstance(stock, type_stock_id) \

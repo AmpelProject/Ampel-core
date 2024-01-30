@@ -114,7 +114,7 @@ class T3SequentialStager(T3BaseStager):
 		if self.paranoia_level:
 			return {
 				unit: [View.of(ab, conf) for ab in buffers]
-				for unit, View in (lambda x: [(u, u._View) for u in x])(self.units)  # noqa: SLF001
+				for unit, View in ((u, u._View) for u in self.units)  # noqa: SLF001
 			}
 
 		optd: dict[type[SnapView], list[AbsT3Unit]] = {}

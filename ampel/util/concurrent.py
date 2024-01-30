@@ -232,12 +232,11 @@ class _Process:
                 # only process active, reset everything
                 del self._active[self._name]
                 self._expired.pop(self._name, None)
+            # at least one other process of the same name; recycle replica
+            elif self._name in self._expired:
+                self._expired[self._name].add(replica_idx)
             else:
-                # at least one other process of the same name; recycle replica
-                if self._name in self._expired:
-                    self._expired[self._name].add(replica_idx)
-                else:
-                    self._expired[self._name] = {replica_idx}
+                self._expired[self._name] = {replica_idx}
             if "PROMETHEUS_MULTIPROC_DIR" in os.environ:
                 prometheus_cleanup_worker(proc.pid)
 
@@ -246,8 +245,6 @@ _registered_functions = {}
 
 
 def _register_function(function):
-    global _registered_functions
-
     _registered_functions[(function.__qualname__, function.__module__)] = function
 
 

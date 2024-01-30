@@ -305,9 +305,9 @@ async def test_process_collector(unused_tcp_port):
 
     for metric in AmpelProcessCollector(name="self").collect():
         assert len(metric.samples) == 1
-        metric = metric.samples[0]
-        assert metric.labels == {"process": "self", "replica": "0"}
-        assert metric.value > 0
+        sample = metric.samples[0]
+        assert sample.labels == {"process": "self", "replica": "0"}
+        assert sample.value > 0
 
     proc = asyncio.create_task(
         _Process(latch, args=(unused_tcp_port,), name="latch").launch()
@@ -316,9 +316,9 @@ async def test_process_collector(unused_tcp_port):
     async with fence(unused_tcp_port):
         for metric in AmpelProcessCollector().collect():
             assert len(metric.samples) == 1
-            metric = metric.samples[0]
-            assert metric.labels == {"process": "latch", "replica": "0"}
-            assert metric.value > 0
+            sample = metric.samples[0]
+            assert sample.labels == {"process": "latch", "replica": "0"}
+            assert sample.value > 0
     await asyncio.wait_for(proc, 3)
 
 

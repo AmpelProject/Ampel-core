@@ -110,13 +110,12 @@ class T2Utils:
 		if config:
 			if isinstance(config, str) and config == "null":
 				match['config'] = None
-			else:
-				if isinstance(config, int):
-					match['config'] = config
-				elif isinstance(config, list | tuple):
-					match['config'] = {'$in': [el for el in config if config != "null"]}
-					if "null" in config:
-						match['config']['$in'].append(None)
+			elif isinstance(config, int):
+				match['config'] = config
+			elif isinstance(config, list | tuple):
+				match['config'] = {'$in': [el for el in config if config != "null"]}
+				if "null" in config:
+					match['config']['$in'].append(None)
 
 		if link:
 			match['link'] = bytes.fromhex(link) if isinstance(link, str) else {'$in': [bytes.fromhex(el) for el in link]}

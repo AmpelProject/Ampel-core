@@ -19,18 +19,17 @@ def reset_metric(metric: MetricWrapperBase) -> None:
     if metric._is_parent():  # noqa: SLF001
         for child in metric._metrics.values():  # noqa: SLF001
             reset_metric(child)
+    elif isinstance(metric, Counter | Gauge):
+        metric._value.set(0)  # noqa: SLF001
+    elif isinstance(metric, Summary):
+        metric._sum.set(0)  # noqa: SLF001
+        metric._count.set(0)  # noqa: SLF001
+    elif isinstance(metric, Histogram):
+        metric._sum.set(0)  # noqa: SLF001
+        for bucket in metric._buckets:  # noqa: SLF001
+            bucket.set(0)
     else:
-        if isinstance(metric, Counter | Gauge):
-            metric._value.set(0)  # noqa: SLF001
-        elif isinstance(metric, Summary):
-            metric._sum.set(0)  # noqa: SLF001
-            metric._count.set(0)  # noqa: SLF001
-        elif isinstance(metric, Histogram):
-            metric._sum.set(0)  # noqa: SLF001
-            for bucket in metric._buckets:  # noqa: SLF001
-                bucket.set(0)
-        else:
-            raise TypeError(f"don't know how to reset metric of type {type(metric)}")
+        raise TypeError(f"don't know how to reset metric of type {type(metric)}")
 
 
 def reset_registry(registry: CollectorRegistry) -> None:

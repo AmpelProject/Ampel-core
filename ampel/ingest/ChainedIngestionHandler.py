@@ -116,6 +116,7 @@ T1ComputeCache = dict[
 	tuple[UBson | UnitResult, StockId]
 ]
 
+# ruff: noqa: PLE0237
 
 class ChainedIngestionHandler:
 

@@ -74,11 +74,10 @@ def get_outer_file_handle(
 
 	if file_exists := path.isfile(file_path):
 		mode = 'r+b' if write else 'rb'
+	elif write:
+		mode = 'w+b'
 	else:
-		if write:
-			mode = 'w+b'
-		else:
-			raise FileNotFoundError(ENOENT, strerror(ENOENT), file_path)
+		raise FileNotFoundError(ENOENT, strerror(ENOENT), file_path)
 
 	if logger:
 		logger.log(VERBOSE, f"Opening {file_path} with mode {mode}")

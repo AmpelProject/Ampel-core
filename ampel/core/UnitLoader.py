@@ -351,7 +351,7 @@ class UnitLoader:
 		for k, annotation in unit_type._annots.items():  # noqa: SLF001
 			# for unions, consider the first member that is not NoneType
 			if get_origin(annotation) in (Union, UnionType):
-				annotation = next((f for f in get_args(annotation) if f is not type(None)), type(None))
+				annotation = next((f for f in get_args(annotation) if f is not type(None)), type(None))  # noqa: PLW2901
 			field_type = get_origin(annotation) or annotation
 			if issubclass(type(field_type), type) and issubclass(field_type, Secret):
 				default = False

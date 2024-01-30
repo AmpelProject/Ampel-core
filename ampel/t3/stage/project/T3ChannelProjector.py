@@ -88,16 +88,15 @@ class T3ChannelProjector(T3BaseProjector):
 				if isinstance(elchan, str | int):
 					if elchan in channel_set:
 						ret.append(el)
-				else:
-					if subset := channel_set.intersection(elchan):
-						channels = (
-							list(subset)
-							if len(subset) > 1 else next(iter(subset)) # type: ignore[arg-type]
-						)
-						if self.unalterable:
-							ret.append({**el, 'channel': channels})
-						else:
-							setitem(el, 'channel', channels)
-							ret.append(el)
+				elif subset := channel_set.intersection(elchan):
+					channels = (
+						list(subset)
+						if len(subset) > 1 else next(iter(subset)) # type: ignore[arg-type]
+					)
+					if self.unalterable:
+						ret.append({**el, 'channel': channels})
+					else:
+						setitem(el, 'channel', channels)
+						ret.append(el)
 
 		return tuple(ret)

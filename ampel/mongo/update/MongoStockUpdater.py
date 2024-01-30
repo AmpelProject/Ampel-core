@@ -335,12 +335,10 @@ class MongoStockUpdater:
 						jrec['tag'].append(tag) # type: ignore[union-attr]
 
 				# multi-tag tweak request
+				elif isinstance(jrec['tag'], tag_type): # journal record contains single tag (not a sequence of tags)
+					jrec['tag'] = [*jrec['tag'], tag] # type: ignore[list-item, misc]
 				else:
-					# journal record contains single tag (not a sequence of tags)
-					if isinstance(jrec['tag'], tag_type):
-						jrec['tag'] = [*jrec['tag'], tag] # type: ignore[list-item, misc]
-					else:
-						jrec['tag'] = jrec['tag'] + tag # type: ignore[operator]
+					jrec['tag'] = jrec['tag'] + tag # type: ignore[operator]
 
 			# journal record contains no tag
 			else:

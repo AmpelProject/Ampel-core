@@ -174,16 +174,15 @@ def apply_schema(
 
 			if len(or_list) == 1:
 				query[field_name] = or_list[0][field_name]
-			else:
-				if '$or' in query:
-					prev_or = {'$or': query.pop('$or')}
-					if '$and' in query:
-						query['$and'].append(prev_or)
-					else:
-						query['$and'] = [prev_or]
-					query['$and'].append({'$or': or_list})
+			elif '$or' in query:
+				prev_or = {'$or': query.pop('$or')}
+				if '$and' in query:
+					query['$and'].append(prev_or)
 				else:
-					query['$or'] = or_list
+					query['$and'] = [prev_or]
+				query['$and'].append({'$or': or_list})
+			else:
+				query['$or'] = or_list
 
 	elif 'one_of' in arg_dict:
 		query[field_name] = arg_dict['one_of']
@@ -317,11 +316,10 @@ def apply_excl_schema(
 
 			if len(and_list) == 1:
 				query[field_name] = and_list[0][field_name]
+			elif '$and' in query:
+				query['$and'].extend(and_list)
 			else:
-				if '$and' in query:
-					query['$and'].extend(and_list)
-				else:
-					query['$and'] = and_list
+				query['$and'] = and_list
 
 	elif 'one_of' in arg:
 		query[field_name] = arg['one_of']

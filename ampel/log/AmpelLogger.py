@@ -144,9 +144,8 @@ class AmpelLogger:
 		self.level = min([h.level for h in self.handlers]) if self.handlers else 0
 		if self.level < INFO:
 			self.verbose = 2 if self.level < VERBOSE else 1
-		else:
-			if self.verbose != 0:
-				self.verbose = 0
+		elif self.verbose != 0:
+			self.verbose = 0
 
 
 	def addHandler(self, handler: LoggingHandlerProtocol) -> None:

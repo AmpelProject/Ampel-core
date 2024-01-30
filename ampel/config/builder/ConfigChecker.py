@@ -164,26 +164,25 @@ class ConfigChecker(BaseConfigChecker):
 							raise_exc = raise_exc,
 							ignore_ressource_not_avail = ignore_ressource_not_avail,
 						)
-					else:
-						if um['model']['unit'] in self.config["unit"]["admin"]:
-							# Deactivated for now, too complicated
-							self.load_model(
-								tier = tier, proc = proc,
-								load_callable = self.loader.new_context_unit,
-								load_args = {"context": self.ctx},
-								model_args = self._customize_admin_models(um),
-								raise_exc = raise_exc,
-								ignore_ressource_not_avail = ignore_ressource_not_avail,
-							)
-						elif um['model']['unit'] in self.config["unit"]["base"]:
-							self.load_model(
-								tier = tier, proc = proc,
-								load_callable = self.loader.new_logical_unit,
-								load_args = {"logger": self.logger},
-								model_args = um["model"],
-								raise_exc = raise_exc,
-								ignore_ressource_not_avail = ignore_ressource_not_avail,
-							)
+					elif um['model']['unit'] in self.config["unit"]["admin"]:
+						# Deactivated for now, too complicated
+						self.load_model(
+							tier = tier, proc = proc,
+							load_callable = self.loader.new_context_unit,
+							load_args = {"context": self.ctx},
+							model_args = self._customize_admin_models(um),
+							raise_exc = raise_exc,
+							ignore_ressource_not_avail = ignore_ressource_not_avail,
+						)
+					elif um['model']['unit'] in self.config["unit"]["base"]:
+						self.load_model(
+							tier = tier, proc = proc,
+							load_callable = self.loader.new_logical_unit,
+							load_args = {"logger": self.logger},
+							model_args = um["model"],
+							raise_exc = raise_exc,
+							ignore_ressource_not_avail = ignore_ressource_not_avail,
+						)
 
 				except Exception as e:  # noqa: PERF203
 
