@@ -105,29 +105,25 @@ class T3SequentialStager(T3BaseStager):
 					unit: [View.of(ab, conf) for ab in buffers]
 					for unit in self.units
 				}
-			else:
-				vs: list[SnapView] = [View.of(ab, conf) for ab in gen]
-				return {unit: vs for unit in self.units}
-		else:
+			vs: list[SnapView] = [View.of(ab, conf) for ab in gen]
+			return {unit: vs for unit in self.units}
 
-			buffers = list(gen)
-			if self.paranoia_level:
-				return {
-					unit: [View.of(ab, conf) for ab in buffers]
-					for unit, View in (lambda x: [(u, u._View) for u in x])(self.units)
-				}
+		buffers = list(gen)
+		if self.paranoia_level:
+			return {
+				unit: [View.of(ab, conf) for ab in buffers]
+				for unit, View in (lambda x: [(u, u._View) for u in x])(self.units)
+			}
 
-			else:
+		optd: dict[type[SnapView], list[AbsT3Unit]] = {}
+		for unit in self.units:
+			if unit._View not in optd:
+				optd[unit._View] = []
+			optd[unit._View].append(unit)
 
-				optd: dict[type[SnapView], list[AbsT3Unit]] = {}
-				for unit in self.units:
-					if unit._View not in optd:
-						optd[unit._View] = []
-					optd[unit._View].append(unit)
-
-				d = {}
-				for View, units in optd.items():
-					vs = [View.of(ab, conf) for ab in buffers]
-					for unit in units:
-						d[unit] = vs
-				return d
+		d = {}
+		for View, units in optd.items():
+			vs = [View.of(ab, conf) for ab in buffers]
+			for unit in units:
+				d[unit] = vs
+		return d

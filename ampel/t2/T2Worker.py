@@ -428,15 +428,13 @@ class T2Worker(AbsWorker[T2Document]):
 				# instance of AbsTiedCustomStateT2Unit
 				return custom_state, qres
 
-			else:
+			if isinstance(t2_unit, AbsStateT2Unit):
+				return t1_doc, dps
 
-				if isinstance(t2_unit, AbsStateT2Unit):
-					return t1_doc, dps
+			# instance of AbsCustomStateT2Unit
+			return (t2_unit.build(t1_doc, dps), )
 
-				else: # instance of AbsCustomStateT2Unit
-					return (t2_unit.build(t1_doc, dps), )
-
-		elif isinstance(t2_unit, AbsStockT2Unit):
+		if isinstance(t2_unit, AbsStockT2Unit):
 
 			if doc := next(self.col_stock.find({'stock': t2_doc['link']}), None):
 				return (doc, )
@@ -448,7 +446,7 @@ class T2Worker(AbsWorker[T2Document]):
 				)
 			return UnitResult(code=DocumentCode.T2_UNKNOWN_LINK)
 
-		elif isinstance(t2_unit, AbsPointT2Unit | AbsTiedPointT2Unit):
+		if isinstance(t2_unit, AbsPointT2Unit | AbsTiedPointT2Unit):
 
 			if doc := next(self.col_t0.find({'id': t2_doc['link']}), None):
 				if isinstance(t2_unit, AbsTiedPointT2Unit):
@@ -475,12 +473,10 @@ class T2Worker(AbsWorker[T2Document]):
 				)
 			return UnitResult(code=DocumentCode.T2_UNKNOWN_LINK)
 
-		else:
-
-			report_error(
-				self._ampel_db, msg='Unknown T2 unit type',
-				logger=logger, info={'doc': t2_doc}
-			)
+		report_error(
+			self._ampel_db, msg='Unknown T2 unit type',
+			logger=logger, info={'doc': t2_doc}
+		)
 
 		return None
 
@@ -561,7 +557,7 @@ class T2Worker(AbsWorker[T2Document]):
 							}
 						)
 					return UnitResult(code=DocumentCode.T2_PENDING_DEPENDENCY)
-				elif view.get_payload() is None:
+				if view.get_payload() is None:
 					logger.error(
 						'Dependent T2 unit failed',
 						extra={
@@ -625,7 +621,7 @@ class T2Worker(AbsWorker[T2Document]):
 			if 'AbsPointT2Unit' in t2_unit_info['base']:
 				raise BadConfig('Tied stock T2 cannot be linked with point T2s')
 
-			elif 'AbsStockT2Unit' in t2_unit_info['base']:
+			if 'AbsStockT2Unit' in t2_unit_info['base']:
 				d['link'] = t2_doc['stock']
 
 			else: # State T2

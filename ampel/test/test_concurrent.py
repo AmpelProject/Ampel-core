@@ -131,9 +131,8 @@ async def test_multilaunch():
             ):
                 assert result == 42
             break
-        else:
-            while len(pending) < num_tasks:
-                pending.add(launch())
+        while len(pending) < num_tasks:
+            pending.add(launch())
 
 
 @process

@@ -42,10 +42,10 @@ class ProcessConfigCollector(AbsDictConfigCollector):
 				VERBOSE, f"Adding {self.tier} process: '{proc_name}' from {register_file}"
 			)
 
-		if self.check_duplicates(
+		if not self.check_duplicates(
 			proc_name, dist_name, version, register_file,
 			section_detail = f"{arg['tier']}.process"
 		):
-			return None
-
-		self.__setitem__(proc_name, arg)
+			self.__setitem__(proc_name, arg)
+		
+		return None

@@ -263,6 +263,7 @@ class DBUpdatesBuffer(Schedulable):
 				if len(v) > self.max_size:
 					return self.push_updates()
 
+		return None
 
 	def push_updates(self, force: bool = False) -> None:
 

@@ -276,7 +276,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 						if not stop_token.is_set():
 							logger.log(LogFlag.SHOUT, "No more docs to process")
 						break
-					elif logger.verbose > 1:
+					if logger.verbose > 1:
 						logger.debug(f'T{self.tier} doc to process', extra={'doc': doc})
 
 					with stat_time.labels(self.tier, "process_doc", doc["unit"]).time():

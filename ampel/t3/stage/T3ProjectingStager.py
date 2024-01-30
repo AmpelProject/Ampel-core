@@ -133,20 +133,17 @@ class T3ProjectingStager(T3ThreadedStager):
 					view_generator,
 					t3s
 				)
-			else:
-				return self.proceed_threaded(
-					self.run_blocks[0].units,
-					self.projected_buffer_generator(self.run_blocks[0], gen),
-					t3s
-				)
-		else:
 
-			if self.chunk_size <= 0:
-				raise ValueError("Chunking is required when multiple filter/projection blocks are defined")
+			return self.proceed_threaded(
+				self.run_blocks[0].units,
+				self.projected_buffer_generator(self.run_blocks[0], gen),
+				t3s
+			)
 
-			return self.multi_bla(gen, t3s)
-			#for gen in tee(data, len(self.run_blocks)):
-			# pass
+		if self.chunk_size <= 0:
+			raise ValueError("Chunking is required when multiple filter/projection blocks are defined")
+
+		return self.multi_bla(gen, t3s)
 
 
 	def projected_buffer_generator(self,

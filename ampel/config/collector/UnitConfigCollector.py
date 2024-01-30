@@ -76,16 +76,15 @@ class UnitConfigCollector(AbsDictConfigCollector):
 						continue
 
 					# Standart unit definition (ex: ampel.t3.stage.T3AggregatingStager)
-					else:
-						class_name = self.get_class_name(el)
-						if not (ret := self.get_mro(el, class_name)):
-							self.logger.break_aggregation()
-							continue
-						entry: dict[str, Any] = {
-							'fqn': el,
-							'base': ret[1],
-							'xxh64': ret[0]
-						}
+					class_name = self.get_class_name(el)
+					if not (ret := self.get_mro(el, class_name)):
+						self.logger.break_aggregation()
+						continue
+					entry: dict[str, Any] = {
+						'fqn': el,
+						'base': ret[1],
+						'xxh64': ret[0]
+					}
 
 				elif isinstance(el, dict):
 					try:

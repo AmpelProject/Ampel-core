@@ -175,7 +175,7 @@ def reduce_to_set(
 	if isinstance(arg, in_type):
 		return {arg} # type: ignore
 
-	elif isinstance(arg, AllOf | AnyOf | OneOf):
+	if isinstance(arg, AllOf | AnyOf | OneOf):
 		v: Any = arg.dict()
 
 	elif isinstance(arg, dict):

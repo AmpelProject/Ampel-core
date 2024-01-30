@@ -123,7 +123,7 @@ class QueryMatchModel(AmpelBaseModel):
 								"Unsupported nesting (err 3)"
 							)
 
-						elif 'allOf' in el:
+						if 'allOf' in el:
 
 							# 'allOf' closes nesting
 							if not check_seq_inner_type(el['allOf'], str):

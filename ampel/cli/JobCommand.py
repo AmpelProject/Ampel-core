@@ -277,7 +277,7 @@ class JobCommand(AbsCoreCommand):
 					if k not in os.environ:
 						logger.info(f'Environment variable {k}={v} required')
 						return
-					elif v and v != _maybe_int(os.environ[k]):
+					if v and v != _maybe_int(os.environ[k]):
 						logger.info(
 							f'Environment variable {k} value mismatch:\n'
 							f' required: {v} ({type(v)})\n'

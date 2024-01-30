@@ -26,6 +26,5 @@ class AuxAliasableModel(AmpelBaseModel):
 		if isinstance(value, str):
 			if value in AuxUnitRegister._defs:
 				return AuxUnitRegister.new_unit(model=UnitModel(unit=value), sub_type=cls).model_dump()
-			else:
-				raise ValueError(f"{cls.__name__} '{value}' not registered")
+			raise ValueError(f"{cls.__name__} '{value}' not registered")
 		return value

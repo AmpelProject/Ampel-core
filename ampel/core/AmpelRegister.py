@@ -490,9 +490,9 @@ class AmpelRegister(AmpelUnit):
 		if not self._outer_fh or self._outer_fh.closed:
 			self.logger.info("File handle already closed")
 			return
-		else:
-			if self.verbose:
-				self.logger.log(VERBOSE, f"Closing {self.get_file_path()}")
+
+		if self.verbose:
+			self.logger.log(VERBOSE, f"Closing {self.get_file_path()}")
 
 		if hasattr(self, 'header') and update_header:
 

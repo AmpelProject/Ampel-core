@@ -76,8 +76,7 @@ def test_ConfigChecker(testing_config, monkeypatch):
     def get_class_by_name(name, *args, **kwargs):
         if name == "SideEffectLadenProcessor":
             return SideEffectLadenProcessor
-        else:
-            return UnitLoader.get_class_by_name(checker.loader, name, *args, **kwargs)
+        return UnitLoader.get_class_by_name(checker.loader, name, *args, **kwargs)
 
     monkeypatch.setattr(checker.loader, "get_class_by_name", get_class_by_name)
 

@@ -335,9 +335,9 @@ class UnitLoader:
 				if value in adict:
 					return self.resolve_aliases(adict[value])
 			return value
-		elif isinstance(value, list):
+		if isinstance(value, list):
 			return [self.resolve_aliases(v) for v in value]
-		elif isinstance(value, dict):
+		if isinstance(value, dict):
 			return {k: self.resolve_aliases(v) for k, v in value.items()}
 
 		return value

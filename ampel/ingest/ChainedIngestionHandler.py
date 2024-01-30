@@ -188,8 +188,7 @@ class ChainedIngestionHandler:
 			model = dbconf[key]
 			if isinstance(model, str):
 				return UnitModel(unit=model)
-			else:
-				return UnitModel(**model)
+			return UnitModel(**model)
 		self.t0_ingester = AuxUnitRegister.new_unit(
 			model = get_ingester_model('t0'),
 			sub_type = AbsDocIngester[DataPoint],
@@ -235,14 +234,13 @@ class ChainedIngestionHandler:
 			)
 			return known_ib, new_ib
 
-		elif isinstance(directive, IngestDirective):
+		if isinstance(directive, IngestDirective):
 			ib = self._new_ingest_block(
 				directive.ingest, directive.channel, updates_buffer, logger
 			)
 			return ib, ib
 
-		else:
-			raise TypeError("Unknown directive type")
+		raise TypeError("Unknown directive type")
 			
 
 	def _new_ingest_block(self,

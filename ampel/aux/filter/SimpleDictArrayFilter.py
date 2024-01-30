@@ -50,5 +50,4 @@ class SimpleDictArrayFilter(AbsLogicOperatorFilter[T]):
 				isinstance(d[attr_name], f.type) and
 				f.operator(d[attr_name], f.value)
 			]
-		else:
-			return [d for d in dicts if attr_name in d and f.operator(d[attr_name], f.value)]
+		return [d for d in dicts if attr_name in d and f.operator(d[attr_name], f.value)]

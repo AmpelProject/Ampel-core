@@ -74,12 +74,11 @@ class T3FilteringStockSelector(T3StockSelector):
 	def _build_match(self, f: T2FilterModel | AllOf[T2FilterModel] | AnyOf[T2FilterModel]) -> dict[str, Any]:
 		if isinstance(f, T2FilterModel):
 			return {f"{f.unit}.{k}": v for k, v in f.match.items()}
-		elif isinstance(f, AllOf):
+		if isinstance(f, AllOf):
 			return {'$and': [self._build_match(el) for el in f.all_of]}
-		elif isinstance(f, AnyOf):
+		if isinstance(f, AnyOf):
 			return {'$or': [self._build_match(el) for el in f.any_of]}
-		else:
-			raise TypeError()
+		raise TypeError()
 
 
 	def _t2_filter_pipeline(self, stock_ids: list[StockId]) -> list[dict]:
@@ -194,10 +193,9 @@ def _all_units(filters: T2FilterModel | AllOf[T2FilterModel] | AnyOf[T2FilterMod
 	"""
 	if isinstance(filters, T2FilterModel):
 		return [filters.unit]
-	elif isinstance(filters, AllOf):
+	if isinstance(filters, AllOf):
 		return list(set(f.unit for f in filters.all_of))
-	elif isinstance(filters, AnyOf):
+	if isinstance(filters, AnyOf):
 		# NB: AnyOf may contain AllOf
 		return list(set(sum((_all_units(f) for f in filters.any_of), [])))
-	else:
-		raise TypeError()
+	raise TypeError()

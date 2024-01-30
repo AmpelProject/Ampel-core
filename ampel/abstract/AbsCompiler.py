@@ -97,12 +97,11 @@ class AbsCompiler(AmpelUnit, AmpelABC, abstract=True):
 							# Raising an error is probably a bad idea actually
 							raise ValueError("Channel-less / channel-bound activity conflict [0]")
 
+						# Add current channel to previously registered activity
+						if isinstance(el['channel'], int | str):
+							g.add(el['channel'])
 						else:
-							# Add current channel to previously registered activity
-							if isinstance(el['channel'], int | str):
-								g.add(el['channel'])
-							else:
-								g.update(el['channel'])
+							g.update(el['channel'])
 					else:
 						ar[x] = {el['channel']} if isinstance(el['channel'], int | str) else set(el['channel'])
 

@@ -156,10 +156,9 @@ def basictype2str(obj):
 		(isinstance(obj, float) and isinf(obj))
 	):
 		return "\"" + str(obj) + "\""
-	elif isinstance(obj, bool):
+	if isinstance(obj, bool):
 		return "true" if obj else "false"
-	else:
-		return str(obj)
+	return str(obj)
 
 
 def indentitems(items, indent, level):

@@ -203,10 +203,7 @@ class task_manager:
 
     @classmethod
     def get_status(cls, name: str) -> Literal["running", "idle"]:
-        if name in cls.process_name_to_controller_id:
-            return "running"
-        else:
-            return "idle"
+        return "running" if name in cls.process_name_to_controller_id else "idle"
 
     @classmethod
     async def shutdown(cls) -> None:

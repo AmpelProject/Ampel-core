@@ -77,18 +77,14 @@ def _to_binary(st: str | bytes | Binary) -> Binary:
 	if isinstance(st, str):
 		if len(st) == 32:
 			return Binary(bytes.fromhex(st), 0)
-		else:
-			raise ValueError("Provided state strings must have 32 characters")
-	elif isinstance(st, bytes):
+		raise ValueError("Provided state strings must have 32 characters")
+	if isinstance(st, bytes):
 		if len(st) == 16:
 			return Binary(st, 0)
-		else:
-			raise ValueError("Provided state bytes must have a length of 16")
-	else:
-		if st.subtype == 0:
-			return st
-		else:
-			raise ValueError("Bson Binary states must have subtype 0")
+		raise ValueError("Provided state bytes must have a length of 16")
+	if st.subtype == 0:
+		return st
+	raise ValueError("Bson Binary states must have subtype 0")
 
 
 def get_compound_match(
@@ -103,14 +99,13 @@ def get_compound_match(
 		return _to_binary(states)
 
 	# Multiple states were provided
-	elif isinstance(states, strict_iterable):
+	if isinstance(states, strict_iterable):
 
 		return {
 			'$in': [_to_binary(st) for st in states]
 		}
 
-	else:
-		raise ValueError(
-			f"Type of provided state ({type(states)}) must be "
-			f"bytes, str, bson.Binary or sequences of these"
-		)
+	raise ValueError(
+		f"Type of provided state ({type(states)}) must be "
+		f"bytes, str, bson.Binary or sequences of these"
+	)

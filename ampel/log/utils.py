@@ -187,11 +187,11 @@ def get_tier_from_logger(logger: AmpelLogger) -> None | int:
 	lb = LogFlag(logger.base_flag)
 	if LogFlag.T0 in lb:
 		return 0
-	elif LogFlag.T1 in lb:
+	if LogFlag.T1 in lb:
 		return 1
-	elif LogFlag.T2 in lb:
+	if LogFlag.T2 in lb:
 		return 2
-	elif LogFlag.T3 in lb:
+	if LogFlag.T3 in lb:
 		return 3
 
 	return None

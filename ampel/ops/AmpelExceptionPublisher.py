@@ -84,13 +84,12 @@ class AmpelExceptionPublisher(AbsOpsUnit):
         else:
             text = f"Unknown exception type. Doc keys are: ```{doc.keys()}```"
 
-        attachment = {
+        return {
             "fields": fields,
             "ts": int(doc["_id"].generation_time.timestamp()),
             "text": text,
             "mrkdwn_in": ["text"],
         }
-        return attachment
 
     def run(self, beacon: None | dict[str, Any] = None) -> None | dict[str, Any]:
 

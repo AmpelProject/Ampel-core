@@ -105,9 +105,9 @@ def maybe_resolve_enum(value: int | str | list[int|str], enum: type[IntEnum]) ->
 	if isinstance(value, str):
 		if value in enum.__members__:
 			return enum.__members__[value]
-		else:
-			raise ValueError(f"{value} is not a valid {enum.__name__}")
-	elif isinstance(value, list):
+		raise ValueError(f"{value} is not a valid {enum.__name__}")
+	if isinstance(value, list):
 		return [maybe_resolve_enum(v, enum) for v in value]
-	elif isinstance(value, int):
+	if isinstance(value, int):
 		return value
+	return None

@@ -128,12 +128,11 @@ def get_fd(
 		if isinstance(fd, str):
 			return open(fd, "wb"), True
 		return fd, close_fd # type: ignore
-	else:
-		if fd is None:
-			return sys.stdout, False
-		if isinstance(fd, str):
-			return open(fd, 'w'), close_fd
-		return fd, close_fd # type: ignore
+	if fd is None:
+		return sys.stdout, False
+	if isinstance(fd, str):
+		return open(fd, 'w'), close_fd
+	return fd, close_fd # type: ignore
 
 
 

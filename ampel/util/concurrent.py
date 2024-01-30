@@ -43,8 +43,7 @@ def process(function=None, **kwargs):
     """
     if function is None:
         return partial(_process_wrapper, **kwargs)
-    else:
-        return _process_wrapper(function)
+    return _process_wrapper(function)
 
 
 class RemoteTraceback(Exception):
@@ -153,8 +152,7 @@ class _Process:
         self._kwargs = dict(kwargs)
 
     def __call__(self):
-        if self._target:
-            return self._target(*self._args, **self._kwargs)
+        return self._target(*self._args, **self._kwargs) if self._target else None
 
     def _get_command_line(self, read_fd, write_fd):
         return (
@@ -210,17 +208,15 @@ class _Process:
                     )
                     if isinstance(exitcode, BaseException):
                         raise exitcode
-                    elif exitcode < 0:
+                    if exitcode < 0:
                         signame = signal.Signals(-exitcode).name
                         raise RuntimeError(f"Process {self._name} (pid {proc.pid}) died on {signame}")
                     if isinstance(payload, BaseException):
                         raise payload
-                    else:
-                        ret = reduction.pickle.loads(payload) # type: ignore
+                    ret = reduction.pickle.loads(payload) # type: ignore
                     if isinstance(ret, BaseException):
                         raise ret
-                    else:
-                        return ret
+                    return ret
                 except asyncio.CancelledError:
                     proc.terminate()
                     try:

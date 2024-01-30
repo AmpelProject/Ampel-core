@@ -142,7 +142,7 @@ select = [
     "DTZ",
     # "T20",
     "PT",
-    # "RET",
+    "RET",
     # "SLF",
     # "SIM",
     # # "ARG", # sometimes your arguments have to conform to an interface

@@ -67,10 +67,7 @@ class T3ChannelProjector(T3BaseProjector):
 
 
 	def overwrite_root_channel(self, v: Sequence[ChannelId]) -> None | Sequence[ChannelId]:
-		if subset := list(self._channel_set.intersection(v)):
-			return subset
-		else:
-			return None
+		return subset if (subset := list(self._channel_set.intersection(v))) else None
 
 
 	def channel_projection(self, dicts: Sequence[dict[str, Any]]) -> Sequence[dict[str, Any]]:

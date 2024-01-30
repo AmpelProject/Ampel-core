@@ -109,12 +109,12 @@ def get_inner_file_handle(
 		if logger: logger.log(VERBOSE, f"New GzipFile from {fh.name} (mode {mode})") # noqa: E701
 		return GzipFile(fileobj=fh, mode=mode) # type: ignore[return-value]
 
-	elif fh.name.endswith('bz2'):
+	if fh.name.endswith('bz2'):
 		from bz2 import BZ2File
 		if logger: logger.log(VERBOSE, f"New BZ2File from {fh.name} (mode {mode})") # noqa: E701
 		return BZ2File(fh, mode=mode) # type: ignore[call-overload]
 
-	elif fh.name.endswith('xz'):
+	if fh.name.endswith('xz'):
 		from lzma import LZMAFile
 		if logger: logger.log(VERBOSE, f"New LZMAFile from {fh.name} (mode {mode})") # noqa: E701
 		return LZMAFile(fh, mode=mode) # type: ignore[return-value]
@@ -187,7 +187,7 @@ def read_header(
 	h = file_handle.read(header_size)
 	if len(h) == 0: # headerless file
 		return None
-	elif len(h) < header_size: # something is wrong
+	if len(h) < header_size: # something is wrong
 		raise ValueError(f"{file_handle.name}: header too small (len: {len(h)})")
 
 	header = decode_header(h, header_len)
@@ -319,6 +319,8 @@ def rescale_header(
 
 	logger.info(f"Renaming {file_path}.new -> {file_path}")
 	rename(f"{file_path}.new", file_path)
+
+	return None
 
 
 def _quick_load(

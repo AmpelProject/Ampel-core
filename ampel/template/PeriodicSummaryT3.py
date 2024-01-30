@@ -159,7 +159,7 @@ class PeriodicSummaryT3(AbsConfigMorpher):
     def get_units(self, units: OneOrMany[str | UnitModel]) -> list[dict[str, Any]]:
         if isinstance(units, str):
             return [UnitModel(unit=units).dict()]
-        elif isinstance(units, UnitModel):
+        if isinstance(units, UnitModel):
             return [units.dict()]
         return [self.get_units(u)[0] for u in units]
 

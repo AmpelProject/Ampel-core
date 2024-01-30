@@ -158,14 +158,13 @@ class ConfigCommand(AbsCoreCommand):
 			if nonstring_keys:
 				doc['__nonstring_keys'] = nonstring_keys
 			return doc
-		elif isinstance(obj, Iterable) and not isinstance(obj, str):
+		if isinstance(obj, Iterable) and not isinstance(obj, str):
 			return [cls._to_strict_json(v) for v in obj]
-		elif isinstance(obj, int) and abs(obj) >> 53:
+		if isinstance(obj, int) and abs(obj) >> 53:
 			# use canonical BSON representation for ints larger than the precision
 			# of a double
 			return {'$numberLong': str(obj)}
-		else:
-			return obj
+		return obj
 
 
 	@staticmethod
@@ -173,19 +172,17 @@ class ConfigCommand(AbsCoreCommand):
 		""" Invert to_strict_json() """
 		if '$numberLong' in doc:
 			return int(doc['$numberLong'])
-		elif '__nonstring_keys' in doc:
+		if '__nonstring_keys' in doc:
 			nonstring_keys = doc.pop('__nonstring_keys')
 			return {nonstring_keys[k]: v for k, v in doc.items()}
-		else:
-			return doc
+		return doc
 
 
 	@staticmethod
 	def _load_dict(source: TextIO) -> dict[str, Any]:
 		if isinstance((payload := yaml.safe_load(source)), dict):
 			return payload
-		else:
-			raise TypeError('buf does not deserialize to a dict')
+		raise TypeError('buf does not deserialize to a dict')
 
 
 	@classmethod

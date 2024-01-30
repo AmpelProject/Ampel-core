@@ -140,8 +140,7 @@ class MongoStockDeleter(AbsOpsUnit):
                 # operation was interrupted because the transaction exceeded the configured 'transactionLifetimeLimitSeconds'
                 if attempt == self.retry or exc.code != 290:
                     raise
-                else:
-                    continue
+                continue
         # unreachable
         raise NotImplementedError()
 

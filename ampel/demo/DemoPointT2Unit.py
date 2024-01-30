@@ -34,5 +34,4 @@ class DemoPointT2Unit(AbsPointT2Unit):
 
 		if randint(0, 1) > 0.5:
 			return ret
-		else:
-			return UnitResult(code=10, tag="MY_CUSTOM_TAG", body=ret)
+		return UnitResult(code=10, tag="MY_CUSTOM_TAG", body=ret)
