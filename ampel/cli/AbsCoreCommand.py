@@ -8,19 +8,21 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import json
-import re, os
-from typing import Any, TypeVar, Literal
-from collections.abc import Sequence, Iterator
-from ampel.config.AmpelConfig import AmpelConfig
+import os
+import re
+from collections.abc import Iterator, Sequence
+from typing import Any, Literal, TypeVar
+
 from ampel.abstract.AbsCLIOperation import AbsCLIOperation
+from ampel.cli.config import get_user_data_config_path
+from ampel.cli.utils import _maybe_int, get_db, get_vault
+from ampel.config.AmpelConfig import AmpelConfig
 from ampel.core.AmpelContext import AmpelContext
 from ampel.core.UnitLoader import UnitLoader
 from ampel.log.AmpelLogger import AmpelLogger
-from ampel.util.mappings import set_by_path
 from ampel.util.freeze import recursive_freeze
+from ampel.util.mappings import set_by_path
 from ampel.util.pretty import out_stack
-from ampel.cli.utils import get_vault, get_db, _maybe_int
-from ampel.cli.config import get_user_data_config_path
 
 custom_conf_patter = re.compile(r"^--[\w-]*(?:\.[\w-]+)*.*$")
 
@@ -31,7 +33,9 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 	def __init__(self):
 		self.parsers = {}
 		try:
-			import sys, IPython
+			import sys
+
+			import IPython
 			sys.breakpointhook = IPython.embed
 		except Exception:
 			pass
@@ -67,7 +71,7 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 					except json.JSONDecodeError:
 						v = value
 					logger.info(f"Setting config parameter '{k}' from environment")
-					set_by_path(ampel_conf._config, k, v)
+					set_by_path(ampel_conf._config, k, v)  # noqa: SLF001
 
 		for k, v in self.get_custom_args(unknown_args):
 
@@ -76,10 +80,10 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 					raise ValueError(f"Unknown config parameter '{k}'\n")
 
 			logger.info(f"Setting config parameter '{k}' value to: {v}")
-			set_by_path(ampel_conf._config, k, v)
+			set_by_path(ampel_conf._config, k, v)  # noqa: SLF001
 
 		if freeze:
-			ampel_conf._config = recursive_freeze(ampel_conf._config)
+			ampel_conf._config = recursive_freeze(ampel_conf._config)  # noqa: SLF001
 
 		return ampel_conf
 

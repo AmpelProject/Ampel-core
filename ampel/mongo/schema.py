@@ -7,10 +7,10 @@
 # Last Modified Date:  26.03.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from ampel.util.collections import check_seq_inner_type
-from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
+from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.OneOf import OneOf
+from ampel.util.collections import check_seq_inner_type
 
 VALID_TYPES = (int, str)
 
@@ -81,9 +81,9 @@ def apply_schema(
 	"""
 
 	# Validations already performed by models
-	if isinstance(arg, (AllOf, AnyOf, OneOf)):
+	if isinstance(arg, AllOf | AnyOf | OneOf):
 		arg_dict = arg.dict()
-	elif isinstance(arg, (int, str)):
+	elif isinstance(arg, int | str):
 		query[field_name] = arg
 		return query
 	else:
@@ -164,7 +164,7 @@ def apply_schema(
 							'$in': [
 								item
 								for el in optimize_potentially
-								if isinstance((item := el[field_name]), (int, str))
+								if isinstance((item := el[field_name]), int | str)
 							]
 						}
 					}
@@ -174,16 +174,15 @@ def apply_schema(
 
 			if len(or_list) == 1:
 				query[field_name] = or_list[0][field_name]
-			else:
-				if '$or' in query:
-					prev_or = {'$or': query.pop('$or')}
-					if '$and' in query:
-						query['$and'].append(prev_or)
-					else:
-						query['$and'] = [prev_or]
-					query['$and'].append({'$or': or_list})
+			elif '$or' in query:
+				prev_or = {'$or': query.pop('$or')}
+				if '$and' in query:
+					query['$and'].append(prev_or)
 				else:
-					query['$or'] = or_list
+					query['$and'] = [prev_or]
+				query['$and'].append({'$or': or_list})
+			else:
+				query['$or'] = or_list
 
 	elif 'one_of' in arg_dict:
 		query[field_name] = arg_dict['one_of']
@@ -208,17 +207,16 @@ def apply_excl_schema(
 	"""
 
 	# Checks were already performed by validators
-	if isinstance(arg, (AllOf, AnyOf, OneOf)):
+	if isinstance(arg, AllOf | AnyOf | OneOf):
 		arg = arg.dict()
 	else:
 		_arg_check(arg)
 
 	# Check if field_name criteria were set previously
-	if field_name in query:
-		if isinstance(query[field_name], VALID_TYPES):
-			# If a previous scalar tag matching criteria was set
-			# then we need rename it since query[field_name] will become a dict
-			query[field_name] = {'$eq': query[field_name]}
+	if field_name in query and isinstance(query[field_name], VALID_TYPES):
+		# If a previous scalar tag matching criteria was set
+		# then we need rename it since query[field_name] will become a dict
+		query[field_name] = {'$eq': query[field_name]}
 
 	if isinstance(arg, VALID_TYPES):
 		if field_name not in query:
@@ -318,11 +316,10 @@ def apply_excl_schema(
 
 			if len(and_list) == 1:
 				query[field_name] = and_list[0][field_name]
+			elif '$and' in query:
+				query['$and'].extend(and_list)
 			else:
-				if '$and' in query:
-					query['$and'].extend(and_list)
-				else:
-					query['$and'] = and_list
+				query['$and'] = and_list
 
 	elif 'one_of' in arg:
 		query[field_name] = arg['one_of']
@@ -364,7 +361,7 @@ def _arg_check(arg) -> bool:
 	if arg is None:
 		raise ValueError('"arg" is None')
 
-	if isinstance(arg, (int, str, tuple)):
+	if isinstance(arg, int | str | tuple):
 		return True
 
 	# Dict must be provided

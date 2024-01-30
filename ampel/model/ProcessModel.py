@@ -7,13 +7,15 @@
 # Last Modified Date:  04.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import schedule as sched
-from typing import Literal
 from collections.abc import Sequence
+from typing import Literal
+
+import schedule as sched
+
 from ampel.base.AmpelBaseModel import AmpelBaseModel
-from ampel.types import ChannelId
-from ampel.model.UnitModel import UnitModel
 from ampel.config.ScheduleEvaluator import ScheduleEvaluator
+from ampel.model.UnitModel import UnitModel
+from ampel.types import ChannelId
 
 
 class ProcessModel(AmpelBaseModel):
@@ -48,5 +50,5 @@ class ProcessModel(AmpelBaseModel):
 				if evaluator is None:
 					evaluator = ScheduleEvaluator()
 				evaluator(sched.Scheduler(), el).do(lambda x: None)
-			except Exception:
-				raise ValueError("Incorrect 'schedule' parameter")
+			except Exception as exc:
+				raise ValueError("Incorrect 'schedule' parameter") from exc

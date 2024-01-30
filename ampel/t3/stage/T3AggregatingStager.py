@@ -7,19 +7,19 @@
 # Last Modified Date:  04.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from time import time
-from ampel.base.AmpelBaseModel import AmpelBaseModel
-from typing import Any
 from collections.abc import Generator, Sequence
+from time import time
+from typing import Any
 
-from ampel.types import UBson, OneOrMany
-from ampel.t3.stage.T3SequentialStager import T3SequentialStager
-from ampel.struct.T3Store import T3Store
-from ampel.view.T3DocView import T3DocView
-from ampel.struct.AmpelBuffer import AmpelBuffer
-from ampel.content.T3Document import T3Document
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.content.MetaRecord import MetaRecord
+from ampel.content.T3Document import T3Document
+from ampel.struct.AmpelBuffer import AmpelBuffer
+from ampel.struct.T3Store import T3Store
+from ampel.t3.stage.T3SequentialStager import T3SequentialStager
+from ampel.types import OneOrMany, UBson
 from ampel.util.mappings import get_by_json_path
+from ampel.view.T3DocView import T3DocView
 
 
 class TargetModel(AmpelBaseModel):
@@ -102,8 +102,8 @@ class T3AggregatingStager(T3SequentialStager):
 
 		super().__init__(**kwargs)
 
-		for i, um in enumerate(self.execute):
-			if um.unit not in self.context.config._config['unit']:
+		for um in self.execute:
+			if um.unit not in self.context.config._config['unit']:  # noqa: SLF001
 				raise ValueError(f"Unknown unit: {um.unit}")
 
 
@@ -182,11 +182,13 @@ class T3AggregatingStager(T3SequentialStager):
 		for i, t3_unit in enumerate(self.units):
 			ts = time()
 			self.logger.info(f"Processing run block {i}", extra={'unit': t3_unit.__class__.__name__})
-			if (t3_ret := t3_unit.process(self.empty_gen(), t3s)):
-				if (x := self.handle_t3_result(t3_unit, t3_ret, t3s, None, ts)):
-					if self.propagate:
-						t3s.add_view(T3DocView.of(x, self.context.config))
-					yield x
+			if (
+				(t3_ret := t3_unit.process(self.empty_gen(), t3s)) and
+				(x := self.handle_t3_result(t3_unit, t3_ret, t3s, None, ts))
+			):
+				if self.propagate:
+					t3s.add_view(T3DocView.of(x, self.context.config))
+				yield x
 
 		return None
 
@@ -206,7 +208,7 @@ class T3AggregatingStager(T3SequentialStager):
 			{k: {s: v} for k, v in d.items()} if self.split_tiers else d,
 			t3s,
 			time(),
-			[int(el) for el in d.keys()]
+			[int(el) for el in d]
 		)
 
 

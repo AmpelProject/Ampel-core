@@ -7,12 +7,12 @@
 # Last Modified Date:  09.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Iterable
-from collections.abc import Generator
+from collections.abc import Generator, Iterable
+
 from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.config.AmpelConfig import AmpelConfig
-from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
+from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.t3.stage.BaseViewGenerator import BaseViewGenerator, T, T3Send
 
 
@@ -27,7 +27,7 @@ class SimpleViewGenerator(BaseViewGenerator[T]):
 
 		super().__init__(unit_name = unit.__class__.__name__, stock_updr = stock_updr)
 		self.buffers = buffers
-		self.View = unit._View
+		self.View = unit._View  # noqa: SLF001
 		# ensure this generator's queue is consumed at most once 
 		self._it = iter(self.buffers)
 		self._config = config

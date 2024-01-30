@@ -7,26 +7,36 @@
 # Last Modified Date:  01.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import os, sys, re, json, yaml, datetime, getpass, importlib, subprocess, pkg_resources
-from typing import Any
-from multiprocessing import Pool
+import datetime
+import getpass
+import importlib
+import json
+import os
+import re
+import subprocess
+import sys
 from collections.abc import Iterable
+from multiprocessing import Pool
+from typing import Any
 
-from ampel.log.utils import log_exception
+import pkg_resources
+import yaml
+
 from ampel.abstract.AbsChannelTemplate import AbsChannelTemplate
-from ampel.log.AmpelLogger import AmpelLogger, VERBOSE, DEBUG, ERROR
 from ampel.config.builder.DisplayOptions import DisplayOptions
 from ampel.config.builder.FirstPassConfig import FirstPassConfig
-from ampel.config.collector.ConfigCollector import ConfigCollector
-from ampel.config.collector.T02ConfigCollector import T02ConfigCollector
-from ampel.template.ChannelWithProcsTemplate import ChannelWithProcsTemplate
-from ampel.config.collector.ProcessConfigCollector import ProcessConfigCollector
-from ampel.config.collector.ChannelConfigCollector import ChannelConfigCollector
 from ampel.config.builder.ProcessMorpher import ProcessMorpher
+from ampel.config.collector.ChannelConfigCollector import ChannelConfigCollector
+from ampel.config.collector.ConfigCollector import ConfigCollector
+from ampel.config.collector.ProcessConfigCollector import ProcessConfigCollector
+from ampel.config.collector.T02ConfigCollector import T02ConfigCollector
+from ampel.log.AmpelLogger import DEBUG, ERROR, VERBOSE, AmpelLogger
+from ampel.log.utils import log_exception
 from ampel.secret.AESecret import AESecret
 from ampel.secret.AESecretProvider import AESecretProvider
+from ampel.template.ChannelWithProcsTemplate import ChannelWithProcsTemplate
+from ampel.util.mappings import dictify, get_by_path, set_by_path
 from ampel.util.recursion import walk_and_process_dict
-from ampel.util.mappings import get_by_path, set_by_path, dictify
 
 
 class ConfigBuilder:
@@ -166,23 +176,25 @@ class ConfigBuilder:
 		:raises: ValueError if self.error is True - this behavior can be disabled using the parameter stop_on_errors
 		"""
 
-		if self.first_pass_config.has_nested_error():
-			if stop_on_errors > 1:
-				raise ValueError(
-					'\n-------------------------------------------------------------------------\n' +
-					'Error were reported while gathering configurations (first pass config),\n' +
-					'Option stop_on_errors = 1 (or 0) can be used to bypass this warning and\n' +
-					'thereby force the assembly of a possibly non-working config.\n' +
-					'CLI: ampel config install -stop-on-errors 1 (or 0)\n' +
-					'-------------------------------------------------------------------------\n'
-				)
+		if (
+			self.first_pass_config.has_nested_error() and
+			stop_on_errors > 1
+		):
+			raise ValueError(
+				'\n-------------------------------------------------------------------------\n' +
+				'Error were reported while gathering configurations (first pass config),\n' +
+				'Option stop_on_errors = 1 (or 0) can be used to bypass this warning and\n' +
+				'thereby force the assembly of a possibly non-working config.\n' +
+				'CLI: ampel config install -stop-on-errors 1 (or 0)\n' +
+				'-------------------------------------------------------------------------\n'
+			)
 
 		if ext_resource and not os.path.exists(ext_resource):
 			raise ValueError(f"External resource file not found: '{ext_resource}'")
 
 		out = {
 			k: self.first_pass_config[k]
-			for k in FirstPassConfig.conf_keys.keys()
+			for k in FirstPassConfig.conf_keys
 		}
 
 		out['process'] = {}
@@ -249,7 +261,7 @@ class ConfigBuilder:
 						self.logger.log(VERBOSE, f'Morphing standalone {tier_name} processes: {p["name"]}')
 						pass
 
-					dist_name = fp_procs_collector._origin[p["name"]][0]
+					dist_name = fp_procs_collector._origin[p["name"]][0]  # noqa: SLF001
 					try:
 						p_collector.add(
 							ProcessMorpher(p, self.logger, self.templates, self.verbose) \
@@ -257,7 +269,7 @@ class ConfigBuilder:
 								.apply_template(self.first_pass_config) \
 								.hash_t2_config(out) \
 								.get(),
-							*fp_procs_collector._origin[p["name"]]
+							*fp_procs_collector._origin[p["name"]]  # noqa: SLF001
 						)
 					except Exception as e:
 						self.logger.error(f'Unable to morph process {p["name"]}', exc_info=e)
@@ -285,7 +297,7 @@ class ConfigBuilder:
 				# Template processing is required for this particular channel
 				try:
 					tpl = self._get_channel_tpl(
-						chan_dict, fp_chan_collector._origin[chan_name][-1]
+						chan_dict, fp_chan_collector._origin[chan_name][-1]  # noqa: SLF001
 					)
 				except Exception as ee:
 					log_exception(self.logger, msg=f'Unable to load template ({chan_name})', exc=ee)
@@ -300,7 +312,7 @@ class ConfigBuilder:
 					try:
 						out['channel'].add(
 							tpl.get_channel(self.logger),
-							*fp_chan_collector._origin[chan_name]
+							*fp_chan_collector._origin[chan_name]  # noqa: SLF001
 						)
 					except Exception as ee:
 						log_exception(
@@ -334,7 +346,7 @@ class ConfigBuilder:
 
 						try:
 							# Add transformed process to final process collector
-							dist_name = fp_chan_collector._origin[chan_name][0]
+							dist_name = fp_chan_collector._origin[chan_name][0]  # noqa: SLF001
 							out['process'][f't{p["tier"]}'].add(
 								ProcessMorpher(p, self.logger, self.templates, self.verbose) \
 									.scope_aliases(self.first_pass_config, dist_name) \
@@ -342,7 +354,7 @@ class ConfigBuilder:
 									.hash_t2_config(out) \
 									.enforce_t3_channel_selection(chan_name) \
 									.get(),
-								*fp_chan_collector._origin[chan_name]
+								*fp_chan_collector._origin[chan_name]  # noqa: SLF001
 							)
 						except Exception as ee:
 							morph_errors.append(p["name"])
@@ -358,11 +370,11 @@ class ConfigBuilder:
 					# Raw/Simple/Standard channel definition
 					# (encouraged behavior actually)
 					out['channel'].add(
-						chan_dict, *fp_chan_collector._origin[chan_name]
+						chan_dict, *fp_chan_collector._origin[chan_name]  # noqa: SLF001
 					)
 
 		if ext_resource:
-			with open(ext_resource, "r") as f:
+			with open(ext_resource) as f:
 				out['resource'].update(
 					yaml.safe_load(f)
 				)
@@ -406,7 +418,7 @@ class ConfigBuilder:
 		
 		d = {
 			'build': {
-				'date': (now := datetime.datetime.now()).strftime("%d/%m/%Y"),
+				'date': (now := datetime.datetime.now(tz=datetime.timezone.utc)).strftime("%d/%m/%Y"),
 				'time': now.strftime("%H:%M:%S"),
 				'by': getpass.getuser(),
 				'conda': os.environ.get('CONDA_DEFAULT_ENV') or False,
@@ -427,7 +439,7 @@ class ConfigBuilder:
 
 		dists: set[tuple[str, str | float | int]] = set()
 		for k in ('unit', 'channel'):
-			for kk, v in out[k]._origin.items():
+			for kk, v in out[k]._origin.items():  # noqa: SLF001
 				dists.add((v[0], v[1]))
 				out[k][kk]['distrib'] = v[0]
 				out[k][kk]['version'] = v[1]
@@ -436,7 +448,7 @@ class ConfigBuilder:
 		for tier in ("t0", "t1", "t2", "t3", "ops"):
 			for k in ('alias', 'process'):
 				if tier in out[k]:
-					for kk, v in out[k][tier]._origin.items():
+					for kk, v in out[k][tier]._origin.items():  # noqa: SLF001
 						dists.add((v[0], v[1]))
 						if k != 'alias':
 							out[k][tier][kk]['distrib'] = v[0]
@@ -462,7 +474,7 @@ class ConfigBuilder:
 		# Convert int keys to str (ensures JSON compatibility)
 		if json_serializable:
 
-			for k in [el for el in out['channel'].keys() if isinstance(el, str) and el.isdigit()]:
+			for k in [el for el in out['channel'] if isinstance(el, str) and el.isdigit()]:
 				out['channel'][str(k)] = out['channel'].pop(k)
 			for k in list(out['confid'].keys()):
 				out['confid'][str(k)] = out['confid'].pop(k)
@@ -478,7 +490,7 @@ class ConfigBuilder:
 
 		if save:
 
-			import pathlib # type: ignore
+			import pathlib  # type: ignore
 			path = pathlib.Path(save if isinstance(save, str) else 'ampel_conf.yaml')
 			with open(path, 'w') as file:
 				yaml.dump(d, file, sort_keys=False)
@@ -489,7 +501,7 @@ class ConfigBuilder:
 				path = path.rename(path.with_stem(f"{path.stem}_{h}"))
 
 			self.logger.break_aggregation()
-			with open(path, "r") as file:
+			with open(path) as file:
 				self.logger.info(f'Config file saved as {path} [{len(file.readlines())} lines]')
 
 		return d

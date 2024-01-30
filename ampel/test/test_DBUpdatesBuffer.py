@@ -1,7 +1,7 @@
-from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
+from pymongo import InsertOne
+
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
-from pymongo import UpdateOne, InsertOne
-from contextlib import contextmanager
+from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
 
 
 def test_metrics(dev_context, ampel_logger):

@@ -1,13 +1,12 @@
-import pytest
 import sys
-import yaml
-from pathlib import Path
+from collections.abc import Sequence
 from contextlib import contextmanager
+from pathlib import Path
 
-from typing import Sequence
-
-from pytest_mock import MockerFixture
+import pytest
+import yaml
 from mongomock import MongoClient
+from pytest_mock import MockerFixture
 
 from ampel.cli.main import main
 from ampel.cli.T2Command import T2Command
@@ -40,7 +39,7 @@ def dump(payload, tmpdir, name: str) -> Path:
     return f
 
 
-@pytest.fixture
+@pytest.fixture()
 def secrets():
     return {
         "mongo/writer": {"username": "writer", "password": "writer"},
@@ -48,12 +47,12 @@ def secrets():
     }
 
 
-@pytest.fixture
+@pytest.fixture()
 def vault(tmpdir, secrets):
     return dump(secrets, tmpdir, "secrets.yml")
 
 
-@pytest.fixture
+@pytest.fixture()
 def check_mongo_auth(mocker):
     def checky(*args, **kwargs):
         assert {"username", "password"}.issubset(kwargs.keys())
@@ -62,7 +61,7 @@ def check_mongo_auth(mocker):
     return mocker.patch("ampel.core.AmpelDB.MongoClient", side_effect=checky)
 
 
-@pytest.fixture
+@pytest.fixture()
 def ampel_cli_opts(testing_config, vault):
     return ["--secrets", str(vault), "--config", str(testing_config)]
 
@@ -71,7 +70,7 @@ def test_auth(ampel_cli_opts, check_mongo_auth):
 
     cli_op, sub_op = T2Command(), "reset"
     parser = cli_op.get_parser(sub_op)
-    args, unknown_args = parser.parse_known_args(ampel_cli_opts + [])
+    args, unknown_args = parser.parse_known_args(ampel_cli_opts)
 
     with pytest.raises(UnknownDatabase):
         cli_op.run(vars(args), unknown_args, sub_op)

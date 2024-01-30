@@ -7,16 +7,16 @@
 # Last Modified Date:  21.11.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Literal, Any
-from ampel.types import OneOrMany, Tag, ChannelId
-from ampel.base.AmpelABC import AmpelABC
-from ampel.base.decorator import abstractmethod
-from ampel.base.AmpelUnit import AmpelUnit
-from ampel.abstract.AbsDocIngester import AbsDocIngester
-from ampel.content.MetaRecord import MetaRecord
-from ampel.content.MetaActivity import MetaActivity
-from ampel.enum.MetaActionCode import MetaActionCode
+from typing import Any, Literal
 
+from ampel.abstract.AbsDocIngester import AbsDocIngester
+from ampel.base.AmpelABC import AmpelABC
+from ampel.base.AmpelUnit import AmpelUnit
+from ampel.base.decorator import abstractmethod
+from ampel.content.MetaActivity import MetaActivity
+from ampel.content.MetaRecord import MetaRecord
+from ampel.enum.MetaActionCode import MetaActionCode
+from ampel.types import ChannelId, OneOrMany, Tag
 
 # Alias
 ActivityRegister = dict[
@@ -42,7 +42,7 @@ class AbsCompiler(AmpelUnit, AmpelABC, abstract=True):
 
 		if self.tag:
 			self._ingest_tag_activity = {'action': MetaActionCode.ADD_INGEST_TAG}
-			if isinstance(self.tag, (str, int)):
+			if isinstance(self.tag, str | int):
 				self._tag = [self.tag]
 				self._ingest_tag_activity['tag'] = self.tag
 			else:
@@ -97,14 +97,13 @@ class AbsCompiler(AmpelUnit, AmpelABC, abstract=True):
 							# Raising an error is probably a bad idea actually
 							raise ValueError("Channel-less / channel-bound activity conflict [0]")
 
+						# Add current channel to previously registered activity
+						if isinstance(el['channel'], int | str):
+							g.add(el['channel'])
 						else:
-							# Add current channel to previously registered activity
-							if isinstance(el['channel'], (int, str)):
-								g.add(el['channel'])
-							else:
-								g.update(el['channel'])
+							g.update(el['channel'])
 					else:
-						ar[x] = {el['channel']} if isinstance(el['channel'], (int, str)) else set(el['channel'])
+						ar[x] = {el['channel']} if isinstance(el['channel'], int | str) else set(el['channel'])
 
 				# Channel-less activity
 				else:
@@ -170,7 +169,7 @@ class AbsCompiler(AmpelUnit, AmpelABC, abstract=True):
 					if el['action'] & MetaActionCode.ADD_CHANNEL:
 						add_chan_registered = True
 					ar[self._metactivity_key(el, {'channel'})] = (
-						{el['channel']} if isinstance(el['channel'], (int, str))
+						{el['channel']} if isinstance(el['channel'], int | str)
 						else set(el['channel'])
 					)
 				else: # Channel-less activity
@@ -214,10 +213,9 @@ class AbsCompiler(AmpelUnit, AmpelABC, abstract=True):
 
 				ad = dict(
 					sorted(
-						(
-							list(activity) +
-							[("channel", next(iter(chan)) if len(chan) == 1 else list(chan))]
-						)
+						[
+							*activity, ("channel", next(iter(chan)) if len(chan) == 1 else list(chan))
+						]
 						if chan else activity
 					)
 				)

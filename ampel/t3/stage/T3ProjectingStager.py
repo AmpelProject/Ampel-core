@@ -7,26 +7,26 @@
 # Last Modified Date:  17.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from time import time
 from collections.abc import Generator, Iterable, Sequence
 from itertools import islice
 from multiprocessing import JoinableQueue
 from multiprocessing.pool import ThreadPool
+from time import time
 
-from ampel.log import VERBOSE
-from ampel.types import StockId, UBson
-from ampel.struct.T3Store import T3Store
-from ampel.struct.UnitResult import UnitResult
-from ampel.struct.AmpelBuffer import AmpelBuffer
-from ampel.content.T3Document import T3Document
-from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.abstract.AbsT3Filter import AbsT3Filter
 from ampel.abstract.AbsT3Projector import AbsT3Projector
+from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.base.AuxUnitRegister import AuxUnitRegister
-from ampel.t3.stage.T3ThreadedStager import T3ThreadedStager
-from ampel.t3.stage.SimpleViewGenerator import BaseViewGenerator, SimpleViewGenerator
-from ampel.t3.stage.NoViewGenerator import NoViewGenerator
+from ampel.content.T3Document import T3Document
+from ampel.log import VERBOSE
 from ampel.model.t3.T3ProjectionDirective import T3ProjectionDirective
+from ampel.struct.AmpelBuffer import AmpelBuffer
+from ampel.struct.T3Store import T3Store
+from ampel.struct.UnitResult import UnitResult
+from ampel.t3.stage.NoViewGenerator import NoViewGenerator
+from ampel.t3.stage.SimpleViewGenerator import BaseViewGenerator, SimpleViewGenerator
+from ampel.t3.stage.T3ThreadedStager import T3ThreadedStager
+from ampel.types import StockId, UBson
 
 
 class RunBlock:
@@ -133,20 +133,17 @@ class T3ProjectingStager(T3ThreadedStager):
 					view_generator,
 					t3s
 				)
-			else:
-				return self.proceed_threaded(
-					self.run_blocks[0].units,
-					self.projected_buffer_generator(self.run_blocks[0], gen),
-					t3s
-				)
-		else:
 
-			if self.chunk_size <= 0:
-				raise ValueError("Chunking is required when multiple filter/projection blocks are defined")
+			return self.proceed_threaded(
+				self.run_blocks[0].units,
+				self.projected_buffer_generator(self.run_blocks[0], gen),
+				t3s
+			)
 
-			return self.multi_bla(gen, t3s)
-			#for gen in tee(data, len(self.run_blocks)):
-			# pass
+		if self.chunk_size <= 0:
+			raise ValueError("Chunking is required when multiple filter/projection blocks are defined")
+
+		return self.multi_bla(gen, t3s)
 
 
 	def projected_buffer_generator(self,
@@ -177,8 +174,7 @@ class T3ProjectingStager(T3ThreadedStager):
 
 					buffers = run_block.projector.project(buffers)
 
-				for el in buffers:
-					yield el
+				yield from buffers
 
 		except RuntimeError as e:
 			if "StopIteration" in str(e):
@@ -210,7 +206,7 @@ class T3ProjectingStager(T3ThreadedStager):
 				for rb in self.run_blocks:
 
 					# Number of view types for this this run block
-					rb.len_view_types = len({t3_unit._View for t3_unit in rb.units})
+					rb.len_view_types = len({t3_unit._View for t3_unit in rb.units})  # noqa: SLF001
 
 					# Subset of queues for this run block
 					rb.qvals = [q for u, q in queues.items() if u in rb.units]
@@ -218,9 +214,9 @@ class T3ProjectingStager(T3ThreadedStager):
 					# Optimize by potentially grouping units associated with the same view type
 					rb.qdict = {}
 					for unit in rb.units:
-						if unit.__class__._View not in rb.qdict:
-							rb.qdict[unit.__class__._View] = []
-						rb.qdict[unit.__class__._View].append(queues[unit])
+						if unit.__class__._View not in rb.qdict:  # noqa: SLF001
+							rb.qdict[unit.__class__._View] = []  # noqa: SLF001
+						rb.qdict[unit.__class__._View].append(queues[unit])  # noqa: SLF001
 
 
 				# Chunk input buffers (loaded from generator)
@@ -253,12 +249,14 @@ class T3ProjectingStager(T3ThreadedStager):
 					for q in queues.values():
 						q.put(None) # type: ignore[arg-type]
 
-					for async_res, generator, t3_unit in zip(async_results, generators, all_units):
+					for async_res, generator, t3_unit in zip(async_results, generators, all_units, strict=False):
 
 						# potential T3Record to be included in the T3Document
-						if (t3_unit_result := async_res.get()):
-							if (z := self.handle_t3_result(t3_unit, t3_unit_result, t3s, generator.stocks, ts)):
-								yield z
+						if (
+							(t3_unit_result := async_res.get()) and
+							(z := self.handle_t3_result(t3_unit, t3_unit_result, t3s, generator.stocks, ts))
+						):
+							yield z
 
 				if self.stock_updr.update_journal:
 					self.stock_updr.flush()

@@ -1,7 +1,12 @@
+import io
+import os
+import subprocess
+import tempfile
 from contextlib import nullcontext
-import io, pytest, yaml, subprocess, tempfile, os
 from pathlib import Path
 
+import pytest
+import yaml
 from pydantic import ValidationError
 
 from ampel.abstract.AbsEventUnit import AbsEventUnit
@@ -9,9 +14,8 @@ from ampel.base.BadConfig import BadConfig
 from ampel.config.builder.ConfigChecker import ConfigChecker
 from ampel.config.builder.ConfigValidator import ConfigValidator
 from ampel.core.UnitLoader import UnitLoader
-from ampel.util.mappings import set_by_path
-
 from ampel.test.test_JobCommand import run
+from ampel.util.mappings import set_by_path
 
 
 def test_build_config():
@@ -30,7 +34,7 @@ def test_build_config():
             ]
         )
     )
-    with open(tmp_file, "r") as f:
+    with open(tmp_file) as f:
         config = yaml.safe_load(f)
     assert ConfigValidator(config).validate() == config
 
@@ -72,8 +76,7 @@ def test_ConfigChecker(testing_config, monkeypatch):
     def get_class_by_name(name, *args, **kwargs):
         if name == "SideEffectLadenProcessor":
             return SideEffectLadenProcessor
-        else:
-            return UnitLoader.get_class_by_name(checker.loader, name, *args, **kwargs)
+        return UnitLoader.get_class_by_name(checker.loader, name, *args, **kwargs)
 
     monkeypatch.setattr(checker.loader, "get_class_by_name", get_class_by_name)
 
@@ -120,7 +123,7 @@ def test_transform_config(doc, tmpdir):
 
 
 @pytest.mark.parametrize(
-    "patch,result", [({}, None), ({"channel.LONG_CHANNEL.purge": {}}, ValidationError)]
+    ("patch","result"), [({}, None), ({"channel.LONG_CHANNEL.purge": {}}, ValidationError)]
 )
 def test_validate_config(testing_config, tmpdir, patch, result):
     """Validate validates config"""

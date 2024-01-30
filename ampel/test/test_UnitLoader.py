@@ -1,19 +1,19 @@
-from typing import Optional
-from ampel.base.LogicalUnit import LogicalUnit
-from ampel.model.ingest.CompilerOptions import CompilerOptions
-from ampel.secret.NamedSecret import NamedSecret
-from ampel.dev.DevAmpelContext import DevAmpelContext
+
 import pytest
 
-from ampel.secret.Secret import Secret
-from ampel.secret.DictSecretProvider import DictSecretProvider
-from ampel.secret.AmpelVault import AmpelVault
-from ampel.model.UnitModel import UnitModel
 from ampel.abstract.AbsOpsUnit import AbsOpsUnit
+from ampel.base.LogicalUnit import LogicalUnit
 from ampel.core.ContextUnit import ContextUnit
+from ampel.dev.DevAmpelContext import DevAmpelContext
+from ampel.model.ingest.CompilerOptions import CompilerOptions
+from ampel.model.UnitModel import UnitModel
+from ampel.secret.AmpelVault import AmpelVault
+from ampel.secret.DictSecretProvider import DictSecretProvider
+from ampel.secret.NamedSecret import NamedSecret
+from ampel.secret.Secret import Secret
 
 
-@pytest.fixture
+@pytest.fixture()
 def secrets():
     return DictSecretProvider(
         {
@@ -23,14 +23,14 @@ def secrets():
         }
     )
 
-@pytest.fixture
+@pytest.fixture()
 def secret_context(dev_context: DevAmpelContext, secrets, monkeypatch):
     monkeypatch.setattr(dev_context.loader, "vault", AmpelVault(providers=[secrets]))
     return dev_context
 
 
 @pytest.mark.parametrize(
-    "expected_type,key", [(dict, "dict"), (str, "str"), (tuple, "tuple")]
+    ("expected_type","key"), [(dict, "dict"), (str, "str"), (tuple, "tuple")]
 )
 def test_resolve_secrets_correct_type(
     dev_context: DevAmpelContext,
@@ -53,7 +53,7 @@ def test_resolve_secrets_correct_type(
 
 
 @pytest.mark.parametrize(
-    "expected_type,key", [(dict, "str"), (str, "tuple"), (tuple, "dict")]
+    ("expected_type","key"), [(dict, "str"), (str, "tuple"), (tuple, "dict")]
 )
 def test_resolve_secrets_wrong_type(
     secrets, dev_context: DevAmpelContext, monkeypatch, expected_type, key, ampel_logger
@@ -65,12 +65,12 @@ def test_resolve_secrets_wrong_type(
     
     vault = AmpelVault(providers=[secrets])
     s = Modelo(logger=ampel_logger).seekrit
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Secret not yet resolved"):
         s.get()
     assert vault.resolve_secret(s, expected_type) is False
     
     monkeypatch.setattr(dev_context.loader, "vault", vault)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=f"Could not resolve Modelo.seekrit as {expected_type.__name__:s}"):
         dev_context.loader.new(
             UnitModel(unit="Modelo"), logger=ampel_logger, unit_type=Modelo
         )
@@ -186,7 +186,7 @@ def test_use_secret_in_init(
                 self.seekrit.get() == secrets.store[self.seekrit.label]
             ), "secret is populated"
     
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Secret not yet resolved"):
         NeedsSecretInInit(logger=ampel_logger).seekrit.get()
 
     dev_context.register_unit(NeedsSecretInInit)
@@ -234,8 +234,8 @@ def test_unit_validation(dev_context: DevAmpelContext):
         # recursive validation
         UnitModel(unit="T3Processor", config=t3_config)
 
-        with pytest.raises(TypeError):
-            t3_config["supply"]["config"]["select"]["unit"] = "NotActuallyAUnit" # type: ignore
+        t3_config["supply"]["config"]["select"]["unit"] = "NotActuallyAUnit" # type: ignore
+        with pytest.raises(TypeError, match=".*Ampel unit not found: NotActuallyAUnit.*"):
             UnitModel(unit="T3Processor", config=t3_config)
 
 
@@ -243,7 +243,7 @@ def test_compiler_options_validation(mock_context: DevAmpelContext):
     """AuxAliasableUnit can be intialized from a string"""
 
     class Dummy(LogicalUnit):
-        compiler_options: Optional[CompilerOptions]
+        compiler_options: None | CompilerOptions
 
     mock_context.register_unit(Dummy)
 
@@ -262,6 +262,6 @@ def test_result_adapter_trace(mock_context: DevAmpelContext):
     u1 = mock_context.loader.new_context_unit(model, mock_context, run_id=1)
     u2 = mock_context.loader.new_context_unit(model, mock_context, run_id=2)
     assert (
-        u1._get_trace_content() == u2._get_trace_content()
+        u1._get_trace_content() == u2._get_trace_content()  # noqa: SLF001
     ), "trace content is identical for different run_id"
-    assert u1._trace_id == u2._trace_id, "trace id is identical for different run_id"
+    assert u1._trace_id == u2._trace_id, "trace id is identical for different run_id"  # noqa: SLF001

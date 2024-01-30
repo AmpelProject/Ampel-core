@@ -7,17 +7,18 @@
 # Last Modified Date:  04.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from datetime import datetime
-from typing import Annotated
 from collections.abc import Sequence
-from ampel.model.UnitModel import UnitModel
+from datetime import datetime, timezone
+from typing import Annotated
+
 from ampel.abstract.AbsEventUnit import AbsEventUnit
-from ampel.abstract.AbsT4Unit import AbsT4Unit
 from ampel.abstract.AbsT4ControlUnit import AbsT4ControlUnit
-from ampel.core.EventHandler import EventHandler
-from ampel.core.DocBuilder import DocBuilder
-from ampel.log import AmpelLogger, LogFlag, SHOUT
+from ampel.abstract.AbsT4Unit import AbsT4Unit
 from ampel.content.T4Document import T4Document
+from ampel.core.DocBuilder import DocBuilder
+from ampel.core.EventHandler import EventHandler
+from ampel.log import SHOUT, AmpelLogger, LogFlag
+from ampel.model.UnitModel import UnitModel
 
 
 class T4Processor(AbsEventUnit, DocBuilder):
@@ -62,7 +63,7 @@ class T4Processor(AbsEventUnit, DocBuilder):
 
 				logger.log(SHOUT, f'Running {self.process_name}', extra={'unit': t4_unit.__class__.__name__})
 
-				ts = datetime.now().timestamp()
+				ts = datetime.now(tz=timezone.utc).timestamp()
 
 				if isinstance(t4_unit, AbsT4Unit):
 

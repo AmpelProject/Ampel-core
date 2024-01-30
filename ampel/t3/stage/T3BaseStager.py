@@ -7,24 +7,23 @@
 # Last Modified Date:  03.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+from collections.abc import Generator
 from time import time
 from typing import Any
-from collections.abc import Generator
 
-from ampel.types import ChannelId, Traceless, OneOrMany, Tag, UBson, StockId
 from ampel.abstract.AbsT3Stager import AbsT3Stager
 from ampel.abstract.AbsT3Unit import AbsT3Unit, T
-from ampel.abstract.AbsUnitResultAdapter import AbsUnitResultAdapter
-from ampel.log.AmpelLogger import AmpelLogger
-from ampel.core.EventHandler import EventHandler
+from ampel.content.T3Document import T3Document
 from ampel.core.DocBuilder import DocBuilder
+from ampel.core.EventHandler import EventHandler
+from ampel.enum.JournalActionCode import JournalActionCode
+from ampel.log.AmpelLogger import AmpelLogger
 from ampel.model.UnitModel import UnitModel
+from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
 from ampel.struct.T3Store import T3Store
 from ampel.struct.UnitResult import UnitResult
-from ampel.content.T3Document import T3Document
-from ampel.enum.JournalActionCode import JournalActionCode
-from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
 from ampel.t3.stage.BaseViewGenerator import BaseViewGenerator
+from ampel.types import ChannelId, OneOrMany, StockId, Tag, Traceless, UBson
 from ampel.util.mappings import dictify
 
 
@@ -141,9 +140,11 @@ class T3BaseStager(AbsT3Stager, DocBuilder, abstract=True):
 		try:
 			self.logger.info("Running T3 unit", extra={'unit': t3_unit.__class__.__name__})
 			ts = time()
-			if (ret := t3_unit.process(view_generator, t3s)) or self.save_stock_ids:
-				if x := self.handle_t3_result(t3_unit, ret, t3s, view_generator.get_stock_ids(), ts):
-					yield x
+			if (
+				((ret := t3_unit.process(view_generator, t3s)) or self.save_stock_ids) and
+				(x := self.handle_t3_result(t3_unit, ret, t3s, view_generator.get_stock_ids(), ts))
+			):
+				yield x
 		except Exception as e:
 			self.event_hdlr.handle_error(e, self.logger)
 		finally:

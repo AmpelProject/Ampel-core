@@ -8,12 +8,13 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from collections.abc import Generator
-from ampel.types import UBson, T3Send
+
 from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.struct.JournalAttributes import JournalAttributes
-from ampel.struct.UnitResult import UnitResult
-from ampel.view.SnapView import SnapView
 from ampel.struct.T3Store import T3Store
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import T3Send, UBson
+from ampel.view.SnapView import SnapView
 
 
 class DemoT3Unit(AbsT3Unit[SnapView]):
@@ -27,7 +28,7 @@ class DemoT3Unit(AbsT3Unit[SnapView]):
 
 		self.logger.info(f"DemoT3Unit output (parameter={self.parameter}):")
 
-		for i, v in enumerate(gen, 1):
+		for v in gen:
 
 			self.logger.info("id: " + str(v.id))
 			gen.send(

@@ -7,36 +7,49 @@
 # Last Modified Date:  05.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import tempfile, ujson, yaml, io, os, signal, sys, \
-	subprocess, platform, shutil, filecmp, psutil, pkg_resources
-from time import time, sleep
-from multiprocessing import Queue, Process
+import filecmp
+import io
+import os
+import platform
+import shutil
+import signal
+import subprocess
+import sys
+import tempfile
 from argparse import ArgumentParser
-from typing import Any, Type
 from collections.abc import Sequence
+from contextlib import suppress
+from multiprocessing import Process, Queue
+from time import sleep, time
+from typing import Any
+
+import pkg_resources
+import psutil
+import ujson
+import yaml
+
 from ampel.abstract.AbsEventUnit import AbsEventUnit
-from ampel.model.UnitModel import UnitModel
-from ampel.core.EventHandler import EventHandler
+from ampel.cli.AbsCoreCommand import AbsCoreCommand
+from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
+from ampel.cli.config import get_user_data_config_path
+from ampel.cli.MaybeIntAction import MaybeIntAction
+from ampel.cli.utils import _maybe_int
 from ampel.core.AmpelContext import AmpelContext
+from ampel.core.EventHandler import EventHandler
 from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogFlag import LogFlag
-from ampel.util.freeze import recursive_freeze
-from ampel.util.hash import build_unsafe_dict_id
-from ampel.util.distrib import get_dist_names
-from ampel.util.collections import try_reduce
-from ampel.util.template import apply_templates
-from ampel.util.pretty import prettyjson
-from ampel.cli.config import get_user_data_config_path
-from ampel.cli.utils import _maybe_int
-from ampel.cli.AbsCoreCommand import AbsCoreCommand
-from ampel.cli.MaybeIntAction import MaybeIntAction
-from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
 from ampel.model.job.JobModel import JobModel
 from ampel.model.job.JobTaskModel import JobTaskModel
-from ampel.util.pretty import out_stack, get_time_delta
+from ampel.model.UnitModel import UnitModel
+from ampel.util.collections import try_reduce
 from ampel.util.debug import MockPool
+from ampel.util.distrib import get_dist_names
+from ampel.util.freeze import recursive_freeze
 from ampel.util.getch import yes_no
+from ampel.util.hash import build_unsafe_dict_id
+from ampel.util.pretty import get_time_delta, out_stack, prettyjson
+from ampel.util.template import apply_templates
 
 
 class JobCommand(AbsCoreCommand):
@@ -153,9 +166,11 @@ class JobCommand(AbsCoreCommand):
 			"""
 			import multiprocessing
 			multiprocessing.__dict__['Pool'] = MockPool
-			if not args['no_agg']:
-				if yes_no('Set -no-agg option too (required for matplotlib interactions)'):
-					args['no_agg'] = True
+			if (
+				not args['no_agg'] and
+				yes_no('Set -no-agg option too (required for matplotlib interactions)')
+			):
+				args['no_agg'] = True
 
 		if not args['no_agg']:
 			try:
@@ -206,7 +221,7 @@ class JobCommand(AbsCoreCommand):
 		if args.get('edit') == 'raw':
 
 			if schema_paths:
-				for sfile in list(schema_paths):
+				for sfile in schema_paths:
 					_, fname = tempfile.mkstemp(suffix='.yml', text=True)
 					shutil.copyfile(sfile, fname)
 					edit_job(fname)
@@ -239,7 +254,7 @@ class JobCommand(AbsCoreCommand):
 		if args.get('edit') == 'parsed':
 			fd, fname = tempfile.mkstemp(suffix='.yml')
 			# Seems fd does not work with yaml.dump(), unsure why
-			with open(fname, 'wt') as f:
+			with open(fname, "w") as f:
 				yaml.dump(
 					ujson.loads(job.json(exclude_unset=True)), f,
 					sort_keys=False, default_flow_style=None
@@ -265,7 +280,7 @@ class JobCommand(AbsCoreCommand):
 					if k not in os.environ:
 						logger.info(f'Environment variable {k}={v} required')
 						return
-					elif v and v != _maybe_int(os.environ[k]):
+					if v and v != _maybe_int(os.environ[k]):
 						logger.info(
 							f'Environment variable {k} value mismatch:\n'
 							f' required: {v} ({type(v)})\n'
@@ -313,12 +328,15 @@ class JobCommand(AbsCoreCommand):
 				logger.info(f'Please install {try_reduce(missing)} to run this job\n')
 				return # raise ValueError ?
 
-		if not args['config'] and not os.path.exists(get_user_data_config_path()):
-			if yes_no('Config seems to be missing, build and install'):
-				from ampel.cli.ConfigCommand import ConfigCommand
-				cc = ConfigCommand()
-				a, ua = cc.get_parser('install').parse_known_args()
-				cc.run(vars(a), ua, sub_op = 'install')
+		if (
+			not args['config'] and
+			not os.path.exists(get_user_data_config_path()) and
+			yes_no('Config seems to be missing, build and install')
+		):
+			from ampel.cli.ConfigCommand import ConfigCommand
+			cc = ConfigCommand()
+			a, ua = cc.get_parser('install').parse_known_args()
+			cc.run(vars(a), ua, sub_op = 'install')
 
 		s = f'Running job {job.name or schema_descr}'
 		logger.info(s, extra={'pid': os.getpid()})
@@ -346,7 +364,7 @@ class JobCommand(AbsCoreCommand):
 			one_db = True
 		)
 
-		config_dict = ctx.config._config
+		config_dict = ctx.config._config  # noqa: SLF001
 
 		# Check for outdated config
 		if 'build' in config_dict and not args['no_conf_check']:
@@ -380,7 +398,7 @@ class JobCommand(AbsCoreCommand):
 						break
 
 		self._patch_config(config_dict, job, logger)
-		ctx.config._config = recursive_freeze(config_dict)
+		ctx.config._config = recursive_freeze(config_dict)  # noqa: SLF001
 
 		# Ensure that job content saved in DB reflects options set dynamically
 		if args['task']:
@@ -398,20 +416,18 @@ class JobCommand(AbsCoreCommand):
 		if args.get('edit') == 'model':
 			fd, fname = tempfile.mkstemp(suffix='.yml')
 			# Seems fd does not work with yaml.dump(), unsure why
-			with open(fname, 'wt') as f:
+			with open(fname, "w") as f:
 				yaml.dump(job_dict, f, sort_keys=False, default_flow_style=None)
 			edit_job(fname)
 			tmp_files.append(fname)
-			with open(fname, 'rt') as f:
+			with open(fname) as f:
 				job_dict = yaml.safe_load(f)
 			jtasks = job_dict['task']
 
 		if args.get('edit') and not args.get('keep_edits'):
 			for el in tmp_files:
-				try:
+				with suppress(BaseException):
 					os.unlink(el)
-				except BaseException:
-					pass
 
 		if (wpid := args['wait_pid']) and psutil.pid_exists(wpid):
 			logger.info(f'Waiting until process with PID {wpid} completes')
@@ -455,8 +471,7 @@ class JobCommand(AbsCoreCommand):
 				cmd.append('-debug')
 
 			print(
-				'%s\n%s command: %s' %
-				('-' * 40, 'Executing' if args.get('show_plots') else 'Plot', " ".join(cmd))
+				f"{'-'*40}\n{'Executing' if args.get('show_plots') else 'Plot'} command: {' '.join(cmd)}"
 			)
 
 			if args.get('show_plots'):
@@ -489,7 +504,7 @@ class JobCommand(AbsCoreCommand):
 			process_name = f'{job.name or schema_descr}#{i}'
 
 			if isinstance(taskd.get('template', None), dict) and 'live' in taskd['template']:
-				taskd = apply_templates(ctx, taskd['template']['live'], taskd, logger)
+				taskd = apply_templates(ctx, taskd['template']['live'], taskd, logger)  # noqa: PLW2901
 				del taskd['template']
 
 			if 'title' in taskd:
@@ -509,21 +524,21 @@ class JobCommand(AbsCoreCommand):
 					signal.signal(signal.SIGINT, signal_handler)
 					signal.signal(signal.SIGTERM, signal_handler)
 
-					for item in range(multiplier):
+					for _ in range(multiplier):
 						result_queue: Queue = Queue()
 						p = Process(
 							target = run_mp_process,
-							args = (result_queue, ctx.config._config, taskd, process_name),
+							args = (result_queue, ctx.config._config, taskd, process_name),  # noqa: SLF001
 							daemon = True
 						)
 						p.start()
 						process_queues.append(p)
 						result_queues.append(result_queue)
 					
-					for i, (p, r1) in enumerate(zip(process_queues, result_queues)):
+					for replica, (p, r1) in enumerate(zip(process_queues, result_queues, strict=False)):
 						p.join()
 						if (m := r1.get()):
-							logger.info(f'{taskd["unit"]}#{i} return value: {m}')
+							logger.info(f'{taskd["unit"]}#{replica} return value: {m}')
 
 				except KeyboardInterrupt:
 					sys.exit(1)
@@ -621,7 +636,7 @@ class JobCommand(AbsCoreCommand):
 		schema_paths: None | Sequence[str] = None,
 		schema_content: None | str = None,
 		compute_sig: bool = True,
-		Model: Type = JobModel
+		Model: type = JobModel
 	) -> tuple[None, None] | tuple[JobModel, int]:
 
 		if not (schema_paths or schema_content):
@@ -629,13 +644,13 @@ class JobCommand(AbsCoreCommand):
 
 		if schema_paths:
 			content = io.StringIO()
-			for i, job_fname in enumerate(schema_paths):
+			for _, job_fname in enumerate(schema_paths):
 
 				if not os.path.exists(job_fname):
 					with out_stack():
 						raise FileNotFoundError(f'Job file not found: "{job_fname}"\n')
 
-				with open(job_fname, 'r') as f:
+				with open(job_fname) as f:
 					content.write('\n'.join(f.readlines()))
 
 			content.seek(0)

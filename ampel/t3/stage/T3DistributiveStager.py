@@ -7,15 +7,15 @@
 # Last Modified Date:  09.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from time import time
-from itertools import cycle
 from collections.abc import Generator
+from itertools import cycle
 from multiprocessing.pool import ThreadPool
+from time import time
 
-from ampel.struct.T3Store import T3Store
+from ampel.content.T3Document import T3Document
 from ampel.model.UnitModel import UnitModel
 from ampel.struct.AmpelBuffer import AmpelBuffer
-from ampel.content.T3Document import T3Document
+from ampel.struct.T3Store import T3Store
 from ampel.t3.stage.T3ThreadedStager import T3ThreadedStager
 
 
@@ -59,7 +59,7 @@ class T3DistributiveStager(T3ThreadedStager):
 
 				# Create queues and generators for all instanciated t3 units
 				queues, generators, async_results = self.create_threaded_generators(pool, self.t3_units, t3s)
-				View = self.t3_units[0]._View
+				View = self.t3_units[0]._View  # noqa: SLF001
 				qs = queues.values()
 				iqs = cycle(qs)
 
@@ -75,17 +75,19 @@ class T3DistributiveStager(T3ThreadedStager):
 				for q in qs:
 					q.put(None) # type: ignore[arg-type]
 
-				for i, (async_res, generator, t3_unit) in enumerate(zip(async_results, generators, self.t3_units)):
+				for i, (async_res, generator, t3_unit) in enumerate(zip(async_results, generators, self.t3_units, strict=False)):
 
 					# potential T3Record to be included in the T3Document
-					if (t3_unit_result := async_res.get()):
-						if (d := self.handle_t3_result(
+					if (
+						(t3_unit_result := async_res.get()) and
+						(d := self.handle_t3_result(
 							t3_unit, t3_unit_result, t3s, generator.stocks, ts,
 							log_extra={'thread': i} if self.log_extra else None
-						)):
-							if self.save_stock_ids:
-								d['stock'] = generator.stocks
-							yield d
+						))
+					):
+						if self.save_stock_ids:
+							d['stock'] = generator.stocks
+						yield d
 
 				if self.stock_updr.update_journal:
 					self.stock_updr.flush()

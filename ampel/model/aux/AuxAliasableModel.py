@@ -7,7 +7,7 @@
 # Last Modified Date: Unspecified
 # Last Modified By  : jvs
 
-from typing import Any, Type
+from typing import Any
 
 from pydantic import model_validator
 
@@ -22,10 +22,9 @@ class AuxAliasableModel(AmpelBaseModel):
 	"""
 
 	@model_validator(mode="before")
-	def resolve_alias(cls: Type["AuxAliasableModel"], value: Any) -> dict[str, Any]:
+	def resolve_alias(cls: type["AuxAliasableModel"], value: Any) -> dict[str, Any]:
 		if isinstance(value, str):
-			if value in AuxUnitRegister._defs:
+			if value in AuxUnitRegister._defs:  # noqa: SLF001
 				return AuxUnitRegister.new_unit(model=UnitModel(unit=value), sub_type=cls).model_dump()
-			else:
-				raise ValueError(f"{cls.__name__} '{value}' not registered")
+			raise ValueError(f"{cls.__name__} '{value}' not registered")
 		return value

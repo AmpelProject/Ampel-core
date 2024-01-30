@@ -7,12 +7,14 @@
 # Last Modified Date:  10.09.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from itertools import islice
-from collections.abc import Sequence as sequence, Iterable as iterable, Sized as sized
-from typing import Any
 from collections.abc import Generator, Iterable
+from collections.abc import Iterable as iterable
+from collections.abc import Sequence as sequence
+from collections.abc import Sized as sized
+from itertools import islice
+from typing import Any
 
-from ampel.types import strict_iterable, StrictIterable, T
+from ampel.types import StrictIterable, T, strict_iterable
 
 
 def ampel_iter(arg: Any) -> Any:
@@ -20,7 +22,7 @@ def ampel_iter(arg: Any) -> Any:
 	-> suppresses python3 treatment of str as iterable (a questionable choice)
 	-> Makes None iterable
 	"""
-	return [arg] if isinstance(arg, (type(None), str, int, bytes, bytearray)) else arg
+	return [arg] if isinstance(arg, type(None) | str | int | bytes | bytearray) else arg
 
 
 def get_chunks(seq: Iterable[T], n: int) -> Generator[list[T], None, None]:
@@ -102,7 +104,7 @@ def to_list(arg: int | str | bytes | bytearray | list | Iterable) -> list:
 	"""
 	raises ValueError is arg is not int, str, bytes, bytearray, list, or Iterable
 	"""
-	if isinstance(arg, (int, str, bytes, bytearray)):
+	if isinstance(arg, int | str | bytes | bytearray):
 		return [arg]
 	if isinstance(arg, list):
 		return arg
@@ -162,9 +164,8 @@ def has_nested_type(obj: StrictIterable, target_type: type, strict: bool = True)
 		# pylint: disable=unidiomatic-typecheck
 		if type(obj) is target_type:
 			return True
-	else:
-		if isinstance(obj, target_type):
-			return True
+	elif isinstance(obj, target_type):
+		return True
 
 	if isinstance(obj, dict):
 		for el in obj.values():

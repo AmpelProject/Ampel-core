@@ -7,15 +7,17 @@
 # Last Modified Date:  21.11.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from ujson import encode
 from typing import Any
-from ampel.types import ChannelId, Tag, StockId
-from ampel.content.StockDocument import StockDocument
-from ampel.content.JournalRecord import JournalRecord
-from ampel.abstract.AbsDocIngester import AbsDocIngester
+
+from ujson import encode
+
 from ampel.abstract.AbsCompiler import AbsCompiler
+from ampel.abstract.AbsDocIngester import AbsDocIngester
 from ampel.abstract.AbsIdMapper import AbsIdMapper
 from ampel.base.AuxUnitRegister import AuxUnitRegister
+from ampel.content.JournalRecord import JournalRecord
+from ampel.content.StockDocument import StockDocument
+from ampel.types import ChannelId, StockId, Tag
 
 
 class StockCompiler(AbsCompiler):
@@ -67,7 +69,7 @@ class StockCompiler(AbsCompiler):
 		if tag:
 			if 'tag' not in d:
 				d['tag'] = set()
-			if isinstance(tag, (str, int)):
+			if isinstance(tag, str | int):
 				d['tag'].add(tag)
 			else:
 				d['tag'].update(tag)
@@ -83,7 +85,7 @@ class StockCompiler(AbsCompiler):
 		Note that we let the ingester handle 'tied' and 'upd' time values
 		"""
 
-		for k, v in self.register.items():
+		for v in self.register.values():
 
 			d: StockDocument = {
 				'stock': v['stock'],

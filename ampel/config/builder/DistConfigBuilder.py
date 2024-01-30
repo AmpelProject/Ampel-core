@@ -7,15 +7,23 @@
 # Last Modified Date:  18.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import json, yaml, pkg_resources, os, re
-from typing import Any
+import json
+import os
+import re
+from collections.abc import Callable, Sequence
 from functools import partial
-from collections.abc import Callable
-from pkg_resources import EggInfoDistribution, DistInfoDistribution # type: ignore[attr-defined]
+from typing import Any
+
+import pkg_resources
+import yaml
+from pkg_resources import (  # type: ignore[attr-defined]
+	DistInfoDistribution,
+	EggInfoDistribution,
+)
 
 from ampel.config.builder.ConfigBuilder import ConfigBuilder
+from ampel.log import SHOUT, VERBOSE
 from ampel.util.distrib import get_dist_names, get_files
-from ampel.log import VERBOSE, SHOUT
 
 
 class DistConfigBuilder(ConfigBuilder):
@@ -25,9 +33,9 @@ class DistConfigBuilder(ConfigBuilder):
 	"""
 
 	def load_distributions(self,
-		prefixes: list[str] = ["pyampel-", "ampel-"],
-		conf_dirs: list[str] = ["conf"],
-		exts: list[str] = ["json", "yaml", "yml"],
+		prefixes: Sequence[str] = ("pyampel-", "ampel-"),
+		conf_dirs: Sequence[str] = ("conf",),
+		exts: Sequence[str] = ("json", "yaml", "yml"),
 		raise_exc: bool = True,
 		exclude: None | list[str] = None
 	) -> None:
@@ -81,7 +89,7 @@ class DistConfigBuilder(ConfigBuilder):
 		try:
 
 			distrib = pkg_resources.get_distribution(dist_name)
-			all_conf_files = get_files(dist_name, conf_dir, re.compile(rf".*\.{ext}$")) # noqa
+			all_conf_files = get_files(dist_name, conf_dir, re.compile(rf".*\.{ext}$"))
 
 			if all_conf_files and self.verbose:
 				self.logger.log(VERBOSE, "Following conf files will be parsed:")
@@ -101,7 +109,7 @@ class DistConfigBuilder(ConfigBuilder):
 						self.load_conf_using_func(distrib, f, self.first_pass_config[key].add)
 
 			# ("channel", "mongo", "resource")
-			for key in self.first_pass_config.conf_keys.keys():
+			for key in self.first_pass_config.conf_keys:
 				if key == "alias":
 					continue
 				if section_conf_file := self.get_conf_file(all_conf_files, f"{key}.{ext}"):

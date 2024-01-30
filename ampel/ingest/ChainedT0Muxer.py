@@ -1,8 +1,7 @@
-from ampel.types import DataPointId, StockId
-from ampel.content.DataPoint import DataPoint
-
 from ampel.abstract.AbsT0Muxer import AbsT0Muxer
+from ampel.content.DataPoint import DataPoint
 from ampel.model.UnitModel import UnitModel
+from ampel.types import DataPointId, StockId
 
 
 class ChainedT0Muxer(AbsT0Muxer):

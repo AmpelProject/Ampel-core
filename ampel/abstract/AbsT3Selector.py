@@ -7,8 +7,9 @@
 # Last Modified Date:  17.02.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import ClassVar
 from collections.abc import Iterable
+from typing import ClassVar
+
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
 from ampel.core.ContextUnit import ContextUnit

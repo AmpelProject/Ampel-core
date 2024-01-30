@@ -8,44 +8,43 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import random
+from collections.abc import Sequence
 from math import ceil
 from time import time
-from bson import ObjectId
-from importlib import import_module
-from typing import Union, Any, ClassVar, Literal
-from collections.abc import Sequence
+from typing import Any, ClassVar, Literal, Union
 
-from ampel.types import T, OneOrMany, UBson, ubson
-from ampel.struct.UnitResult import UnitResult
-from ampel.enum.DocumentCode import DocumentCode
-from ampel.enum.MetaActionCode import MetaActionCode
-from ampel.enum.JournalActionCode import JournalActionCode
-from ampel.content.StockDocument import StockDocument
-from ampel.content.DataPoint import DataPoint
-from ampel.content.T1Document import T1Document
-from ampel.content.T2Document import T2Document
-from ampel.base.BadConfig import BadConfig
-from ampel.log import AmpelLogger
-from ampel.log.utils import convert_dollars
-from ampel.log.utils import report_exception, report_error
-from ampel.abstract.AbsStockT2Unit import AbsStockT2Unit
+from bson import ObjectId
+
+from ampel.abstract.AbsCustomStateT2Unit import AbsCustomStateT2Unit
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.abstract.AbsStateT2Unit import AbsStateT2Unit
-from ampel.abstract.AbsCustomStateT2Unit import AbsCustomStateT2Unit
-from ampel.abstract.AbsTiedT2Unit import AbsTiedT2Unit
+from ampel.abstract.AbsStockT2Unit import AbsStockT2Unit
+from ampel.abstract.AbsTiedCustomStateT2Unit import AbsTiedCustomStateT2Unit, U
 from ampel.abstract.AbsTiedPointT2Unit import AbsTiedPointT2Unit
 from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.abstract.AbsTiedStockT2Unit import AbsTiedStockT2Unit
-from ampel.abstract.AbsTiedCustomStateT2Unit import AbsTiedCustomStateT2Unit, U
+from ampel.abstract.AbsTiedT2Unit import AbsTiedT2Unit
 from ampel.abstract.AbsWorker import AbsWorker, register_stats
 from ampel.base.AmpelBaseModel import AmpelBaseModel
-from ampel.model.UnitModel import UnitModel
+from ampel.base.BadConfig import BadConfig
+from ampel.content.DataPoint import DataPoint
+from ampel.content.StockDocument import StockDocument
+from ampel.content.T1Document import T1Document
+from ampel.content.T2Document import T2Document
+from ampel.enum.DocumentCode import DocumentCode
+from ampel.enum.JournalActionCode import JournalActionCode
+from ampel.enum.MetaActionCode import MetaActionCode
+from ampel.log import AmpelLogger
+from ampel.log.utils import convert_dollars, report_error, report_exception
 from ampel.model.StateT2Dependency import StateT2Dependency
-from ampel.mongo.utils import maybe_match_array
+from ampel.model.UnitModel import UnitModel
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
+from ampel.mongo.utils import maybe_match_array
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import OneOrMany, T, UBson, ubson
 from ampel.view.T2DocView import T2DocView
 
-AbsT2 = Union[
+AbsT2 = Union[ # noqa: UP007
 	AbsStockT2Unit, AbsPointT2Unit, AbsStateT2Unit, AbsTiedPointT2Unit,
 	AbsTiedStateT2Unit, AbsCustomStateT2Unit[T], AbsTiedCustomStateT2Unit[T, U]
 ]
@@ -171,7 +170,7 @@ class T2Worker(AbsWorker[T2Document]):
 			# New (channel-less) journal entry for the associated stock document
 			trace_id = (
 				({'t2worker': self._trace_id} if self._trace_id else {}) |
-				({'t2unit': t2_unit._trace_id} if t2_unit._trace_id else {})
+				({'t2unit': t2_unit._trace_id} if t2_unit._trace_id else {})  # noqa: SLF001
 			)
 
 			jrec = stock_updr.add_journal_record(
@@ -185,7 +184,7 @@ class T2Worker(AbsWorker[T2Document]):
 			# New meta entry (code appended later)
 			meta = self.gen_meta(
 				stock_updr.run_id,
-				t2_unit._trace_id,
+				t2_unit._trace_id,  # noqa: SLF001
 				round(now - before_run, 3),
 				MetaActionCode.BUMP_STOCK_UPD
 			)
@@ -257,7 +256,7 @@ class T2Worker(AbsWorker[T2Document]):
 				)
 
 			# Update stock document
-			if len(stock_updr._updates) >= self.updates_buffer_size:
+			if len(stock_updr._updates) >= self.updates_buffer_size:  # noqa: SLF001
 				stock_updr.flush()
 
 		except Exception as e:
@@ -267,7 +266,7 @@ class T2Worker(AbsWorker[T2Document]):
 
 			self._processing_error(
 				logger, doc, None, exception=e, msg='An exception occured',
-				meta = self.gen_meta(stock_updr.run_id, t2_unit._trace_id, round(now - before_run, 3))
+				meta = self.gen_meta(stock_updr.run_id, t2_unit._trace_id, round(now - before_run, 3))  # noqa: SLF001
 			)
 			code = DocumentCode.EXCEPTION
 
@@ -283,7 +282,7 @@ class T2Worker(AbsWorker[T2Document]):
 	# NB: spell out union arg to ensure a common context for the TypeVar T
 	def load_input_docs(self,
 		t2_unit: AbsT2, t2_doc: T2Document, logger: AmpelLogger, stock_updr: MongoStockUpdater
-	) -> Union[
+	) -> Union[ # noqa: UP007
 		None,
 		UnitResult,                                              # Error / missing dependency
 		DataPoint,                                               # point t2
@@ -314,9 +313,9 @@ class T2Worker(AbsWorker[T2Document]):
 		# State bound T2 units require loading of compound doc and datapoints
 		if isinstance(
 			t2_unit, (
-				AbsStateT2Unit,
-				AbsCustomStateT2Unit,
-				AbsTiedStateT2Unit,
+				AbsStateT2Unit |
+				AbsCustomStateT2Unit |
+				AbsTiedStateT2Unit |
 				AbsTiedCustomStateT2Unit
 			)
 		):
@@ -429,15 +428,13 @@ class T2Worker(AbsWorker[T2Document]):
 				# instance of AbsTiedCustomStateT2Unit
 				return custom_state, qres
 
-			else:
+			if isinstance(t2_unit, AbsStateT2Unit):
+				return t1_doc, dps
 
-				if isinstance(t2_unit, AbsStateT2Unit):
-					return t1_doc, dps
+			# instance of AbsCustomStateT2Unit
+			return (t2_unit.build(t1_doc, dps), )
 
-				else: # instance of AbsCustomStateT2Unit
-					return (t2_unit.build(t1_doc, dps), )
-
-		elif isinstance(t2_unit, AbsStockT2Unit):
+		if isinstance(t2_unit, AbsStockT2Unit):
 
 			if doc := next(self.col_stock.find({'stock': t2_doc['link']}), None):
 				return (doc, )
@@ -449,7 +446,7 @@ class T2Worker(AbsWorker[T2Document]):
 				)
 			return UnitResult(code=DocumentCode.T2_UNKNOWN_LINK)
 
-		elif isinstance(t2_unit, (AbsPointT2Unit, AbsTiedPointT2Unit)):
+		if isinstance(t2_unit, AbsPointT2Unit | AbsTiedPointT2Unit):
 
 			if doc := next(self.col_t0.find({'id': t2_doc['link']}), None):
 				if isinstance(t2_unit, AbsTiedPointT2Unit):
@@ -476,12 +473,10 @@ class T2Worker(AbsWorker[T2Document]):
 				)
 			return UnitResult(code=DocumentCode.T2_UNKNOWN_LINK)
 
-		else:
-
-			report_error(
-				self._ampel_db, msg='Unknown T2 unit type',
-				logger=logger, info={'doc': t2_doc}
-			)
+		report_error(
+			self._ampel_db, msg='Unknown T2 unit type',
+			logger=logger, info={'doc': t2_doc}
+		)
 
 		return None
 
@@ -562,7 +557,7 @@ class T2Worker(AbsWorker[T2Document]):
 							}
 						)
 					return UnitResult(code=DocumentCode.T2_PENDING_DEPENDENCY)
-				elif view.get_payload() is None:
+				if view.get_payload() is None:
 					logger.error(
 						'Dependent T2 unit failed',
 						extra={
@@ -626,13 +621,13 @@ class T2Worker(AbsWorker[T2Document]):
 			if 'AbsPointT2Unit' in t2_unit_info['base']:
 				raise BadConfig('Tied stock T2 cannot be linked with point T2s')
 
-			elif 'AbsStockT2Unit' in t2_unit_info['base']:
+			if 'AbsStockT2Unit' in t2_unit_info['base']:
 				d['link'] = t2_doc['stock']
 
 			else: # State T2
 				raise BadConfig('Tied stock T2 cannot be linked with state T2s')
 
-		if isinstance(t2_unit, (AbsTiedStateT2Unit, AbsTiedCustomStateT2Unit)):
+		if isinstance(t2_unit, AbsTiedStateT2Unit | AbsTiedCustomStateT2Unit):
 
 			if 'AbsPointT2Unit' in t2_unit_info['base']:
 				d['link'] = None # Further checks required (link_override check)
@@ -668,8 +663,8 @@ class T2Worker(AbsWorker[T2Document]):
 			with stat_time.labels(t2_doc["unit"], "process").time():
 				ret = t2_unit.process(*args)
 
-			if t2_unit._buf_hdlr.buffer: # type: ignore[union-attr]
-				t2_unit._buf_hdlr.forward( # type: ignore[union-attr]
+			if t2_unit._buf_hdlr.buffer: # type: ignore[union-attr]  # noqa: SLF001
+				t2_unit._buf_hdlr.forward( # type: ignore[union-attr]  # noqa: SLF001
 					logger, stock=t2_doc['stock']
 				)
 

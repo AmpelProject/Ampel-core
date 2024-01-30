@@ -7,23 +7,23 @@
 # Last Modified Date:  22.04.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from time import time
-from math import inf
-from multiprocessing.pool import ThreadPool
-from pymongo.errors import BulkWriteError
-from pymongo.collection import Collection
-from pymongo import UpdateOne, InsertOne, UpdateMany
-from typing import Any, Generator, Literal, Union, Mapping
-from collections.abc import Callable, Iterable, Iterator
+from collections.abc import Callable, Generator, Iterable, Iterator, Mapping
 from contextlib import contextmanager
+from multiprocessing.pool import ThreadPool
+from time import time
+from typing import Any, Literal
 
-from ampel.core.Schedulable import Schedulable
-from ampel.log.utils import report_exception, report_error, convert_dollars
-from ampel.log.AmpelLogger import AmpelLogger
+from pymongo import InsertOne, UpdateMany, UpdateOne
+from pymongo.collection import Collection
+from pymongo.errors import BulkWriteError
+
 from ampel.core.AmpelDB import AmpelDB, intcol
+from ampel.core.Schedulable import Schedulable
+from ampel.log.AmpelLogger import AmpelLogger
+from ampel.log.utils import convert_dollars, report_error, report_exception
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 
-DBOp = Union[UpdateOne, UpdateMany, InsertOne]
+DBOp = UpdateOne | UpdateMany | InsertOne
 AmpelMainCol = Literal['stock', 't0', 't1', 't2', 't3']
 
 # Monitoring counters
@@ -124,14 +124,14 @@ class DBUpdatesBuffer(Schedulable):
 
 		self._cols: dict[AmpelMainCol, Collection] = {
 			col_name: ampel_db.get_collection(col_name)
-			for col_name in self.db_ops.keys()
+			for col_name in self.db_ops
 		}
 
 		self.stats: dict[AmpelMainCol, int] = {
 			'stock': 0, 't0': 0, 't1': 0, 't2': 0,
 		}
 
-		self._err_db_ops: dict[str, Any] = {k: [] for k in self.db_ops.keys()}
+		self._err_db_ops: dict[str, Any] = {k: [] for k in self.db_ops}
 		self._ampel_db = ampel_db
 		self.run_id = run_id
 		self.logger = logger
@@ -263,6 +263,7 @@ class DBUpdatesBuffer(Schedulable):
 				if len(v) > self.max_size:
 					return self.push_updates()
 
+		return None
 
 	def push_updates(self, force: bool = False) -> None:
 
@@ -275,14 +276,14 @@ class DBUpdatesBuffer(Schedulable):
 		self._last_update = time()
 		if self._autopush_asap:
 			self._autopush_asap = False
-			self._job._schedule_next_run()
+			self._job._schedule_next_run()  # noqa: SLF001
 
 		# Reference instance buffer locally before creating a new one
 		db_ops = self.db_ops
 		messages = self._messages_to_ack
 		self._new_buffer()
 
-		for col_name in db_ops.keys():
+		for col_name in db_ops:
 			if db_ops[col_name]:
 				if self.thread_pool:
 					self.thread_pool.starmap(
@@ -420,8 +421,8 @@ class DBUpdatesBuffer(Schedulable):
 				# Log exc and try to insert doc into trouble collection (raises no exception)
 				report_exception(self._ampel_db, self.logger, exc=e)
 
-			print(f"Update of {col_name} collection has failed")
-			print(db_ops)
+			print(f"Update of {col_name} collection has failed")  # noqa: T201
+			print(db_ops)  # noqa: T201
 
 			self._err_db_ops[col_name] += db_ops
 			if self.error_callback:
@@ -445,13 +446,13 @@ class DBUpdatesBuffer(Schedulable):
 		if self.log_doc_ids and ret['col'] in self.log_doc_ids:
 			try:
 				if ret['col'] != 2:
-					ret['docs'] = [op._filter['_id'] for op in ops] # type: ignore
+					ret['docs'] = [op._filter['_id'] for op in ops] # type: ignore  # noqa: SLF001
 				else:
 					ret['docs'] = [
 						{
-							'unit': op._filter['unit'], # type: ignore
-							'config': op._filter['config'], # type: ignore
-							'link': op._filter['link'] # type: ignore
+							'unit': op._filter['unit'], # type: ignore  # noqa: SLF001
+							'config': op._filter['config'], # type: ignore  # noqa: SLF001
+							'link': op._filter['link'] # type: ignore  # noqa: SLF001
 						}
 						for op in ops
 					]

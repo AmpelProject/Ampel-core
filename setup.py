@@ -7,7 +7,7 @@
 # Last Modified Date:  06.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from setuptools import setup, find_namespace_packages
+from setuptools import find_namespace_packages, setup
 
 package_data = {
 	'': ['*.json', 'py.typed'],

@@ -7,13 +7,14 @@
 # Last Modified Date:  05.09.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import TypeVar
 from collections.abc import Generator
-from ampel.types import StockId, T3Send
-from ampel.view.SnapView import SnapView
+from typing import TypeVar
+
+from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.struct.StockAttributes import StockAttributes
-from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
+from ampel.types import StockId, T3Send
+from ampel.view.SnapView import SnapView
 
 T = TypeVar("T", bound=SnapView)
 

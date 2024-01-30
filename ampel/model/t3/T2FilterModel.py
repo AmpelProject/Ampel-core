@@ -8,7 +8,9 @@
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 from typing import Any
+
 from ampel.base.AmpelBaseModel import AmpelBaseModel
+
 
 class T2FilterModel(AmpelBaseModel):
 

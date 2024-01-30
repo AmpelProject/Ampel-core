@@ -8,16 +8,20 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import collections
-from bson.int64 import Int64
-from typing import Any
 from collections.abc import Sequence
-from ampel.types import StockId, ChannelId, StrictIterable
-from ampel.util.collections import check_seq_inner_type
-from ampel.model.operator.AnyOf import AnyOf
+from typing import Any
+
+from bson.int64 import Int64
+
 from ampel.model.operator.AllOf import AllOf
+from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.OneOf import OneOf
-from ampel.mongo.schema import apply_schema
 from ampel.mongo.query.general import type_stock_id
+from ampel.mongo.schema import apply_schema
+from ampel.types import ChannelId, StockId, StrictIterable
+from ampel.util.collections import check_seq_inner_type
+
+# ruff: noqa: RUF002
 
 """
 Lastest by mean of compound 'body' length.
@@ -54,9 +58,8 @@ def latest_fast_query(
 	if isinstance(stock, Sequence):
 		if not check_seq_inner_type(stock, type_stock_id):
 			raise ValueError("Elements in stock must be of type str or int or Int64 (bson)")
-	else:
-		if not isinstance(stock, type_stock_id):
-			raise ValueError("stock must be of type str or int or Int64 (or sequence of these types)")
+	elif not isinstance(stock, type_stock_id):
+		raise ValueError("stock must be of type str or int or Int64 (or sequence of these types)")
 
 	query = {
 		'stock': stock if isinstance(stock, type_stock_id) \
@@ -165,7 +168,7 @@ def latest_general_query(
 
 	# Robustness
 	if isinstance(single_stock, collections.abc.Sequence) or \
-		not isinstance(single_stock, (int, Int64, str)):
+		not isinstance(single_stock, int | Int64 | str):
 		raise ValueError(
 			"Type of single_stock must be a string or an int (multi single_stock queries not supported)"
 		)

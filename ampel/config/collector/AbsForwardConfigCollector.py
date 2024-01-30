@@ -7,13 +7,14 @@
 # Last Modified Date:  02.03.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any, Type
 from collections.abc import Sequence
-import ampel.config.builder.FirstPassConfig as fpc # avoid circular import issue
-from ampel.base.decorator import abstractmethod
+from typing import Any
+
+import ampel.config.builder.FirstPassConfig as fpc  # avoid circular import issue
 from ampel.base.AmpelABC import AmpelABC
-from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
+from ampel.base.decorator import abstractmethod
 from ampel.config.builder.DisplayOptions import DisplayOptions
+from ampel.log.AmpelLogger import VERBOSE, AmpelLogger
 
 
 class AbsForwardConfigCollector(dict, AmpelABC, abstract=True):
@@ -50,7 +51,7 @@ class AbsForwardConfigCollector(dict, AmpelABC, abstract=True):
 	) -> None:
 
 
-		for el in [arg] if isinstance(arg, (dict, str)) else arg:
+		for el in [arg] if isinstance(arg, dict | str) else arg:
 
 			path_elements = self.get_path(el, dist_name, version, register_file)
 			if not path_elements:

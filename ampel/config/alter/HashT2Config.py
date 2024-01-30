@@ -8,11 +8,12 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
-from ampel.log.AmpelLogger import AmpelLogger
-from ampel.core.AmpelContext import AmpelContext
+
 from ampel.abstract.AbsConfigUpdater import AbsConfigUpdater
-from ampel.config.collector.T02ConfigCollector import T02ConfigCollector
 from ampel.config.builder.ProcessMorpher import ProcessMorpher
+from ampel.config.collector.T02ConfigCollector import T02ConfigCollector
+from ampel.core.AmpelContext import AmpelContext
+from ampel.log.AmpelLogger import AmpelLogger
 
 
 class HashT2Config(AbsConfigUpdater):
@@ -23,7 +24,7 @@ class HashT2Config(AbsConfigUpdater):
 		pm = ProcessMorpher(process={}, logger=logger, proc_name='<off-config>')
 		cc = T02ConfigCollector(conf_section="confid")
 		# Note: *process* templating could be possible there as well, add if ever needed
-		ac = context.config._config
+		ac = context.config._config  # noqa: SLF001
 		pm.hash_t2_config(
 			{'unit': ac['unit'], 'alias': ac['alias'], 'confid': cc},
 			target=content['directives'] if 'directives' in content else content['config']['directives']

@@ -7,11 +7,14 @@
 # Last Modified Date:  07.09.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import subprocess, yaml
-from typing import Any, get_args, _GenericAlias # type: ignore[attr-defined]
+import subprocess
+from typing import Any, _GenericAlias, get_args  # type: ignore[attr-defined]
+
+import yaml
+
 from ampel.abstract.AbsSecretProvider import AbsSecretProvider
-from ampel.secret.Secret import Secret
 from ampel.secret.NamedSecret import NamedSecret
+from ampel.secret.Secret import Secret
 
 
 class DictSecretProvider(AbsSecretProvider):

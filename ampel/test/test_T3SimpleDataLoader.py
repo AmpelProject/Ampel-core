@@ -1,8 +1,11 @@
-from ampel.t3.supply.load.T3SimpleDataLoader import T3SimpleDataLoader
+import pytest
+
 from ampel.core.AmpelContext import AmpelContext
+from ampel.t3.supply.load.T3SimpleDataLoader import T3SimpleDataLoader
 
 
-def test_instantiate(core_config, patch_mongo, ampel_logger):
+@pytest.mark.usefixtures("_patch_mongo")
+def test_instantiate(core_config, ampel_logger):
     """
     AbsT3Loader understands all the aliases in the ampel-core config
     """
@@ -12,8 +15,8 @@ def test_instantiate(core_config, patch_mongo, ampel_logger):
         directives := T3SimpleDataLoader(
             context=ctx,
             logger=ampel_logger,
-            directives=[k[1:] for k in aliases.keys()]
+            directives=[k[1:] for k in aliases]
         ).directives
     ) == len(aliases)
-    for d, value in zip(directives, aliases.values()):
+    for d, value in zip(directives, aliases.values(), strict=False):
         assert d.dict(exclude_defaults=True) == value

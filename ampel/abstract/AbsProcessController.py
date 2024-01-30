@@ -7,16 +7,17 @@
 # Last Modified Date:  17.04.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Literal, Any, ClassVar
 from collections.abc import Sequence
-from ampel.base.decorator import abstractmethod
+from typing import Any, ClassVar, Literal
+
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.AmpelUnit import AmpelUnit
+from ampel.base.decorator import abstractmethod
 from ampel.config.AmpelConfig import AmpelConfig
-from ampel.secret.AmpelVault import AmpelVault
-from ampel.model.ProcessModel import ProcessModel
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
+from ampel.model.ProcessModel import ProcessModel
+from ampel.secret.AmpelVault import AmpelVault
 
 
 class AbsProcessController(AmpelABC, AmpelUnit, abstract=True):

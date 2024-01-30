@@ -8,15 +8,16 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from collections.abc import Generator
-from ampel.types import UBson, T3Send
-from ampel.cli.T3BufferExporterStager import TextExportOptions
-from ampel.abstract.AbsT3Unit import AbsT3Unit
+
 from ampel.abstract.AbsIdMapper import AbsIdMapper
+from ampel.abstract.AbsT3Unit import AbsT3Unit
+from ampel.cli.export import bin_export, get_fd, txt_export
+from ampel.cli.T3BufferExporterStager import TextExportOptions
 from ampel.struct.AmpelBuffer import AmpelBuffer
-from ampel.struct.UnitResult import UnitResult
-from ampel.view.SnapView import SnapView
 from ampel.struct.T3Store import T3Store
-from ampel.cli.export import txt_export, bin_export, get_fd
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import T3Send, UBson
+from ampel.view.SnapView import SnapView
 
 
 class T3BufferExporterUnit(AbsT3Unit[SnapView]):

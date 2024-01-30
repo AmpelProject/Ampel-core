@@ -7,18 +7,24 @@
 # Last Modified Date:  04.03.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import bson
-from time import time
 from os.path import isdir, isfile
 from pathlib import Path
 from struct import calcsize
-from typing import BinaryIO, Literal, Any, TypedDict
+from time import time
+from typing import Any, BinaryIO, Literal, TypedDict
 
-from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
+import bson
+
 from ampel.base.AmpelUnit import AmpelUnit
+from ampel.log.AmpelLogger import VERBOSE, AmpelLogger
 from ampel.util.hash import build_unsafe_dict_id
-from ampel.util.register import read_header, write_header, \
-	get_inner_file_handle, get_outer_file_handle, rescale_header
+from ampel.util.register import (
+	get_inner_file_handle,
+	get_outer_file_handle,
+	read_header,
+	rescale_header,
+	write_header,
+)
 
 
 class HeaderInfo(TypedDict):
@@ -484,9 +490,9 @@ class AmpelRegister(AmpelUnit):
 		if not self._outer_fh or self._outer_fh.closed:
 			self.logger.info("File handle already closed")
 			return
-		else:
-			if self.verbose:
-				self.logger.log(VERBOSE, f"Closing {self.get_file_path()}")
+
+		if self.verbose:
+			self.logger.log(VERBOSE, f"Closing {self.get_file_path()}")
 
 		if hasattr(self, 'header') and update_header:
 

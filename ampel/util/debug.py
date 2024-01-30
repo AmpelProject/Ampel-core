@@ -7,7 +7,11 @@
 # Last Modified Date:  24.09.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import os, sys, pdb, traceback, multiprocessing.pool
+import multiprocessing.pool
+import os
+import pdb
+import sys
+import traceback
 
 """
 Usage:
@@ -62,8 +66,8 @@ class ForkedPdb(pdb.Pdb):
 	def interaction(self, *args, **kwargs):
 		_stdin = sys.stdin
 		try:
-			sys.stdin = open('/dev/stdin')
-			print(f"ForkedPdb started (pid: {os.getpid()})")
+			sys.stdin = open('/dev/stdin') # noqa: SIM115
+			print(f"ForkedPdb started (pid: {os.getpid()})")  # noqa: T201
 			pdb.Pdb.interaction(self, *args, **kwargs)
 		finally:
 			sys.stdin = _stdin

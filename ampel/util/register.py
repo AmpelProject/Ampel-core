@@ -36,18 +36,23 @@ Properties:
 Known class making use of this module: `ampel.core.AmpelRegister.AmpelRegister` and sub-classes
 """
 
-import bson, json, sys
+import json
+import sys
 from errno import ENOENT
-from struct import iter_unpack, calcsize
 from os import path, strerror
+from struct import calcsize, iter_unpack
 from zlib import compress, decompress
+
+import bson
+
 if sys.version_info.minor > 8:
 	from typing import TypedDict
 else:
 	from typing_extensions import TypedDict
-from typing import BinaryIO, Any
 from collections.abc import Callable, Generator
-from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
+from typing import Any, BinaryIO
+
+from ampel.log.AmpelLogger import VERBOSE, AmpelLogger
 
 ampel_magic_bytes = bytes([97, 109, 112, 101, 108])
 
@@ -69,16 +74,15 @@ def get_outer_file_handle(
 
 	if file_exists := path.isfile(file_path):
 		mode = 'r+b' if write else 'rb'
+	elif write:
+		mode = 'w+b'
 	else:
-		if write:
-			mode = 'w+b'
-		else:
-			raise FileNotFoundError(ENOENT, strerror(ENOENT), file_path)
+		raise FileNotFoundError(ENOENT, strerror(ENOENT), file_path)
 
 	if logger:
 		logger.log(VERBOSE, f"Opening {file_path} with mode {mode}")
-
-	f: BinaryIO = open(file_path, mode) # type: ignore[assignment]
+	
+	f: BinaryIO = open(file_path, mode) # type: ignore[assignment] # noqa: SIM115
 	if file_exists:
 		return read_header(f, logger), f
 
@@ -104,12 +108,12 @@ def get_inner_file_handle(
 		if logger: logger.log(VERBOSE, f"New GzipFile from {fh.name} (mode {mode})") # noqa: E701
 		return GzipFile(fileobj=fh, mode=mode) # type: ignore[return-value]
 
-	elif fh.name.endswith('bz2'):
+	if fh.name.endswith('bz2'):
 		from bz2 import BZ2File
 		if logger: logger.log(VERBOSE, f"New BZ2File from {fh.name} (mode {mode})") # noqa: E701
 		return BZ2File(fh, mode=mode) # type: ignore[call-overload]
 
-	elif fh.name.endswith('xz'):
+	if fh.name.endswith('xz'):
 		from lzma import LZMAFile
 		if logger: logger.log(VERBOSE, f"New LZMAFile from {fh.name} (mode {mode})") # noqa: E701
 		return LZMAFile(fh, mode=mode) # type: ignore[return-value]
@@ -182,7 +186,7 @@ def read_header(
 	h = file_handle.read(header_size)
 	if len(h) == 0: # headerless file
 		return None
-	elif len(h) < header_size: # something is wrong
+	if len(h) < header_size: # something is wrong
 		raise ValueError(f"{file_handle.name}: header too small (len: {len(h)})")
 
 	header = decode_header(h, header_len)
@@ -272,8 +276,8 @@ def rescale_header(
 	header: None | dict[str, Any] = None
 ) -> None:
 
-	from mmap import mmap, ACCESS_WRITE
-	from os import rename, remove
+	from mmap import ACCESS_WRITE, mmap
+	from os import remove, rename
 
 	logger = AmpelLogger.get_logger()
 	with open(file_path, "r+b") as f1:
@@ -315,6 +319,8 @@ def rescale_header(
 	logger.info(f"Renaming {file_path}.new -> {file_path}")
 	rename(f"{file_path}.new", file_path)
 
+	return None
+
 
 def _quick_load(
 	f: BinaryIO | str, logger: None | AmpelLogger = None
@@ -355,8 +361,7 @@ def reg_iter(
 	r = ifh.read
 
 	while b := r(buf_len):
-		for el in iter_unpack(struct, b):
-			yield el
+		yield from iter_unpack(struct, b)
 
 	ifh.close()
 	if isinstance(f, str) and not ofh.closed:

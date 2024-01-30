@@ -9,11 +9,13 @@
 
 from collections import defaultdict
 from datetime import datetime
-from pymongo import UpdateOne, UpdateMany
 from typing import Any, Literal
-from ampel.mongo.utils import maybe_use_each
-from ampel.content.DataPoint import DataPoint
+
+from pymongo import UpdateMany, UpdateOne
+
 from ampel.abstract.AbsDocIngester import AbsDocIngester
+from ampel.content.DataPoint import DataPoint
+from ampel.mongo.utils import maybe_use_each
 from ampel.types import DataPointId
 
 
@@ -54,7 +56,7 @@ class MongoT0Ingester(AbsDocIngester[DataPoint]):
 			upd['$addToSet']['tag'] = maybe_use_each(doc['tag'])
 
 		if 'stock' in doc:
-			upd['$addToSet']['stock'] = doc['stock'] if isinstance(doc['stock'], (int, bytes, str)) \
+			upd['$addToSet']['stock'] = doc['stock'] if isinstance(doc['stock'], int | bytes | str) \
 				else maybe_use_each(doc['stock'])
 
 		if 'expiry' in doc:

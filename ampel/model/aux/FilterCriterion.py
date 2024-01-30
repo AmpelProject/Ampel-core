@@ -7,9 +7,11 @@
 # Last Modified Date:  17.06.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import collections, operator
-from typing import Any, Type
+import collections
+import operator
 from collections.abc import Callable
+from typing import Any
+
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 
 ops: dict[str, Callable[[str, Any], bool]] = {
@@ -27,7 +29,7 @@ ops: dict[str, Callable[[str, Any], bool]] = {
 class FilterCriterion(AmpelBaseModel):
 
 	attribute: None | str = None
-	type: None | Type = None
+	type: None | type = None
 	operator: Callable
 	value: Any
 

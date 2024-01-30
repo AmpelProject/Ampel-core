@@ -9,8 +9,9 @@
 
 
 from collections.abc import Sequence
-from ampel.model.UnitModel import UnitModel
+
 from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.model.UnitModel import UnitModel
 
 
 class T3ProjectionDirective(AmpelBaseModel):
@@ -28,6 +29,6 @@ class T3ProjectionDirective(AmpelBaseModel):
 	execute: Sequence[UnitModel]
 
 	def __init__(self, **kwargs):
-		if isinstance(v := kwargs.get("execute"), (dict, UnitModel)):
+		if isinstance(v := kwargs.get("execute"), dict | UnitModel):
 			kwargs["execute"] = [v]
 		super().__init__(**kwargs)

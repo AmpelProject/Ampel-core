@@ -1,13 +1,13 @@
 from contextlib import nullcontext
 
 import pytest
-
 import schedule as sched
+
 from ampel.config.ScheduleEvaluator import ScheduleEvaluator
 
 
 @pytest.mark.parametrize(
-    "line,unit,interval,error",
+    ("line","unit","interval","error"),
     [
         ("every(30).seconds", "seconds", 30, None),
         ("every().day.at('16:00')", "days", 1, None),

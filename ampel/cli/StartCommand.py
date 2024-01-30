@@ -7,19 +7,22 @@
 # Last Modified Date:  20.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import logging, signal, asyncio
+import asyncio
+import logging
+import signal
 from argparse import ArgumentParser
-from typing import Any
 from collections.abc import Sequence
+from typing import Any
+
 from ampel.abstract.AbsCLIOperation import AbsCLIOperation
-from ampel.core.AmpelController import AmpelController
-from ampel.cli.MaybeIntAction import MaybeIntAction
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
+from ampel.cli.MaybeIntAction import MaybeIntAction
+from ampel.config.AmpelConfig import AmpelConfig
+from ampel.core.AmpelController import AmpelController
+
 #from ampel.log.AmpelLogger import AmpelLogger
 #from ampel.log.LogFlag import LogFlag
 from ampel.secret.AmpelVault import AmpelVault
-from ampel.config.AmpelConfig import AmpelConfig
-
 
 # Help parameter descriptions
 h = {
@@ -195,7 +198,7 @@ class ScheduleCommand(AbsCLIOperation):
 				logging.info(
 					f"Updated {controller.__class__.__name__} with processes: {[pm.name for pm in processes]} "
 				)
-			except Exception:
+			except Exception:  # noqa: PERF203
 				logging.exception(
 					f"Failed to update {controller.__class__.__name__} with processes: {[pm.name for pm in processes]}"
 				)

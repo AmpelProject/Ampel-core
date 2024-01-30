@@ -7,12 +7,13 @@
 # Last Modified Date:  05.08.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any
 from collections.abc import Iterable
-from ampel.types import StockId
+from typing import Any
+
 from ampel.abstract.AbsT0Unit import AbsT0Unit
 from ampel.content.DataPoint import DataPoint
 from ampel.log.AmpelLogger import AmpelLogger
+from ampel.types import StockId
 
 
 class NoShaper(AbsT0Unit):

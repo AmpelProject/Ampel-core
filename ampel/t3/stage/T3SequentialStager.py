@@ -7,19 +7,20 @@
 # Last Modified Date:  03.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+from collections.abc import Generator, Iterable, Sequence
 from time import time
 from typing import Annotated
-from collections.abc import Generator, Iterable, Sequence
+
 from ampel.abstract.AbsT3Unit import AbsT3Unit, T
-from ampel.struct.T3Store import T3Store
-from ampel.view.T3DocView import T3DocView
-from ampel.view.SnapView import SnapView
-from ampel.model.UnitModel import UnitModel
 from ampel.content.T3Document import T3Document
+from ampel.model.UnitModel import UnitModel
+from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
 from ampel.struct.AmpelBuffer import AmpelBuffer
+from ampel.struct.T3Store import T3Store
 from ampel.t3.stage.BaseViewGenerator import BaseViewGenerator, T3Send
 from ampel.t3.stage.T3BaseStager import T3BaseStager
-from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
+from ampel.view.SnapView import SnapView
+from ampel.view.T3DocView import T3DocView
 
 
 class SimpleGenerator(BaseViewGenerator[T]):
@@ -80,20 +81,22 @@ class T3SequentialStager(T3BaseStager):
 			sg = SimpleGenerator(t3_unit, views, self.stock_updr)
 			ts = time()
 
-			if (ret := t3_unit.process(sg, t3s)):
-				if (x := self.handle_t3_result(t3_unit, ret, t3s, sg.stocks, ts)):
-					if self.propagate:
-						t3s.add_view(
-							T3DocView.of(x, self.context.config)
-						)
-					yield x
+			if (
+				(ret := t3_unit.process(sg, t3s)) and
+				(x := self.handle_t3_result(t3_unit, ret, t3s, sg.stocks, ts))
+			):
+				if self.propagate:
+					t3s.add_view(
+						T3DocView.of(x, self.context.config)
+					)
+				yield x
 
 		return None
 
 
 	def get_views(self, gen: Generator[AmpelBuffer, None, None]) -> dict[AbsT3Unit, list[SnapView]]:
 
-		Views: set[type[SnapView]] = {u._View for u in self.units}
+		Views: set[type[SnapView]] = {u._View for u in self.units}  # noqa: SLF001
 		conf = self.context.config
 
 		if len(Views) == 1:
@@ -104,29 +107,25 @@ class T3SequentialStager(T3BaseStager):
 					unit: [View.of(ab, conf) for ab in buffers]
 					for unit in self.units
 				}
-			else:
-				vs: list[SnapView] = [View.of(ab, conf) for ab in gen]
-				return {unit: vs for unit in self.units}
-		else:
+			vs: list[SnapView] = [View.of(ab, conf) for ab in gen]
+			return {unit: vs for unit in self.units}
 
-			buffers = list(gen)
-			if self.paranoia_level:
-				return {
-					unit: [View.of(ab, conf) for ab in buffers]
-					for unit, View in (lambda x: [(u, u._View) for u in x])(self.units)
-				}
+		buffers = list(gen)
+		if self.paranoia_level:
+			return {
+				unit: [View.of(ab, conf) for ab in buffers]
+				for unit, View in ((u, u._View) for u in self.units)  # noqa: SLF001
+			}
 
-			else:
+		optd: dict[type[SnapView], list[AbsT3Unit]] = {}
+		for unit in self.units:
+			if unit._View not in optd:  # noqa: SLF001
+				optd[unit._View] = []  # noqa: SLF001
+			optd[unit._View].append(unit)  # noqa: SLF001
 
-				optd: dict[type[SnapView], list[AbsT3Unit]] = {}
-				for unit in self.units:
-					if unit._View not in optd:
-						optd[unit._View] = []
-					optd[unit._View].append(unit)
-
-				d = {}
-				for View, units in optd.items():
-					vs = [View.of(ab, conf) for ab in buffers]
-					for unit in units:
-						d[unit] = vs
-				return d
+		d = {}
+		for View, units in optd.items():
+			vs = [View.of(ab, conf) for ab in buffers]
+			for unit in units:
+				d[unit] = vs
+		return d

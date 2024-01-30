@@ -1,48 +1,43 @@
 #!/usr/bin/env python
 
+# ruff: noqa: B904
+
 import asyncio
-from contextlib import asynccontextmanager
 import enum
 import logging
 import operator
 import os
-from datetime import datetime, timedelta
+from contextlib import asynccontextmanager, suppress
+from datetime import datetime, timedelta, timezone
 from functools import reduce
 from typing import (
-    Any,
-    cast,
-    Dict,
-    List,
-    Literal,
-    Optional,
-    Set,
-    Tuple,
-    Union,
-    cast,
     TYPE_CHECKING,
+    Any,
+    Literal,
+    cast,
 )
 
-from bson import json_util, tz_util, ObjectId
-from fastapi import FastAPI, Header, HTTPException, Path, Query, Depends
+from bson import ObjectId, json_util, tz_util
+from fastapi import Depends, FastAPI, Header, HTTPException, Path, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from prometheus_client.exposition import choose_encoder
 
 from ampel.abstract.AbsProcessController import AbsProcessController
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.core.AmpelContext import AmpelContext
 from ampel.core.AmpelController import AmpelController
+from ampel.core.AmpelDB import AmpelDB
 from ampel.core.UnitLoader import UnitLoader
-from ampel.secret.DictSecretProvider import DictSecretProvider
-from ampel.secret.AmpelVault import AmpelVault
+from ampel.enum.DocumentCode import DocumentCode
 from ampel.log.LogFlag import LogFlag
 from ampel.metrics.AmpelDBCollector import AmpelDBCollector
-from ampel.metrics.AmpelProcessCollector import AmpelProcessCollector
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
+from ampel.metrics.AmpelProcessCollector import AmpelProcessCollector
 from ampel.model.ProcessModel import ProcessModel
-from ampel.base.AmpelBaseModel import AmpelBaseModel
-from ampel.core.AmpelDB import AmpelDB
-from ampel.enum.DocumentCode import DocumentCode
+from ampel.secret.AmpelVault import AmpelVault
+from ampel.secret.DictSecretProvider import DictSecretProvider
 from ampel.util.hash import build_unsafe_dict_id
 
 if TYPE_CHECKING:
@@ -100,7 +95,6 @@ class task_manager:
         under the same name. If the process requests a new controller
         configuration, a new task will be spawned.
         """
-        global context
         groups: dict[str, list[ProcessModel]] = {}
         for pm in processes:
             if not pm.active:
@@ -163,7 +157,6 @@ class task_manager:
         """
         Remove the named process from the active set.
         """
-        global context
         to_remove: dict[str, list[str]] = {}
         for name in names:
             if (config_id := cls.process_name_to_controller_id.get(name)) is None:
@@ -208,10 +201,7 @@ class task_manager:
 
     @classmethod
     def get_status(cls, name: str) -> Literal["running", "idle"]:
-        if name in cls.process_name_to_controller_id:
-            return "running"
-        else:
-            return "idle"
+        return "running" if name in cls.process_name_to_controller_id else "idle"
 
     @classmethod
     async def shutdown(cls) -> None:
@@ -231,7 +221,7 @@ async def init():
         raise RuntimeError(
             "uvloop does not work with OS pipes (https://github.com/MagicStack/uvloop/issues/317). start uvicorn with --loop asyncio."
         )
-    global context
+    global context  # noqa: PLW0603
     context = AmpelContext.load(
         os.environ.get("AMPEL_CONFIG", "config.yml"),
         vault=AmpelVault(providers=[DictSecretProvider.load(os.environ["AMPEL_SECRETS"])])
@@ -295,7 +285,7 @@ async def reload_config() -> TaskDescriptionCollection:
     )
 
     # update global context
-    global context
+    global context  # noqa: PLW0603
     context = AmpelContext(config, db, loader)
 
     # update processes currently in the active set
@@ -450,8 +440,7 @@ async def get_process(process: str) -> ProcessModel:
         except Exception:
             continue
         return ProcessModel(**doc)
-    else:
-        raise HTTPException(status_code=404, detail=f"{process} not found")
+    raise HTTPException(status_code=404, detail=f"{process} not found")
 
 
 @app.post("/process/{process}/start")
@@ -476,10 +465,8 @@ async def kill_process(process: str):
     except KeyError:
         raise HTTPException(status_code=404, detail=f"{process} is not running")
     task.cancel()
-    try:
+    with suppress(asyncio.CancelledError):
         await task
-    except asyncio.CancelledError:
-        ...
 
 
 @app.post("/process/{process}/scale")
@@ -505,14 +492,14 @@ async def scale_process(
 
 @app.get("/stock/{stock_id}")
 def get_stock(stock_id: int):
-    doc = json_util._json_convert(
+    doc = json_util._json_convert(  # noqa: SLF001
         context.db.get_collection("stock").find_one({"_id": stock_id}),
         json_util.RELAXED_JSON_OPTIONS,
     )
     for k in "created", "updated":
-        doc[k] = {facet: datetime.fromtimestamp(ts) for facet, ts in doc[k].items()}
+        doc[k] = {facet: datetime.fromtimestamp(ts, tz=timezone.utc) for facet, ts in doc[k].items()}
     for jentry in doc["journal"]:
-        jentry["ts"] = datetime.fromtimestamp(jentry["ts"])
+        jentry["ts"] = datetime.fromtimestamp(jentry["ts"], tz=timezone.utc)
     return doc
 
 
@@ -547,15 +534,15 @@ def stock_summary():
 
 
 def transform_doc(doc: dict[str, Any], tier: int) -> dict[str, Any]:
-    doc = json_util._json_convert(doc, json_util.RELAXED_JSON_OPTIONS)
+    doc = json_util._json_convert(doc, json_util.RELAXED_JSON_OPTIONS)  # noqa: SLF001
     if tier == 1:
-        doc["added"] = datetime.fromtimestamp(doc["added"])
+        doc["added"] = datetime.fromtimestamp(doc["added"], tz=timezone.utc)
     if tier == 2:
         for jentry in doc["journal"]:
-            jentry["dt"] = datetime.fromtimestamp(jentry["dt"])
+            jentry["dt"] = datetime.fromtimestamp(jentry["dt"], tz=timezone.utc)
         doc["code"] = DocumentCode(doc["code"]).name
         for subrecord in doc.get("body", []):
-            subrecord["ts"] = datetime.fromtimestamp(subrecord["ts"])
+            subrecord["ts"] = datetime.fromtimestamp(subrecord["ts"], tz=timezone.utc)
     return doc
 
 

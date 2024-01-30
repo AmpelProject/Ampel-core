@@ -12,20 +12,19 @@ from typing import Any
 
 import pytest
 
+from ampel.abstract.AbsT3Unit import AbsT3Unit, T3Send
 from ampel.content.StockDocument import StockDocument
 from ampel.content.T2Document import T2Document
 from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.enum.DocumentCode import DocumentCode
+from ampel.enum.EventCode import EventCode
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.struct.StockAttributes import StockAttributes
-from ampel.enum.EventCode import EventCode
-from ampel.view.SnapView import SnapView
 from ampel.struct.T3Store import T3Store
+from ampel.t3.T3Processor import T3Processor
 from ampel.test.dummy import DummyStateT2Unit
 from ampel.util.config import get_unit_confid
-
-from ampel.abstract.AbsT3Unit import AbsT3Unit, T3Send
-from ampel.t3.T3Processor import T3Processor
+from ampel.view.SnapView import SnapView
 
 
 class Mutineer(AbsT3Unit):
@@ -36,7 +35,7 @@ class Mutineer(AbsT3Unit):
             raise ValueError
 
 
-def mutineer_process(config={}):
+def mutineer_process(config=None):
 
     return {
         "supply": {
@@ -54,21 +53,22 @@ def mutineer_process(config={}):
         "stage": {
             "unit": "T3SimpleStager",
             "config": {
-                "execute": [{"unit": "Mutineer", "config": config}]
+                "execute": [{"unit": "Mutineer", "config": config or {}}]
             }
         }
     }
 
 
+@pytest.mark.usefixtures("_ingest_stock")
 @pytest.mark.parametrize(
-    "config,expect_success",
+    ("config","expect_success"),
     [
         ({}, True),
         ({"raise_on_process": True}, False),
     ]
 )
 def test_unit_raises_error(
-    dev_context: DevAmpelContext, ingest_stock, config, expect_success
+    dev_context: DevAmpelContext, config, expect_success
 ):
     """Run is marked failed if units raise an exception"""
     dev_context.register_unit(Mutineer)
@@ -81,7 +81,8 @@ def test_unit_raises_error(
     assert event["code"] == EventCode.OK.value if expect_success else EventCode.EXCEPTION
 
 
-def test_view_generator(integration_context: DevAmpelContext, ingest_stock):
+@pytest.mark.usefixtures("_ingest_stock")
+def test_view_generator(integration_context: DevAmpelContext):
 
     class SendySend(AbsT3Unit):
         raise_on_process: bool = False
@@ -134,7 +135,8 @@ def test_view_generator(integration_context: DevAmpelContext, ingest_stock):
     jentry = entries[0]
     assert jentry["extra"] == {"foo": "bar"}
 
-def test_empty_generator(integration_context: DevAmpelContext, ingest_stock):
+@pytest.mark.usefixtures("_ingest_stock")
+def test_empty_generator(integration_context: DevAmpelContext):
     """
     Empty selection returns cleanly, rather than raising
     """

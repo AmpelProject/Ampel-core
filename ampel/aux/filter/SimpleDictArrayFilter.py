@@ -7,10 +7,11 @@
 # Last Modified Date:  18.06.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import TypeVar
 from collections.abc import Mapping, Sequence
-from ampel.model.aux.FilterCriterion import FilterCriterion
+from typing import TypeVar
+
 from ampel.aux.filter.AbsLogicOperatorFilter import AbsLogicOperatorFilter
+from ampel.model.aux.FilterCriterion import FilterCriterion
 
 T = TypeVar("T", bound=Mapping)
 
@@ -49,5 +50,4 @@ class SimpleDictArrayFilter(AbsLogicOperatorFilter[T]):
 				isinstance(d[attr_name], f.type) and
 				f.operator(d[attr_name], f.value)
 			]
-		else:
-			return [d for d in dicts if attr_name in d and f.operator(d[attr_name], f.value)]
+		return [d for d in dicts if attr_name in d and f.operator(d[attr_name], f.value)]

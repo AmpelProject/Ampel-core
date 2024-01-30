@@ -7,12 +7,12 @@
 # Last Modified Date:  18.06.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import MutableMapping
-from collections.abc import Mapping, Sequence
-from ampel.util.mappings import flatten_dict, unflatten_dict
-from ampel.model.aux.FilterCriterion import FilterCriterion
+from collections.abc import Mapping, MutableMapping, Sequence
+
 from ampel.aux.filter.AbsLogicOperatorFilter import AbsLogicOperatorFilter
 from ampel.aux.filter.SimpleDictArrayFilter import SimpleDictArrayFilter
+from ampel.model.aux.FilterCriterion import FilterCriterion
+from ampel.util.mappings import flatten_dict, unflatten_dict
 
 
 class FlatDictArrayFilter(AbsLogicOperatorFilter[MutableMapping]):
@@ -26,5 +26,5 @@ class FlatDictArrayFilter(AbsLogicOperatorFilter[MutableMapping]):
 	def _apply_filter(dicts: Sequence[Mapping], f: FilterCriterion) -> list[MutableMapping]:
 		return [
 			unflatten_dict(ell)
-			for ell in SimpleDictArrayFilter._apply_filter([flatten_dict(el) for el in dicts], f)
+			for ell in SimpleDictArrayFilter._apply_filter([flatten_dict(el) for el in dicts], f)  # noqa: SLF001
 		]

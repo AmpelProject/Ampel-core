@@ -7,37 +7,39 @@
 # Last Modified Date:  04.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import os, sys
+import os
+import sys
+from collections.abc import Iterator, Mapping
+from contextlib import contextmanager
+from copy import deepcopy
+from hashlib import blake2b
 from importlib import import_module
 from pathlib import Path
-from hashlib import blake2b
-from contextlib import contextmanager
 from types import UnionType
-from typing import Any, TypeVar, Union, overload, get_args, get_origin
-from collections.abc import Iterator, Mapping
-from copy import deepcopy
+from typing import Any, TypeVar, Union, get_args, get_origin, overload
 
-from ampel.types import ChannelId, check_class
-from ampel.util.collections import ampel_iter
-from ampel.util.freeze import recursive_unfreeze
-from ampel.util.mappings import merge_dicts
-from ampel.view.ReadOnlyDict import ReadOnlyDict
 from ampel.base.AmpelUnit import AmpelUnit
 from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.base.LogicalUnit import LogicalUnit
-from ampel.core.AmpelContext import AmpelContext
-from ampel.core.ContextUnit import ContextUnit
-from ampel.core.AmpelDB import AmpelDB
-from ampel.model.UnitModel import UnitModel
-from ampel.secret.Secret import Secret
-from ampel.secret.AmpelVault import AmpelVault
-from ampel.model.t3.AliasableModel import AliasableModel
 from ampel.config.AmpelConfig import AmpelConfig
-from ampel.log.AmpelLogger import AmpelLogger, LogFlag, VERBOSE
+from ampel.core.AmpelContext import AmpelContext
+from ampel.core.AmpelDB import AmpelDB
+from ampel.core.ContextUnit import ContextUnit
+from ampel.log.AmpelLogger import VERBOSE, AmpelLogger, LogFlag
 from ampel.log.handlers.ChanRecordBufHandler import ChanRecordBufHandler
-from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
+from ampel.log.handlers.DefaultRecordBufferingHandler import (
+	DefaultRecordBufferingHandler,
+)
+from ampel.model.t3.AliasableModel import AliasableModel
+from ampel.model.UnitModel import UnitModel
+from ampel.secret.AmpelVault import AmpelVault
+from ampel.secret.Secret import Secret
+from ampel.types import ChannelId, check_class
+from ampel.util.collections import ampel_iter
+from ampel.util.freeze import recursive_unfreeze
 from ampel.util.hash import build_unsafe_dict_id
-
+from ampel.util.mappings import merge_dicts
+from ampel.view.ReadOnlyDict import ReadOnlyDict
 
 T = TypeVar('T', bound=AmpelUnit)
 LT = TypeVar('LT', bound=LogicalUnit)
@@ -70,8 +72,8 @@ class UnitLoader:
 		self.vault = vault
 		self.config = config
 		self.provenance = provenance
-		self.unit_defs: dict = config._config['unit']
-		self.aliases: list[dict] = [config._config['alias'][f"t{el}"] for el in (0, 3, 1, 2)]
+		self.unit_defs: dict = config._config['unit']  # noqa: SLF001
+		self.aliases: list[dict] = [config._config['alias'][f"t{el}"] for el in (0, 3, 1, 2)]  # noqa: SLF001
 		self._dyn_register: None | dict[str, type[LogicalUnit] | type[ContextUnit]] = None # potentially updated by DevAmpelContext
 
 
@@ -131,7 +133,7 @@ class UnitLoader:
 			sub_type = unit_type
 		)
 
-		setattr(unit, '_buf_hdlr', buf_hdlr) # Shortcut
+		setattr(unit, '_buf_hdlr', buf_hdlr) # noqa: B010
 		return unit
 
 
@@ -191,7 +193,7 @@ class UnitLoader:
 			)
 		)
 				
-		if isinstance(unit, (LogicalUnit, ContextUnit)):
+		if isinstance(unit, LogicalUnit | ContextUnit):
 
 			trace_id = None
 
@@ -207,11 +209,11 @@ class UnitLoader:
 					'version': self.config.get(f"unit.{model.unit}.version", str, raise_exc=True)
 				}
 
-				if c := unit._get_trace_content():
+				if c := unit._get_trace_content():  # noqa: SLF001
 					trace_dict['config'] = c
 
 				if deps := self.config.get(f"unit.{model.unit}.dependencies"):
-					if not isinstance(deps, (list, tuple)):
+					if not isinstance(deps, list | tuple):
 						raise ValueError(f"Retrieved environment is not a list/tuple: {type(deps)}")
 					envd = self.config.get(f"environment.{env}", dict, raise_exc=True)
 					trace_dict['env'] = {k: envd[k] for k in deps}
@@ -231,7 +233,7 @@ class UnitLoader:
 					trace_id = 0
 					# raise e
 
-			unit._trace_id = trace_id # type: ignore[union-attr]
+			unit._trace_id = trace_id # type: ignore[union-attr]  # noqa: SLF001
 
 			if hasattr(unit, "post_init"):
 				unit.post_init() # type: ignore[union-attr]
@@ -268,7 +270,7 @@ class UnitLoader:
 
 		:raises: ValueError if unit cannot be found or loaded or if parent class is unrecognized
 		"""
-		if name in AuxUnitRegister._defs:
+		if name in AuxUnitRegister._defs:  # noqa: SLF001
 			return AuxUnitRegister.get_aux_class(name, sub_type=unit_type)
 
 		if self._dyn_register and name in self._dyn_register:
@@ -293,7 +295,7 @@ class UnitLoader:
 
 		base_conf: dict[str, Any] = {}
 
-		if isinstance(config, (dict, str)):
+		if isinstance(config, dict | str):
 
 			base_conf = self.resolve_aliases(config)
 			if base_conf is None:
@@ -333,9 +335,9 @@ class UnitLoader:
 				if value in adict:
 					return self.resolve_aliases(adict[value])
 			return value
-		elif isinstance(value, list):
+		if isinstance(value, list):
 			return [self.resolve_aliases(v) for v in value]
-		elif isinstance(value, dict):
+		if isinstance(value, dict):
 			return {k: self.resolve_aliases(v) for k, v in value.items()}
 
 		return value
@@ -346,18 +348,18 @@ class UnitLoader:
 		Add a resolved Secret instance to init_kwargs for every Secret field of
 		unit_type.
 		"""
-		for k, annotation in unit_type._annots.items():
+		for k, annotation in unit_type._annots.items():  # noqa: SLF001
 			# for unions, consider the first member that is not NoneType
 			if get_origin(annotation) in (Union, UnionType):
-				annotation = next((f for f in get_args(annotation) if f is not type(None)), type(None))
+				annotation = next((f for f in get_args(annotation) if f is not type(None)), type(None))  # noqa: PLW2901
 			field_type = get_origin(annotation) or annotation
 			if issubclass(type(field_type), type) and issubclass(field_type, Secret):
 				default = False
 				if isinstance(kwargs := init_kwargs.get(k), Mapping):
 					v = field_type(**kwargs)
-				elif k in unit_type._defaults:
+				elif k in unit_type._defaults:  # noqa: SLF001
 					default = True
-					v = deepcopy(unit_type._defaults[k])
+					v = deepcopy(unit_type._defaults[k])  # noqa: SLF001
 				else:
 					# missing required field; will be caught in validation later
 					continue
@@ -369,7 +371,7 @@ class UnitLoader:
 				if not self.vault.resolve_secret(v, ValueType):
 					raise ValueError(
 						f"Could not resolve {unit_type.__name__}.{k} as {getattr(ValueType, '__name__', '<untyped>')}"
-						f" using {'default' if default else 'configured'} value {repr(v)}"
+						f" using {'default' if default else 'configured'} value {v!r}"
 					)
 				init_kwargs[k] = v
 
@@ -413,12 +415,12 @@ class UnitLoader:
 			return value
 
 		UnitModel.post_validate_hook = validate_unit
-		AliasableModel._config = self.config
+		AliasableModel._config = self.config  # noqa: SLF001
 		try:
 			yield
 		finally:
 			UnitModel.post_validate_hook = None
-			AliasableModel._config = None
+			AliasableModel._config = None  # noqa: SLF001
 
 
 	"""

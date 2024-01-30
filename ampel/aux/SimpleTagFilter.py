@@ -7,9 +7,9 @@
 # Last Modified Date:  06.12.2021
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
-from ampel.types import Tag
 from ampel.abstract.AbsApplicable import AbsApplicable
 from ampel.content.DataPoint import DataPoint
+from ampel.types import Tag
 
 
 class SimpleTagFilter(AbsApplicable):

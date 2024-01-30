@@ -8,5 +8,5 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 # flake8: noqa: F401
-from .AmpelLogger import AmpelLogger, DEBUG, INFO, VERBOSE, SHOUT, WARNING, ERROR
+from .AmpelLogger import DEBUG, ERROR, INFO, SHOUT, VERBOSE, WARNING, AmpelLogger
 from .LogFlag import LogFlag

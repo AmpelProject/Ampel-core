@@ -7,15 +7,19 @@
 # Last Modified Date:  23.04.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import os, re
-from collections.abc import Generator
-from pkg_resources import ( # type: ignore[attr-defined]
-	get_distribution, AvailableDistributions,
-	EggInfoDistribution, DistInfoDistribution
+import os
+import re
+from collections.abc import Generator, Sequence
+
+from pkg_resources import (  # type: ignore[attr-defined]
+	AvailableDistributions,
+	DistInfoDistribution,
+	EggInfoDistribution,
+	get_distribution,
 )
 
 
-def get_dist_names(distrib_prefixes: list[str] = ["ampel-", "pyampel-"]) -> list[str]:
+def get_dist_names(distrib_prefixes: Sequence[str] = ("ampel-", "pyampel-")) -> list[str]:
 	""" Get all installed distributions whose names start with the provided prefix """
 	# ensure that at least interface and core are found
 	prefixes = {"ampel-interface", "ampel-core"}.union(distrib_prefixes)
@@ -25,8 +29,8 @@ def get_dist_names(distrib_prefixes: list[str] = ["ampel-", "pyampel-"]) -> list
 	]
 
 	if ret:
-		ret.insert(0, ret.pop([i for i, el in enumerate(ret) if "interface" in el][0]))
-		ret.insert(0, ret.pop([i for i, el in enumerate(ret) if "core" in el][0]))
+		ret.insert(0, ret.pop(next(i for i, el in enumerate(ret) if "interface" in el)))
+		ret.insert(0, ret.pop(next(i for i, el in enumerate(ret) if "core" in el)))
 
 	return ret
 
@@ -58,7 +62,7 @@ def get_files(
 
 			fname = pth if os.path.isfile(pth) else distrib.get_resource_filename(__name__, pth)
 			# 2) Manually look for files in referenced folder
-			with open(fname, "r") as f:
+			with open(fname) as f:
 				return list(
 					walk_dir(
 						f.read().strip(),
@@ -110,7 +114,7 @@ def walk_dir(
 	lookup_dir: None | str = None,
 	pattern: None | re.Pattern = None
 ) -> Generator[str, None, None]:
-	for root, dirs, files in os.walk(f"{path}/{lookup_dir}" if lookup_dir else f"{path}"):
+	for root, _, files in os.walk(f"{path}/{lookup_dir}" if lookup_dir else f"{path}"):
 		for fname in files:
 			if pattern and not pattern.match(fname):
 				continue

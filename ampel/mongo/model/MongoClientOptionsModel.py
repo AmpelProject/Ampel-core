@@ -9,6 +9,7 @@
 
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 
+
 class MongoClientOptionsModel(AmpelBaseModel):
 
 	# 0 means use operating system's default socket timeout

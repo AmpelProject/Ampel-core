@@ -7,12 +7,17 @@
 # Last Modified Date:  06.09.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import sys, re, html, math
+import html
+import math
+import re
+import sys
+from contextlib import contextmanager
+from datetime import timedelta
 from math import isinf
 from time import time
-from datetime import timedelta
-from contextlib import contextmanager
+
 from ampel.protocol.LoggerProtocol import LoggerProtocol
+
 
 # copied from https://stackoverflow.com/a/56497521/104668
 def prettyjson(obj, indent=2, maxlinelength=80):
@@ -151,10 +156,9 @@ def basictype2str(obj):
 		(isinstance(obj, float) and isinf(obj))
 	):
 		return "\"" + str(obj) + "\""
-	elif isinstance(obj, bool):
+	if isinstance(obj, bool):
 		return "true" if obj else "false"
-	else:
-		return str(obj)
+	return str(obj)
 
 
 def indentitems(items, indent, level):
@@ -179,7 +183,7 @@ def indentitems(items, indent, level):
 # Notebook goodies
 def set_bold(s: str, match: str):
 
-	from IPython.display import HTML # type: ignore[import]
+	from IPython.display import HTML  # type: ignore[import]
 	out = []
 
 	for el in s.split("\n"):
@@ -198,12 +202,12 @@ def out_stack():
 	"""
 	default_value = getattr(sys, "tracebacklimit", 1000)
 	sys.tracebacklimit = 0
-	print(" ")
+	print(" ")  # noqa: T201
 	yield
 	sys.tracebacklimit = default_value
 
 
-def human_format(num, precision=2, suffixes=['', 'K', 'M', 'G', 'T', 'P']):
+def human_format(num, precision=2, suffixes=('', 'K', 'M', 'G', 'T', 'P')):
 	"""
 	In []: human_format(1000000, precision=0)
 	Out[]: '1M'
@@ -256,4 +260,4 @@ class TimeFeedback:
 	def _print(self, s: str) -> None:
 		if self.logger:
 			self.logger.info(s)
-		print(s)
+		print(s)  # noqa: T201

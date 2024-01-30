@@ -1,37 +1,38 @@
-import mongomock, pytest, pymongo, subprocess, json, datetime
+import datetime
+import json
+import subprocess
 from os import environ
 from pathlib import Path, PosixPath
 from typing import Any
 
-from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
+import mongomock
+import pymongo
+import pytest
+
 from ampel.config.builder.DisplayOptions import DisplayOptions
-from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
-from ampel.dev.DevAmpelContext import DevAmpelContext
+from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
 from ampel.content.JournalRecord import JournalRecord
-
-from ampel.mongo.update.MongoStockIngester import MongoStockIngester
-from ampel.mongo.update.MongoT2Ingester import MongoT2Ingester
-from ampel.ingest.T2Compiler import T2Compiler
+from ampel.dev.DevAmpelContext import DevAmpelContext
+from ampel.ingest.ChainedIngestionHandler import ChainedIngestionHandler
 from ampel.ingest.StockCompiler import StockCompiler
+from ampel.ingest.T2Compiler import T2Compiler
 from ampel.log.AmpelLogger import AmpelLogger
-from ampel.util.config import get_unit_confid
-
+from ampel.model.ingest.CompilerOptions import CompilerOptions
+from ampel.model.ingest.IngestBody import IngestBody
+from ampel.model.ingest.IngestDirective import IngestDirective
 from ampel.model.ingest.T1Combine import T1Combine
 from ampel.model.ingest.T2Compute import T2Compute
-from ampel.model.ingest.IngestBody import IngestBody
 from ampel.model.UnitModel import UnitModel
-from ampel.model.ingest.CompilerOptions import CompilerOptions
-from ampel.model.ingest.IngestDirective import IngestDirective
-
-from ampel.ingest.ChainedIngestionHandler import ChainedIngestionHandler
-
-
+from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
+from ampel.mongo.update.MongoStockIngester import MongoStockIngester
+from ampel.mongo.update.MongoT2Ingester import MongoT2Ingester
 from ampel.test.dummy import (
-    DummyStockT2Unit,
     DummyPointT2Unit,
     DummyStateT2Unit,
+    DummyStockT2Unit,
     DummyTiedStateT2Unit,
 )
+from ampel.util.config import get_unit_confid
 
 
 def pytest_addoption(parser):
@@ -46,7 +47,7 @@ def pytest_addoption(parser):
 @pytest.fixture(scope="session")
 def mongod(pytestconfig):
     if port := environ.get("MONGO_PORT"):
-        yield "mongodb://localhost:{}".format(port)
+        yield f"mongodb://localhost:{port}"
         return
 
     if not pytestconfig.getoption("--integration"):
@@ -69,8 +70,8 @@ def mongod(pytestconfig):
         subprocess.check_call(["docker", "stop", container])
 
 
-@pytest.fixture
-def patch_mongo(monkeypatch):
+@pytest.fixture()
+def _patch_mongo(monkeypatch):
     monkeypatch.setattr("ampel.core.AmpelDB.MongoClient", mongomock.MongoClient)
     # ignore codec_options in DataLoader
     monkeypatch.setattr("mongomock.codec_options.is_supported", lambda *args: None)
@@ -92,12 +93,12 @@ def core_config():
     return cb.build_config(config_validator=None, get_unit_env=False)
 
 
-@pytest.fixture
-def mock_context(patch_mongo, testing_config: PosixPath):
+@pytest.fixture()
+def mock_context(_patch_mongo, testing_config: PosixPath):
     return DevAmpelContext.load(config=str(testing_config), purge_db=True)
 
 
-@pytest.fixture
+@pytest.fixture()
 def integration_context(mongod, testing_config: PosixPath):
     return DevAmpelContext.load(
         config=str(testing_config),
@@ -109,16 +110,16 @@ def integration_context(mongod, testing_config: PosixPath):
 # metafixture as suggested in https://github.com/pytest-dev/pytest/issues/349#issuecomment-189370273
 @pytest.fixture(params=["mock_context", "integration_context"])
 def dev_context(request):
-    yield request.getfixturevalue(request.param)
+    return request.getfixturevalue(request.param)
 
 
-@pytest.fixture
+@pytest.fixture()
 def ampel_logger():
     return AmpelLogger.get_logger()
 
 
-@pytest.fixture
-def ingest_stock(integration_context, ampel_logger):
+@pytest.fixture()
+def _ingest_stock(integration_context, ampel_logger):
     run_id = 0
     updates_buffer = DBUpdatesBuffer(integration_context.db, run_id=run_id, logger=ampel_logger)
     ingester = MongoStockIngester(
@@ -133,17 +134,17 @@ def ingest_stock(integration_context, ampel_logger):
         channel="TEST_CHANNEL",
         journal=JournalRecord(tier=0, extra={"alert": 123}),
     )
-    compiler.commit(ingester, datetime.datetime.now())
+    compiler.commit(ingester, datetime.datetime.now(tz=datetime.timezone.utc))
     ingester.updates_buffer.push_updates()
     assert integration_context.db.get_collection("stock").count_documents({}) == 1
 
 
-@pytest.fixture
-def ingest_stock_t2(integration_context: DevAmpelContext, ampel_logger):
+@pytest.fixture()
+def _ingest_stock_t2(integration_context: DevAmpelContext, ampel_logger):
     run_id = 0
     updates_buffer = DBUpdatesBuffer(integration_context.db, run_id=run_id, logger=ampel_logger)
     stock_id = "stockystock"
-    now = datetime.datetime.now().timestamp()
+    now = datetime.datetime.now(datetime.timezone.utc).timestamp()
     t2_compiler = T2Compiler(run_id=run_id, tier=2)
     t2_compiler.add(
         unit="DummyStockT2Unit",

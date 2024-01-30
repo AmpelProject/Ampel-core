@@ -7,12 +7,8 @@
 # Last Modified Date:  30.05.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from pymongo import UpdateOne
-from typing import Any
-from ampel.enum.DocumentCode import DocumentCode
-from ampel.content.T3Document import T3Document
-from ampel.mongo.utils import maybe_use_each
 from ampel.abstract.AbsDocIngester import AbsDocIngester
+from ampel.content.T3Document import T3Document
 
 
 class MongoT3Ingester(AbsDocIngester[T3Document]):

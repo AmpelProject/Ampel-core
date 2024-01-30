@@ -8,10 +8,12 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
+
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.types import strict_iterable
 from ampel.util.collections import check_seq_inner_type
 from ampel.util.docstringutils import gendocstring
-from ampel.base.AmpelBaseModel import AmpelBaseModel
+
 
 @gendocstring
 class QueryMatchModel(AmpelBaseModel):
@@ -77,10 +79,10 @@ class QueryMatchModel(AmpelBaseModel):
 		#print("QueryMatchModel: kwargs: %s" % kwargs)
 		#print("QueryMatchModel: values: %s" % values)
 
-		if type(v) is str:
+		if isinstance(v, str):
 			return {'anyOf': [v]}
 
-		if type(v) is list:
+		if isinstance(v, list):
 			if not check_seq_inner_type(v, str):
 				raise ValueError(
 					"QueryMatchModel error\n" +
@@ -88,7 +90,7 @@ class QueryMatchModel(AmpelBaseModel):
 				)
 			return {'anyOf': v}
 
-		if type(v) is dict:
+		if isinstance(v, dict):
 
 			if len(v) != 1:
 				raise ValueError(
@@ -121,7 +123,7 @@ class QueryMatchModel(AmpelBaseModel):
 								"Unsupported nesting (err 3)"
 							)
 
-						elif 'allOf' in el:
+						if 'allOf' in el:
 
 							# 'allOf' closes nesting
 							if not check_seq_inner_type(el['allOf'], str):

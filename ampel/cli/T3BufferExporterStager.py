@@ -7,21 +7,21 @@
 # Last Modified Date:  17.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from io import BufferedWriter, TextIOWrapper
-from datetime import datetime
-from typing import BinaryIO, TextIO, Any
 from collections.abc import Generator
+from datetime import datetime
+from io import BufferedWriter, TextIOWrapper
+from typing import Any, BinaryIO, TextIO
 
-from ampel.types import Traceless
-from ampel.struct.T3Store import T3Store
-from ampel.log.AmpelLogger import AmpelLogger
-from ampel.abstract.AbsT3Stager import AbsT3Stager
 from ampel.abstract.AbsIdMapper import AbsIdMapper
-from ampel.struct.AmpelBuffer import AmpelBuffer
+from ampel.abstract.AbsT3Stager import AbsT3Stager
+from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.cli.export import bin_export, get_fd, txt_export
 from ampel.content.T3Document import T3Document
 from ampel.core.EventHandler import EventHandler
-from ampel.base.AmpelBaseModel import AmpelBaseModel
-from ampel.cli.export import txt_export, bin_export, get_fd
+from ampel.log.AmpelLogger import AmpelLogger
+from ampel.struct.AmpelBuffer import AmpelBuffer
+from ampel.struct.T3Store import T3Store
+from ampel.types import Traceless
 
 dsi = dict.__setitem__
 ufts = datetime.utcfromtimestamp

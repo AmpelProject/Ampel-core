@@ -8,9 +8,10 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
-from ampel.util.hash import hash_payload
+
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 from ampel.log import VERBOSE
+from ampel.util.hash import hash_payload
 
 
 class ChannelConfigCollector(AbsDictConfigCollector):

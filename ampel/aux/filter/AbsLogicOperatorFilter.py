@@ -7,14 +7,15 @@
 # Last Modified Date:  18.06.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Generic, Any
 from collections.abc import Sequence
-from ampel.types import T
+from typing import Any, Generic
+
+from ampel.abstract.AbsApplicable import AbsApplicable
 from ampel.base.decorator import abstractmethod
+from ampel.model.aux.FilterCriterion import FilterCriterion
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.FlatAnyOf import FlatAnyOf
-from ampel.model.aux.FilterCriterion import FilterCriterion
-from ampel.abstract.AbsApplicable import AbsApplicable
+from ampel.types import T
 
 
 # mypy: disable-error-code = empty-body

@@ -1,19 +1,20 @@
 import pytest
-from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry, reset_registry
 from prometheus_client.metrics import MetricWrapperBase
 
+from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry, reset_registry
 
-@pytest.fixture
+
+@pytest.fixture()
 def empty_registry():
-    prev = AmpelMetricsRegistry._registry
-    AmpelMetricsRegistry._registry = None
+    prev = AmpelMetricsRegistry._registry  # noqa: SLF001
+    AmpelMetricsRegistry._registry = None  # noqa: SLF001
     yield AmpelMetricsRegistry.registry()
-    AmpelMetricsRegistry._registry = prev
+    AmpelMetricsRegistry._registry = prev  # noqa: SLF001
 
 
 def test_autoname(empty_registry):
     assert (
-        AmpelMetricsRegistry.counter(
+        AmpelMetricsRegistry.counter(  # noqa: SLF001
             "foo", "foos", unit="blarghs", subsystem="blah"
         )._name
         == "ampel_blah_foo_blarghs"

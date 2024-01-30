@@ -8,20 +8,21 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import sys
-from json import dumps
-from bson import ObjectId, encode
+from collections.abc import Generator
+from datetime import datetime
 from io import BufferedWriter, TextIOWrapper
 from itertools import islice
-from datetime import datetime
-from typing import TextIO, BinaryIO
-from collections.abc import Generator
+from json import dumps
+from typing import BinaryIO, TextIO
 
-from ampel.protocol.LoggerProtocol import LoggerProtocol
+from bson import ObjectId, encode
+
 from ampel.abstract.AbsIdMapper import AbsIdMapper
+from ampel.protocol.LoggerProtocol import LoggerProtocol
 from ampel.struct.AmpelBuffer import AmpelBuffer
-from ampel.util.serialize import walk_and_encode
-from ampel.util.pretty import prettyjson
 from ampel.util.getch import getch as fgetch
+from ampel.util.pretty import prettyjson
+from ampel.util.serialize import walk_and_encode
 
 dsi = dict.__setitem__
 ufts = datetime.utcfromtimestamp
@@ -67,7 +68,7 @@ def txt_export(
 				fd.write('\n]\n')
 				if logger:
 					logger.info("Abording")
-				return None
+				return
 
 			for el in data:
 
@@ -84,7 +85,7 @@ def txt_export(
 					fd.write('\n]\n')
 					if logger:
 						logger.info("Abording")
-					return None
+					return
 
 		fd.write('\n]\n')
 
@@ -125,14 +126,13 @@ def get_fd(
 
 	if binary:
 		if isinstance(fd, str):
-			return open(fd, "wb"), True
+			return open(fd, "wb"), True # noqa: SIM115
 		return fd, close_fd # type: ignore
-	else:
-		if fd is None:
-			return sys.stdout, False
-		if isinstance(fd, str):
-			return open(fd, 'w'), close_fd
-		return fd, close_fd # type: ignore
+	if fd is None:
+		return sys.stdout, False
+	if isinstance(fd, str):
+		return open(fd, 'w'), close_fd # noqa: SIM115
+	return fd, close_fd # type: ignore
 
 
 
@@ -167,7 +167,8 @@ def convert_timestamps(ab: AmpelBuffer) -> None:
 					dsi(t2meta, 'ts', ufts(t2meta['ts']).isoformat()) # type: ignore[arg-type]
 
 	except Exception:
-		import traceback, sys
+		import sys
+		import traceback
 		traceback.print_exc()
 		print(ab)
 		sys.exit("Exception occured")

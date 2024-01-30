@@ -87,12 +87,18 @@ b'HELLO WORLD\\n'
 ```
 """
 
-from asyncio import StreamReader, StreamWriter, StreamReaderProtocol, BaseTransport, \
-        get_running_loop, sleep
-from contextlib import contextmanager, asynccontextmanager
-from typing import Any, ContextManager, AsyncIterator
-from collections.abc import Iterator
 import os
+from asyncio import (
+    BaseTransport,
+    StreamReader,
+    StreamReaderProtocol,
+    StreamWriter,
+    get_running_loop,
+    sleep,
+)
+from collections.abc import AsyncIterator, Iterator
+from contextlib import asynccontextmanager, contextmanager, suppress
+from typing import Any
 
 __pdoc__ = {} # type: ignore
 
@@ -183,10 +189,8 @@ class AioPipeStream:
             self._fd = None
 
     def __del__(self):
-        try:
+        with suppress(OSError):
             self.close()
-        except OSError:
-            pass
 
 class AioPipeReader(AioPipeStream):
     """

@@ -7,12 +7,12 @@
 # Last Modified Date:  06.06.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.model.time.QueryTimeModel import QueryTimeModel
 from ampel.model.time.TimeDeltaModel import TimeDeltaModel
 from ampel.model.time.TimeLastRunModel import TimeLastRunModel
 from ampel.model.time.TimeStringModel import TimeStringModel
 from ampel.model.time.UnixTimeModel import UnixTimeModel
-from ampel.model.time.QueryTimeModel import QueryTimeModel
-from ampel.base.AmpelBaseModel import AmpelBaseModel
 
 
 class TimeConstraintModel(AmpelBaseModel):

@@ -7,50 +7,53 @@
 # Last Modified Date:  24.11.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+from collections.abc import Callable, Sequence
 from datetime import timedelta
 from time import time
-from typing import Literal, Any
-from collections.abc import Callable, Sequence
-from ampel.model.ChannelModel import ChannelModel
-from ampel.types import StockId, ChannelId, UnitId, DataPointId, UBson, Tag
-from ampel.abstract.AbsT0Muxer import AbsT0Muxer
-from ampel.abstract.AbsDocIngester import AbsDocIngester
+from typing import Any, Literal
+
 from ampel.abstract.AbsApplicable import AbsApplicable
+from ampel.abstract.AbsDocIngester import AbsDocIngester
+from ampel.abstract.AbsT0Muxer import AbsT0Muxer
 from ampel.abstract.AbsT0Unit import AbsT0Unit
-from ampel.abstract.AbsT1ComputeUnit import AbsT1ComputeUnit
 from ampel.abstract.AbsT1CombineUnit import AbsT1CombineUnit
+from ampel.abstract.AbsT1ComputeUnit import AbsT1ComputeUnit
 from ampel.abstract.AbsT1RetroCombineUnit import AbsT1RetroCombineUnit
-from ampel.model.UnitModel import UnitModel
+from ampel.base.AuxUnitRegister import AuxUnitRegister
+from ampel.base.LogicalUnit import LogicalUnit
+from ampel.content.DataPoint import DataPoint
+from ampel.content.MetaActivity import MetaActivity
+from ampel.content.StockDocument import StockDocument
+from ampel.content.T1Document import T1Document
+from ampel.content.T2Document import T2Document
+from ampel.core.AmpelContext import AmpelContext
 from ampel.enum.DocumentCode import DocumentCode
-from ampel.enum.MetaActionCode import MetaActionCode
 from ampel.enum.JournalActionCode import JournalActionCode
+from ampel.enum.MetaActionCode import MetaActionCode
+from ampel.ingest.StockCompiler import StockCompiler
+from ampel.ingest.T0Compiler import T0Compiler
+from ampel.ingest.T1Compiler import T1Compiler
+from ampel.ingest.T2Compiler import T2Compiler
+from ampel.log import AmpelLogger
+from ampel.log.handlers.DefaultRecordBufferingHandler import (
+	DefaultRecordBufferingHandler,
+)
+from ampel.log.LogFlag import LogFlag
+from ampel.model.ChannelModel import ChannelModel
+from ampel.model.DPSelection import DPSelection
 from ampel.model.ingest.CompilerOptions import CompilerOptions
+from ampel.model.ingest.DualIngestDirective import DualIngestDirective
+from ampel.model.ingest.IngestBody import IngestBody
+from ampel.model.ingest.IngestDirective import IngestDirective
 from ampel.model.ingest.T1Combine import T1Combine
 from ampel.model.ingest.T1CombineCompute import T1CombineCompute
 from ampel.model.ingest.T1CombineComputeNow import T1CombineComputeNow
 from ampel.model.ingest.T2Compute import T2Compute
-from ampel.model.ingest.IngestDirective import IngestDirective
-from ampel.model.ingest.DualIngestDirective import DualIngestDirective
-from ampel.model.ingest.IngestBody import IngestBody
-from ampel.model.DPSelection import DPSelection
-from ampel.core.AmpelContext import AmpelContext
-from ampel.base.LogicalUnit import LogicalUnit
-from ampel.base.AuxUnitRegister import AuxUnitRegister
-from ampel.content.T1Document import T1Document
-from ampel.content.T2Document import T2Document
-from ampel.content.StockDocument import StockDocument
-from ampel.content.DataPoint import DataPoint
-from ampel.content.MetaActivity import MetaActivity
+from ampel.model.UnitModel import UnitModel
 from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
-from ampel.ingest.T0Compiler import T0Compiler
-from ampel.ingest.T2Compiler import T2Compiler
-from ampel.ingest.StockCompiler import StockCompiler
-from ampel.ingest.T1Compiler import T1Compiler
-from ampel.struct.UnitResult import UnitResult
 from ampel.struct.T1CombineResult import T1CombineResult
-from ampel.log import AmpelLogger
-from ampel.log.LogFlag import LogFlag
-from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import ChannelId, DataPointId, StockId, Tag, UBson, UnitId
 from ampel.util.hash import build_unsafe_dict_id
 
 
@@ -113,6 +116,7 @@ T1ComputeCache = dict[
 	tuple[UBson | UnitResult, StockId]
 ]
 
+# ruff: noqa: PLE0237
 
 class ChainedIngestionHandler:
 
@@ -166,7 +170,7 @@ class ChainedIngestionHandler:
 		self.shaper = self.context.loader.new_logical_unit(
 			model=shaper, logger=logger, sub_type=AbsT0Unit
 		)
-		self.shaper_trace_id = self.shaper._trace_id
+		self.shaper_trace_id = self.shaper._trace_id  # noqa: SLF001
 
 		# Base compiler parameters
 		bopts: dict[str, Any] = {"origin": origin, "tier": tier, "run_id": run_id}
@@ -185,8 +189,7 @@ class ChainedIngestionHandler:
 			model = dbconf[key]
 			if isinstance(model, str):
 				return UnitModel(unit=model)
-			else:
-				return UnitModel(**model)
+			return UnitModel(**model)
 		self.t0_ingester = AuxUnitRegister.new_unit(
 			model = get_ingester_model('t0'),
 			sub_type = AbsDocIngester[DataPoint],
@@ -232,14 +235,13 @@ class ChainedIngestionHandler:
 			)
 			return known_ib, new_ib
 
-		elif isinstance(directive, IngestDirective):
+		if isinstance(directive, IngestDirective):
 			ib = self._new_ingest_block(
 				directive.ingest, directive.channel, updates_buffer, logger
 			)
 			return ib, ib
 
-		else:
-			raise TypeError("Unknown directive type")
+		raise TypeError("Unknown directive type")
 			
 
 	def _new_ingest_block(self,
@@ -295,10 +297,10 @@ class ChainedIngestionHandler:
 				)
 
 				# Shortcut to avoid muxer.logger.handlers[?]
-				setattr(muxer, '_buf_hdlr', buf_hdlr)
+				setattr(muxer, '_buf_hdlr', buf_hdlr) # noqa: B010
 
 			muxb.unit = muxer
-			muxb.trace_id = muxer._trace_id
+			muxb.trace_id = muxer._trace_id  # noqa: SLF001
 
 			if directive.mux.combine:
 
@@ -385,23 +387,23 @@ class ChainedIngestionHandler:
 			)
 
 			# Shortcut to avoid t1_unit.logger.handlers[?]
-			setattr(t1_unit, '_buf_hdlr', buf_hdlr)
+			setattr(t1_unit, '_buf_hdlr', buf_hdlr) # noqa: B010
 			self._t1_combine_units_cache[t1b.trace_id] = t1_unit
 
 		t1b.unit = t1_unit
-		t1b.trace_id = t1_unit._trace_id
+		t1b.trace_id = t1_unit._trace_id  # noqa: SLF001
 		if g := t1_combine.group:
 			t1b.group = g if isinstance(g, Sequence) else [g]
 
 		# State T2s (are defined along with t1 directives usually)
 		# We allow the definition of multiple combiners t2 ingesters
-		if isinstance(t1_combine, (T1Combine, T1CombineComputeNow)):
+		if isinstance(t1_combine, T1Combine | T1CombineComputeNow):
 			if t1_combine.state_t2:
 				t1b.state_t2 = [self._gen_t2_block(el) for el in t1_combine.state_t2]
 			if t1_combine.point_t2:
 				t1b.point_t2 = [self._gen_t2_block(el) for el in t1_combine.point_t2]
 
-		if isinstance(t1_combine, (T1CombineCompute, T1CombineComputeNow)):
+		if isinstance(t1_combine, T1CombineCompute | T1CombineComputeNow):
 
 			t1b.compute = T1ComputeBlock()
 			t1b.compute.unit_name = t1_combine.compute.unit
@@ -426,7 +428,7 @@ class ChainedIngestionHandler:
 					self._t1_compute_units_cache[i] = t1_compute_unit
 
 				t1b.compute.unit = t1_compute_unit
-				t1b.compute.trace_id = t1_compute_unit._trace_id
+				t1b.compute.trace_id = t1_compute_unit._trace_id  # noqa: SLF001
 
 		return t1b
 
@@ -455,10 +457,10 @@ class ChainedIngestionHandler:
 		if im.ingest:
 
 			if isinstance(im.ingest, str):
-				if im.ingest not in self.context.config._config['alias']['t2']:
+				if im.ingest not in self.context.config._config['alias']['t2']:  # noqa: SLF001
 					raise ValueError(f"Ingest alias {im.ingest} not found")
 				ingest_opts.update(
-					self.context.config._config['alias']['t2'][im.ingest]
+					self.context.config._config['alias']['t2'][im.ingest]  # noqa: SLF001
 				)
 			else: # AmpelBaseModel
 				ingest_opts.update(im.ingest.dict())
@@ -531,7 +533,7 @@ class ChainedIngestionHandler:
 				if jm_extra:
 					jentry = jm_extra | jentry
 
-				if i > 0: # Known stock (for the current channel)
+				if i > 0: # Known stock (for the current channel) # noqa: SIM108
 					ib = ibs[i][0]
 				else: # New stock
 					ib = ibs[-i][1]
@@ -616,14 +618,14 @@ class ChainedIngestionHandler:
 
 				logger = self.logger
 				for muxer, (_, _, chans) in mux_cache.items():
-					if muxer._buf_hdlr.buffer: # type: ignore[attr-defined]
-						muxer._buf_hdlr.forward( # type: ignore[attr-defined]
+					if muxer._buf_hdlr.buffer: # type: ignore[attr-defined]  # noqa: SLF001
+						muxer._buf_hdlr.forward( # type: ignore[attr-defined]  # noqa: SLF001
 							logger, stock=stock_id, channel=list(chans), extra = jm_extra
 						)
 
 				for (t1_unit, _), (_, chans) in t1_comb_cache.items():
-					if t1_unit._buf_hdlr.buffer: # type: ignore[union-attr]
-						t1_unit._buf_hdlr.forward( # type: ignore[union-attr]
+					if t1_unit._buf_hdlr.buffer: # type: ignore[union-attr]  # noqa: SLF001
+						t1_unit._buf_hdlr.forward( # type: ignore[union-attr]  # noqa: SLF001
 							logger, stock=stock_id, channel=list(chans), extra = jm_extra
 						)
 

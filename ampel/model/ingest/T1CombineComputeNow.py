@@ -8,8 +8,10 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from collections.abc import Sequence
-from ampel.model.UnitModel import UnitModel
+
 from ampel.model.ingest.T2Compute import T2Compute
+from ampel.model.UnitModel import UnitModel
+
 
 class T1CombineComputeNow(UnitModel[str]):
 	"""

@@ -7,19 +7,19 @@
 # Last Modified Date:  03.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import sys, time
-from sys import _getframe
-from os.path import basename
+import sys
 from time import strftime
 from typing import Literal
-from ampel.log.LogFlag import LogFlag
+
 from ampel.log.LightLogRecord import LightLogRecord
-from ampel.util.mappings import compare_dict_values
+from ampel.log.LogFlag import LogFlag
 from ampel.util.collections import try_reduce
+from ampel.util.mappings import compare_dict_values
 
 levels = {1: 'DEBUG', 2: 'VERBOSE', 4: 'INFO', 8: 'SHOUT', 16: 'WARNING', 32: 'ERROR'}
 
 # flake8: noqa: E101
+# ruff: noqa: PLE0237
 class AmpelStreamHandler:
 	"""
 	:param int aggregate_interval: logs with similar attributes (log level, ...) are aggregated
@@ -87,9 +87,9 @@ class AmpelStreamHandler:
 		elif density == "compacter":
 			self.log_sep = ''
 			self.fields_check = ['extra', 'stock', 'channel']
-			self.handle = getattr(self, f"handle_compacter") # type: ignore[assignment]
+			self.handle = self.handle_compacter # type: ignore[assignment]
 		elif density == "headerless":
-			self.handle = getattr(self, f"handle_headerless") # type: ignore[assignment]
+			self.handle = self.handle_headerless # type: ignore[assignment]
 
 
 	def handle(self, rec: LightLogRecord) -> None:
@@ -127,7 +127,7 @@ class AmpelStreamHandler:
 			self.stream.write(rec.msg)
 		if rec.extra:
 			if rec.msg:
-				self.stream.write(f" ")
+				self.stream.write(" ")
 			self.stream.write(str(rec.extra))
 		self.stream.write(self.nl)
 

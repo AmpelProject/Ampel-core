@@ -1,7 +1,10 @@
-import pytest, yaml
 from typing import Any
-from ampel.model.UnitModel import UnitModel
+
+import pytest
+import yaml
+
 from ampel.model.ingest.T2Compute import T2Compute
+from ampel.model.UnitModel import UnitModel
 from ampel.util.template import check_tied_units, filter_units
 
 
@@ -28,7 +31,7 @@ def test_dependency_present(first_pass_config: dict[str, Any], dependency: str):
 
 def test_missing_dependency(first_pass_config: dict[str, Any]):
     units = [T2Compute(unit="DummyTiedStateT2Unit")] # type: ignore[var-annotated, arg-type]
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r"^Unit DummyTiedStateT2Unit depends on unit.*Possible matches are: \[\]$"):
         check_tied_units(units, first_pass_config)
 
 
@@ -42,12 +45,12 @@ def test_misconfigured_dependency(first_pass_config: dict[str, Any]):
         ),
         T2Compute(unit="DummyStateT2Unit", config={"foo": 42}) # type: ignore [arg-type]
     ]
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r"^Unit DummyTiedStateT2Unit depends on unit.*Possible matches are: (?!\[\])"):
         check_tied_units(units, first_pass_config)
 
-@pytest.fixture
+@pytest.fixture()
 def all_units(first_pass_config: dict[str, Any]) -> list[UnitModel]:
-    return [UnitModel(unit=name) for name in first_pass_config["unit"].keys()]
+    return [UnitModel(unit=name) for name in first_pass_config["unit"]]
 
 def test_filter_units(all_units: list[UnitModel], first_pass_config: dict[str, Any]):
     assert len(filter_units(all_units, "LogicalUnit", first_pass_config)) == 10

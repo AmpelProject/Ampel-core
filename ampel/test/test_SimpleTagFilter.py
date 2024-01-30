@@ -1,11 +1,11 @@
-from ampel.model.UnitModel import UnitModel
 import pytest
 
 from ampel.model.DPSelection import DPSelection
+from ampel.model.UnitModel import UnitModel
 
 
 @pytest.mark.parametrize(
-    "filter,count",
+    ("filter","count"),
     [
         (None, 0),
         ("SimpleTagFilter", 5),

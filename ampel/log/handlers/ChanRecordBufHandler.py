@@ -8,9 +8,10 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
+
 from ampel.log.handlers.RecordBufferingHandler import RecordBufferingHandler
 from ampel.protocol.LoggingHandlerProtocol import LoggingHandlerProtocol
-from ampel.types import StockId, ChannelId
+from ampel.types import ChannelId, StockId
 
 
 class ChanRecordBufHandler(RecordBufferingHandler):
@@ -71,7 +72,7 @@ class ChanRecordBufHandler(RecordBufferingHandler):
 						rec.extra = self._extra # type: ignore[union-attr]
 
 				if self._unit:
-					setattr(rec, 'unit', self._unit)
+					rec.unit = self._unit
 
 				target.handle(rec) # type: ignore
 

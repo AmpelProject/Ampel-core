@@ -9,6 +9,7 @@
 
 import sys
 
+
 def yes_no(question: str) -> bool:
 
 	try:
@@ -19,13 +20,13 @@ def yes_no(question: str) -> bool:
 			sys.stdout.write('\x1b[1A')
 			sys.stdout.write('\x1b[2K')
 	except KeyboardInterrupt as e:
-		print('\nAbording...\n\n')
+		print('\nAbording...\n\n')  # noqa: T201
 		raise e
 
-	if c == 'y' or c == 'yes':
+	if c in ('y', 'yes'):
 		return True
 
-	if c == 'n' or c == 'no':
+	if c in ('n', 'no'):
 		return False
 
 	raise ValueError(f"Unsupported response (expected y or n): {c}")

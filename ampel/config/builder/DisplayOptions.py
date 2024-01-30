@@ -9,6 +9,7 @@
 
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 
+
 class DisplayOptions(AmpelBaseModel):
 
 	verbose: bool = False

@@ -7,16 +7,17 @@
 # Last Modified Date:  22.11.2020
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
-from typing import Any
 from collections.abc import Sequence
-from ampel.types import ChannelId
+from typing import Any
+
+from ampel.aux.ComboDictModifier import ComboDictModifier
 from ampel.log import VERBOSE
-from ampel.util.logicschema import reduce_to_set
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.OneOf import OneOf
-from ampel.aux.ComboDictModifier import ComboDictModifier
 from ampel.t3.stage.project.T3BaseProjector import T3BaseProjector
+from ampel.types import ChannelId
+from ampel.util.logicschema import reduce_to_set
 
 
 class T3ChannelProjector(T3BaseProjector):
@@ -66,10 +67,7 @@ class T3ChannelProjector(T3BaseProjector):
 
 
 	def overwrite_root_channel(self, v: Sequence[ChannelId]) -> None | Sequence[ChannelId]:
-		if subset := list(self._channel_set.intersection(v)):
-			return subset
-		else:
-			return None
+		return subset if (subset := list(self._channel_set.intersection(v))) else None
 
 
 	def channel_projection(self, dicts: Sequence[dict[str, Any]]) -> Sequence[dict[str, Any]]:
@@ -87,19 +85,18 @@ class T3ChannelProjector(T3BaseProjector):
 
 		for el in dicts:
 			if elchan := el.get('channel'):
-				if isinstance(elchan, (str, int)):
+				if isinstance(elchan, str | int):
 					if elchan in channel_set:
 						ret.append(el)
-				else:
-					if subset := list(channel_set.intersection(elchan)):
-						channels = (
-							list(subset)
-							if len(subset) > 1 else list(subset)[0]
-						)
-						if self.unalterable:
-							ret.append({**el, 'channel': channels})
-						else:
-							setitem(el, 'channel', channels)
-							ret.append(el)
+				elif subset := channel_set.intersection(elchan):
+					channels = (
+						list(subset)
+						if len(subset) > 1 else next(iter(subset)) # type: ignore[arg-type]
+					)
+					if self.unalterable:
+						ret.append({**el, 'channel': channels})
+					else:
+						setitem(el, 'channel', channels)
+						ret.append(el)
 
 		return tuple(ret)

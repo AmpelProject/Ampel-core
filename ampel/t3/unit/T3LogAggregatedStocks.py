@@ -8,8 +8,9 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
-from ampel.struct.T3Store import T3Store
+
 from ampel.abstract.AbsT3Unit import AbsT3Unit
+from ampel.struct.T3Store import T3Store
 
 
 class T3LogAggregatedStocks(AbsT3Unit):
@@ -34,4 +35,3 @@ class T3LogAggregatedStocks(AbsT3Unit):
 			}
 		)
 
-		return None

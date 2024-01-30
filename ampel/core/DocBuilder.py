@@ -7,24 +7,23 @@
 # Last Modified Date:  04.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Literal, TypeVar, Type
-from datetime import datetime
-from importlib import import_module
+from datetime import datetime, timezone
+from typing import Literal, TypeVar
 
-from ampel.types import ChannelId, OneOrMany, Tag, ubson, UBson
 from ampel.abstract.AbsUnitResultAdapter import AbsUnitResultAdapter
-from ampel.core.ContextUnit import ContextUnit
-from ampel.core.EventHandler import EventHandler
 from ampel.base.AmpelUnit import AmpelUnit
-from ampel.struct.UnitResult import UnitResult
+from ampel.content.MetaRecord import MetaRecord
 from ampel.content.T3Document import T3Document
 from ampel.content.T4Document import T4Document
-from ampel.content.MetaRecord import MetaRecord
+from ampel.core.ContextUnit import ContextUnit
+from ampel.core.EventHandler import EventHandler
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.enum.MetaActionCode import MetaActionCode
 from ampel.model.UnitModel import UnitModel
-from ampel.util.tag import merge_tags
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import ChannelId, OneOrMany, Tag, UBson, ubson
 from ampel.util.hash import build_unsafe_dict_id
+from ampel.util.tag import merge_tags
 
 T = TypeVar("T", T3Document, T4Document)
 
@@ -77,12 +76,12 @@ class DocBuilder(ContextUnit):
 		unit: AmpelUnit,
 		res: None | UBson | UnitResult,
 		ts: float,
-		doc_type: Type[T]
+		doc_type: type[T]
 	) -> T:
 
 		d: T = {'process': event_hdlr.process_name} # type: ignore[typeddict-item]
 		actact = MetaActionCode(0)
-		now = datetime.now()
+		now = datetime.now(tz=timezone.utc)
 
 		if self.human_timestamp:
 			d['datetime'] = now.strftime(self.human_timestamp_format)
@@ -90,7 +89,7 @@ class DocBuilder(ContextUnit):
 		d['unit'] = unit.__class__.__name__
 		d['code'] = actact
 
-		conf = unit._get_trace_content()
+		conf = unit._get_trace_content()  # noqa: SLF001
 		meta: MetaRecord = {
 			'run': event_hdlr.get_run_id(),
 			'ts': int(now.timestamp()),
@@ -101,8 +100,8 @@ class DocBuilder(ContextUnit):
 		self.context.db.add_conf_id(confid, conf)
 
 		# Live dangerously
-		if confid not in self.context.config._config['confid']:
-			dict.__setitem__(self.context.config._config['confid'], confid, conf)
+		if confid not in self.context.config._config['confid']:  # noqa: SLF001
+			dict.__setitem__(self.context.config._config['confid'], confid, conf)  # noqa: SLF001
 
 		d['confid'] = confid
 
@@ -164,13 +163,13 @@ class DocBuilder(ContextUnit):
 			if 'unit' in self.human_id:
 				ids.append("[%s]" % unit.__class__.__name__)
 			if 'tag' in self.human_id and d.get('tag'):
-				ids.append("[%s]" % (d['tag'] if isinstance(d['tag'], (int, str)) \
+				ids.append("[%s]" % (d['tag'] if isinstance(d['tag'], int | str) \
 					else " ".join(d['tag']))) # type: ignore
 			if 'config' in self.human_id:
 				ids.append("[%s]" % confid)
 			if 'run' in self.human_id:
 				ids.append("[%s]" % event_hdlr.get_run_id())
-			ids.append(datetime.now().strftime(self.human_timestamp_format))
+			ids.append(datetime.now(tz=timezone.utc).strftime(self.human_timestamp_format))
 			d['_id'] = " ".join(ids)
 
 		return d

@@ -7,10 +7,12 @@
 # Last Modified Date:  29.04.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+from multiprocessing import Pool
+
 from pymongo import MongoClient
 from pymongo.collection import Collection
-from multiprocessing import Pool
-from ampel.types import ChannelId, StockId, OneOrMany
+
+from ampel.types import ChannelId, OneOrMany, StockId
 
 
 def get_ids_using_find(
@@ -19,7 +21,7 @@ def get_ids_using_find(
 	batch_size=1000000
 ) -> dict[ChannelId, set[StockId]]:
 
-	if isinstance(channel, (int, str)):
+	if isinstance(channel, int | str):
 		return {
 			channel: {
 				el['_id'] for el in col \
@@ -40,7 +42,7 @@ def get_ids_using_parallel_find(
 	batch_size: int = 1000000
 ) -> dict[ChannelId, set[StockId]]:
 
-	if isinstance(channel, (int, str)):
+	if isinstance(channel, int | str):
 		return get_ids_using_find(
 			MongoClient(mongo_uri) \
 				.get_database(db_name) \

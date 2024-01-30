@@ -7,22 +7,22 @@
 # Last Modified Date:  03.09.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+from collections.abc import Mapping, Sequence
 from time import time
+from typing import Any, Literal, get_args
+
 from bson import ObjectId
 from pymongo.errors import BulkWriteError
 from pymongo.operations import UpdateMany, UpdateOne
-from typing import Any, Literal, get_args
-from collections.abc import Sequence, Mapping
 
+from ampel.content.JournalRecord import JournalRecord
 from ampel.core.AmpelDB import AmpelDB
-from ampel.types import ChannelId, Tag, StockId
-from ampel.log import AmpelLogger, VERBOSE
+from ampel.enum.JournalActionCode import JournalActionCode
+from ampel.log import VERBOSE, AmpelLogger
 from ampel.log.utils import report_exception
 from ampel.mongo.utils import maybe_use_each
-from ampel.enum.JournalActionCode import JournalActionCode
 from ampel.struct.JournalAttributes import JournalAttributes
-from ampel.content.JournalRecord import JournalRecord
-
+from ampel.types import ChannelId, StockId, Tag
 
 tag_type = get_args(Tag) # type: ignore[misc]
 chan_type = get_args(ChannelId) # type: ignore[misc]
@@ -133,7 +133,7 @@ class MongoStockUpdater:
 		if tag or name:
 
 			upd['$addToSet'] = (
-				({'tag': tag if isinstance(tag, (str, int)) else maybe_use_each(tag)} if tag else {}) |
+				({'tag': tag if isinstance(tag, str | int) else maybe_use_each(tag)} if tag else {}) |
 				({'name': name if isinstance(name, str) else maybe_use_each(name)} if name else {})
 			)
 
@@ -156,7 +156,7 @@ class MongoStockUpdater:
 			# - case: UpdateMany + UpdateMany: do nothing or put differently: submit the two ops as is
 			# - case: UpdateOne + UpdateMany: update op UpdateOne and no longer match target stock in UpdateMany
 			# - case: UpdateOne + UpdateOne: merge updates
-			if not isinstance(stock, (int, str)):
+			if not isinstance(stock, int | str):
 				self._add_many_update(list(stock), upd)
 			else:
 				self._add_one_update(stock, upd)
@@ -178,7 +178,7 @@ class MongoStockUpdater:
 
 		upd = {'$addToSet': {'tag': tag if isinstance(tag, tag_type) else {'$each': tag}}}
 
-		if isinstance(stock, (int, bytes, str)): # StockId
+		if isinstance(stock, int | bytes | str): # StockId
 			self._add_one_update(stock, upd)
 		else: # Sequence[StockId]
 			self._add_many_update(stock if isinstance(stock, list) else list(stock), upd)
@@ -190,8 +190,8 @@ class MongoStockUpdater:
 
 		if stock in self._multi_updates:
 			for um in self._multi_updates.pop(stock):
-				um._filter['stock']['$in'].remove(stock)
-				self._merge_updates(uo, um._doc)
+				um._filter['stock']['$in'].remove(stock)  # noqa: SLF001
+				self._merge_updates(uo, um._doc)  # noqa: SLF001
 
 		if stock in self._one_updates:
 			self._merge_updates(self._one_updates[stock], upd)
@@ -231,7 +231,7 @@ class MongoStockUpdater:
 		:raises: ValueError in case update structures are not conform ex: {'$addToSet': {'name': {'a': 1}}}
 		"""
 
-		opd = op._doc
+		opd = op._doc  # noqa: SLF001
 		assert isinstance(d, Mapping)
 		assert isinstance(opd, dict)
 
@@ -288,7 +288,7 @@ class MongoStockUpdater:
 
 			if self.logger.verbose > 1:
 				for el in jupds:
-					self.logger.log(VERBOSE, f"Journal update: {str(el)}")
+					self.logger.log(VERBOSE, f"Journal update: {el!s}")
 
 			self.col_stock.bulk_write(jupds)
 
@@ -301,8 +301,8 @@ class MongoStockUpdater:
 
 			if self.raise_exc:
 				if isinstance(e, BulkWriteError):
-					raise ValueError(f"Journal update error: {e.details}")
-				raise ValueError("Journal update error")
+					raise ValueError(f"Journal update error: {e.details}") from e
+				raise ValueError("Journal update error") from e
 
 			info: dict[str, Any] = {
 				'process': self.process_name,
@@ -335,12 +335,10 @@ class MongoStockUpdater:
 						jrec['tag'].append(tag) # type: ignore[union-attr]
 
 				# multi-tag tweak request
+				elif isinstance(jrec['tag'], tag_type): # journal record contains single tag (not a sequence of tags)
+					jrec['tag'] = [*jrec['tag'], tag] # type: ignore[list-item, misc]
 				else:
-					# journal record contains single tag (not a sequence of tags)
-					if isinstance(jrec['tag'], tag_type):
-						jrec['tag'] = [*jrec['tag'], tag] # type: ignore[list-item, misc]
-					else:
-						jrec['tag'] = jrec['tag'] + tag # type: ignore[operator]
+					jrec['tag'] = jrec['tag'] + tag # type: ignore[operator]
 
 			# journal record contains no tag
 			else:

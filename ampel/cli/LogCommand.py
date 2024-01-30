@@ -8,20 +8,20 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from argparse import ArgumentParser
-from typing import Any
 from collections.abc import Sequence
+from typing import Any
+
 from ampel.abstract.AbsIdMapper import AbsIdMapper
 from ampel.base.AuxUnitRegister import AuxUnitRegister
-from ampel.core.AmpelContext import AmpelContext
-from ampel.cli.ArgParserBuilder import ArgParserBuilder
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
-from ampel.cli.MaybeIntAction import MaybeIntAction
+from ampel.cli.ArgParserBuilder import ArgParserBuilder
 from ampel.cli.LoadJSONAction import LoadJSONAction
+from ampel.cli.MaybeIntAction import MaybeIntAction
+from ampel.core.AmpelContext import AmpelContext
+from ampel.log.LogsDumper import LogsDumper
 from ampel.mongo.query.var.LogsLoader import LogsLoader
 from ampel.mongo.query.var.LogsMatcher import LogsMatcher
-from ampel.log.LogsDumper import LogsDumper
-
 
 hlp = {
 	'show': 'Print logs to stdout',
@@ -211,10 +211,11 @@ class LogCommand(AbsCoreCommand):
 		mcrit = matcher.get_match_criteria()
 
 		if sub_op == 'tail':
-			from bson.objectid import ObjectId
-			from datetime import datetime
 			import time
-			mcrit['_id'] = {'$gte': ObjectId.from_datetime(datetime.utcnow())}
+			from datetime import datetime, timezone
+
+			from bson.objectid import ObjectId
+			mcrit['_id'] = {'$gte': ObjectId.from_datetime(datetime.now(tz=timezone.utc))}
 			ld.datetime_key = 'date'
 			loader.datetime_key = 'date'
 

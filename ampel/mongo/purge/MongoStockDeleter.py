@@ -1,13 +1,13 @@
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import partial
 from typing import Any, Literal
 
 from pymongo.client_session import ClientSession
+from pymongo.errors import OperationFailure
 from pymongo.read_concern import ReadConcern
 from pymongo.read_preferences import ReadPreference
 from pymongo.write_concern import WriteConcern
-from pymongo.errors import OperationFailure
 
 from ampel.abstract.AbsOpsUnit import AbsOpsUnit
 from ampel.base.AmpelBaseModel import AmpelBaseModel
@@ -136,19 +136,18 @@ class MongoStockDeleter(AbsOpsUnit):
                     partial(self._purge_chunk_in_transaction, stock_ids=stock_ids),
                     write_concern=WriteConcern(**self.write_concern.dict()),
                 )
-            except OperationFailure as exc:
+            except OperationFailure as exc:  # noqa: PERF203
                 # operation was interrupted because the transaction exceeded the configured 'transactionLifetimeLimitSeconds'
                 if attempt == self.retry or exc.code != 290:
                     raise
-                else:
-                    continue
+                continue
         # unreachable
         raise NotImplementedError()
 
     def run(self, beacon: None | dict[str, Any] = None) -> None | dict[str, Any]:
 
         if self.now == "now":
-            now = datetime.today()
+            now = datetime.now(tz=timezone.utc)
         elif self.now == "latest_stock":
             # use the timestamp of the most recently inserted stock as a marker for "now"
             try:
@@ -160,7 +159,7 @@ class MongoStockDeleter(AbsOpsUnit):
                 )
             except StopIteration:
                 return None
-            now = datetime.fromtimestamp(latest_stock["ts"]["any"]["tied"])
+            now = datetime.fromtimestamp(latest_stock["ts"]["any"]["tied"], tz=timezone.utc)
             self.logger.info(f"Last stock inserted {now} ({now.timestamp():.0f})")
 
         # TODO: specify conditions for stocks to delete (e.g. per channel), and then $and them
@@ -194,7 +193,7 @@ class MongoStockDeleter(AbsOpsUnit):
                 .sort("stock", 1),
                 self.chunk_size,
             ):
-                self.logger.debug(f"Purging chunk")
+                self.logger.debug("Purging chunk")
                 deleted_in_chunk = self._purge_chunk(
                     session, stock_ids=[doc["stock"] for doc in docs]
                 )

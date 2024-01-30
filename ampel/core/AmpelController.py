@@ -7,17 +7,18 @@
 # Last Modified Date:  14.03.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import asyncio, re
-from typing import Literal, TYPE_CHECKING
-from collections.abc import Iterable, Sequence
+import asyncio
+import re
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Literal
 
 from ampel.abstract.AbsProcessController import AbsProcessController
-from ampel.secret.AmpelVault import AmpelVault
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.core.UnitLoader import UnitLoader
-from ampel.log.AmpelLogger import AmpelLogger, DEBUG, VERBOSE
-from ampel.util.hash import build_unsafe_dict_id
+from ampel.log.AmpelLogger import DEBUG, VERBOSE, AmpelLogger
 from ampel.model.ProcessModel import ProcessModel
+from ampel.secret.AmpelVault import AmpelVault
+from ampel.util.hash import build_unsafe_dict_id
 
 if TYPE_CHECKING:
 	from ampel.protocol.LoggerProtocol import LoggerProtocol
@@ -180,20 +181,18 @@ class AmpelController:
 
 				# Process name inclusion filter
 				if match and not any(rm.match(p["name"]) for rm in rmatch):
-					if logger:
-						if verbose > 1:
-							logger.debug(
-								f'Ignoring process {p["name"]} unmatched by {rmatch}'
-							)
+					if logger and verbose > 1:
+						logger.debug(
+							f'Ignoring process {p["name"]} unmatched by {rmatch}'
+						)
 					continue
 
 				# Process name exclusion filter
 				if exclude and any(rx.match(p["name"]) for rx in rexcl):
-					if logger:
-						if verbose > 1:
-							logger.info(
-								f'Excluding process {p["name"]} matched by {rmatch}'
-							)
+					if logger and verbose > 1:
+						logger.info(
+							f'Excluding process {p["name"]} matched by {rmatch}'
+						)
 					continue
 
 				if not p.get("active", True):
@@ -228,8 +227,10 @@ class AmpelController:
 	@classmethod
 	def main(cls, args: None | list[str] = None) -> None:
 
-		import logging, signal
+		import logging
+		import signal
 		from argparse import ArgumentParser
+
 		from ampel.secret.DictSecretProvider import DictSecretProvider
 
 		logging.basicConfig(level="INFO")
@@ -342,7 +343,7 @@ class AmpelController:
 					logging.info(
 						f"Updated {controller.__class__.__name__} with processes: {[pm.name for pm in processes]} "
 					)
-				except Exception:
+				except Exception:  # noqa: PERF203
 					logging.exception(
 						f"Failed to update {controller.__class__.__name__} with processes: {[pm.name for pm in processes]}"
 					)

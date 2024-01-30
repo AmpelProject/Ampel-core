@@ -8,11 +8,12 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
+
 from ampel.abstract.AbsEventUnit import AbsEventUnit
-from ampel.model.UnitModel import UnitModel
-from ampel.log import AmpelLogger
-from ampel.core.EventHandler import EventHandler
 from ampel.abstract.AbsT3Unit import AbsT3Unit
+from ampel.core.EventHandler import EventHandler
+from ampel.log import AmpelLogger
+from ampel.model.UnitModel import UnitModel
 
 
 class DemoProcessor(AbsEventUnit):
@@ -22,8 +23,8 @@ class DemoProcessor(AbsEventUnit):
 
 	def proceed(self, event_hdlr: EventHandler) -> Any:
 
-		from random import randint
 		import time
+		from random import randint
 		self.parameter_b = randint(3, 10)
 		time.sleep(self.parameter_b)
 
@@ -54,4 +55,4 @@ class DemoProcessor(AbsEventUnit):
 			sub_type = AbsT3Unit
 		)
 
-		print(unit)
+		print(unit)  # noqa: T201

@@ -7,19 +7,21 @@
 # Last Modified Date:  23.04.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import pytest, yaml
-from ampel.config.builder.ProcessMorpher import ProcessMorpher
+import pytest
+import yaml
+
 from ampel.config.builder.DisplayOptions import DisplayOptions
+from ampel.config.builder.ProcessMorpher import ProcessMorpher
 from ampel.config.collector.T02ConfigCollector import T02ConfigCollector
 
 
-@pytest.fixture
+@pytest.fixture()
 def first_pass_config(testing_config):
     with open(testing_config) as f:
         return yaml.safe_load(f)
 
 
-@pytest.fixture
+@pytest.fixture()
 def config_collector(first_pass_config, ampel_logger):
     first_pass_config["confid"] = T02ConfigCollector(
         conf_section = "confid",
@@ -30,7 +32,7 @@ def config_collector(first_pass_config, ampel_logger):
 
 
 @pytest.mark.parametrize(
-    "config,hashed_config",
+    ("config","hashed_config"),
     [
         ({}, {"test_parameter": 1, "chatty": False}),
         ({"test_parameter": 1, "chatty": False}, {"test_parameter": 1, "chatty": False}),

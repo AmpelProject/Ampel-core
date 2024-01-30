@@ -1,5 +1,6 @@
 import os
-from typing import Any, ClassVar, Iterable, Optional, Sequence
+from time import perf_counter_ns
+from typing import Any, ClassVar
 
 from prometheus_client import (
     CollectorRegistry,
@@ -9,34 +10,30 @@ from prometheus_client import (
     Summary,
     push_to_gateway,
 )
-from prometheus_client.multiprocess import MultiProcessCollector
-from prometheus_client.metrics import MetricWrapperBase
 from prometheus_client.context_managers import Timer
-from time import perf_counter_ns
-
-from prometheus_client.registry import REGISTRY, CollectorRegistry
+from prometheus_client.metrics import MetricWrapperBase
+from prometheus_client.multiprocess import MultiProcessCollector
 
 
 def reset_metric(metric: MetricWrapperBase) -> None:
-    if metric._is_parent():
-        for child in metric._metrics.values():
+    if metric._is_parent():  # noqa: SLF001
+        for child in metric._metrics.values():  # noqa: SLF001
             reset_metric(child)
+    elif isinstance(metric, Counter | Gauge):
+        metric._value.set(0)  # noqa: SLF001
+    elif isinstance(metric, Summary):
+        metric._sum.set(0)  # noqa: SLF001
+        metric._count.set(0)  # noqa: SLF001
+    elif isinstance(metric, Histogram):
+        metric._sum.set(0)  # noqa: SLF001
+        for bucket in metric._buckets:  # noqa: SLF001
+            bucket.set(0)
     else:
-        if isinstance(metric, (Counter, Gauge)):
-            metric._value.set(0)
-        elif isinstance(metric, Summary):
-            metric._sum.set(0)
-            metric._count.set(0)
-        elif isinstance(metric, Histogram):
-            metric._sum.set(0)
-            for bucket in metric._buckets:
-                bucket.set(0)
-        else:
-            raise TypeError(f"don't know how to reset metric of type {type(metric)}")
+        raise TypeError(f"don't know how to reset metric of type {type(metric)}")
 
 
 def reset_registry(registry: CollectorRegistry) -> None:
-    for metric in registry._names_to_collectors.values():
+    for metric in registry._names_to_collectors.values():  # noqa: SLF001
         if isinstance(metric, MetricWrapperBase):
             reset_metric(metric)
 

@@ -7,14 +7,16 @@
 # Last Modified Date:  27.12.2019
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from bson.binary import Binary
 from typing import Any
-from ampel.types import StockId, ChannelId, StrictIterable, strict_iterable
-from ampel.model.operator.AnyOf import AnyOf
+
+from bson.binary import Binary
+
 from ampel.model.operator.AllOf import AllOf
+from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.OneOf import OneOf
-from ampel.mongo.utils import maybe_match_array
 from ampel.mongo.query.general import build_general_query
+from ampel.mongo.utils import maybe_match_array
+from ampel.types import ChannelId, StockId, StrictIterable, strict_iterable
 
 
 def build_stateless_query(
@@ -40,7 +42,7 @@ def build_stateless_query(
 	query = build_general_query(stock=stock, channel=channel)
 
 	if t2_subsel:
-		query['unit'] = t2_subsel if isinstance(t2_subsel, (str, int)) \
+		query['unit'] = t2_subsel if isinstance(t2_subsel, str | int) \
 			else maybe_match_array(t2_subsel)
 
 	return query
@@ -66,7 +68,7 @@ def build_statebound_t2_query(
 	query['link'] = get_compound_match(states)
 
 	if t2_subsel:
-		query['unit'] = t2_subsel if isinstance(t2_subsel, (str, int)) \
+		query['unit'] = t2_subsel if isinstance(t2_subsel, str | int) \
 			else maybe_match_array(t2_subsel)
 
 	return query
@@ -75,18 +77,14 @@ def _to_binary(st: str | bytes | Binary) -> Binary:
 	if isinstance(st, str):
 		if len(st) == 32:
 			return Binary(bytes.fromhex(st), 0)
-		else:
-			raise ValueError("Provided state strings must have 32 characters")
-	elif isinstance(st, bytes):
+		raise ValueError("Provided state strings must have 32 characters")
+	if isinstance(st, bytes):
 		if len(st) == 16:
 			return Binary(st, 0)
-		else:
-			raise ValueError("Provided state bytes must have a length of 16")
-	else:
-		if st.subtype == 0:
-			return st
-		else:
-			raise ValueError("Bson Binary states must have subtype 0")
+		raise ValueError("Provided state bytes must have a length of 16")
+	if st.subtype == 0:
+		return st
+	raise ValueError("Bson Binary states must have subtype 0")
 
 
 def get_compound_match(
@@ -97,18 +95,17 @@ def get_compound_match(
 	"""
 
 	# Single state was provided
-	if isinstance(states, (str, bytes, Binary)):
+	if isinstance(states, str | bytes | Binary):
 		return _to_binary(states)
 
 	# Multiple states were provided
-	elif isinstance(states, strict_iterable):
+	if isinstance(states, strict_iterable):
 
 		return {
 			'$in': [_to_binary(st) for st in states]
 		}
 
-	else:
-		raise ValueError(
-			f"Type of provided state ({type(states)}) must be "
-			f"bytes, str, bson.Binary or sequences of these"
-		)
+	raise ValueError(
+		f"Type of provided state ({type(states)}) must be "
+		f"bytes, str, bson.Binary or sequences of these"
+	)

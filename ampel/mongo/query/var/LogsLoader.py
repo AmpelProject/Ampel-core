@@ -7,13 +7,15 @@
 # Last Modified Date:  16.03.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Literal, Any
 from collections.abc import Sequence
+from typing import Any, Literal
+
 from pymongo.collection import Collection
+
 from ampel.base.AmpelFlexModel import AmpelFlexModel
-from ampel.view.ReadOnlyDict import ReadOnlyDict
 from ampel.content.LogDocument import LogDocument
 from ampel.log.LogFlag import LogFlag
+from ampel.view.ReadOnlyDict import ReadOnlyDict
 
 
 class LogsLoader(AmpelFlexModel):
@@ -181,7 +183,7 @@ class LogsLoader(AmpelFlexModel):
 			stages.append(proj)
 
 		if self.debug:
-			print("Using aggregation: %s" % stages)
+			print("Using aggregation: %s" % stages)  # noqa: T201
 
 		log_entries: list[LogDocument] = list(col.aggregate(stages))
 
@@ -191,7 +193,7 @@ class LogsLoader(AmpelFlexModel):
 
 		if self.simplify:
 			for el in log_entries:
-				print("%r %s" % (el["_id"], el['m']))
+				print(f'{el["_id"]!r} {el["m"]}')  # noqa: T201
 			return []
 
 		# if hexify:

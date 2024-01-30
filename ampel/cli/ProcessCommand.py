@@ -7,26 +7,31 @@
 # Last Modified Date:  14.08.2022
 # Last Modified By:    jvs
 
-from contextlib import contextmanager
 import json
-import signal, traceback, yaml, os
-from ampel.core.Schedulable import Schedulable
+import os
+import signal
+import traceback
 from argparse import ArgumentParser
+from collections.abc import Generator, Sequence
+from contextlib import contextmanager
 from time import time
-from typing import Any, Generator, Optional, Sequence, Union
+from typing import Any
+
+import yaml
 
 from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
+from ampel.core.EventHandler import EventHandler
+from ampel.core.Schedulable import Schedulable
 from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogFlag import LogFlag
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 from ampel.model.ChannelModel import ChannelModel
 from ampel.model.UnitModel import UnitModel
-from ampel.util.freeze import recursive_freeze
-from ampel.core.EventHandler import EventHandler
 from ampel.struct.Resource import Resource
+from ampel.util.freeze import recursive_freeze
 
 
 def _handle_traceback(signal, frame):
@@ -49,8 +54,8 @@ class ProcessCommand(AbsCoreCommand):
 
     # Mandatory implementation
     def get_parser(
-        self, sub_op: Optional[str] = None
-    ) -> Union[ArgumentParser, AmpelArgumentParser]:
+        self, sub_op: None | str = None
+    ) -> ArgumentParser | AmpelArgumentParser:
 
         if self.parser:
             return self.parser
@@ -114,7 +119,7 @@ class ProcessCommand(AbsCoreCommand):
             one_db=True,
         )
 
-        config_dict = ctx.config._config
+        config_dict = ctx.config._config  # noqa: SLF001
 
         # load channels if provided
         if args["channel"]:
@@ -138,7 +143,7 @@ class ProcessCommand(AbsCoreCommand):
                             dict.__setitem__(config_dict["alias"], k, {})
                         dict.__setitem__(config_dict["alias"][k], kk, vv)
 
-        ctx.config._config = recursive_freeze(config_dict)
+        ctx.config._config = recursive_freeze(config_dict)  # noqa: SLF001
 
         return ctx
 
@@ -163,7 +168,7 @@ class ProcessCommand(AbsCoreCommand):
         self,
         args: dict[str, Any],
         unknown_args: Sequence[str],
-        sub_op: Optional[str] = None,
+        sub_op: None | str = None,
     ) -> None:
 
         if args["debug"]:
@@ -174,7 +179,7 @@ class ProcessCommand(AbsCoreCommand):
 
         logger.info(f"Running task {args['name']}")
 
-        with open(args["schema"], "r") as f:
+        with open(args["schema"]) as f:
             unit_model = UnitModel(**yaml.safe_load(f))
         # always raise exceptions
         unit_model.override = (unit_model.override or {}) | {
@@ -225,7 +230,6 @@ class ProcessCommand(AbsCoreCommand):
 
         dm = divmod(time() - start_time, 60)
         logger.info(
-            "Task processing done. Time required: %s minutes %s seconds\n"
-            % (round(dm[0]), round(dm[1]))
+            f"Task processing done. Time required: {round(dm[0])} minutes {round(dm[1])} seconds\n"
         )
         logger.flush()

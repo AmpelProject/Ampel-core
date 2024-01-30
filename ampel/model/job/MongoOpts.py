@@ -9,6 +9,7 @@
 
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 
+
 class MongoOpts(AmpelBaseModel):
     reset: bool = False
     prefix: str = "Ampel"

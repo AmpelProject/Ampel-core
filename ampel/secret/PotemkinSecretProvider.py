@@ -8,9 +8,9 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import get_args, get_origin
+
 from ampel.abstract.AbsSecretProvider import AbsSecretProvider
 from ampel.secret.Secret import Secret
-from ampel.secret.NamedSecret import NamedSecret
 
 
 class PotemkinSecretProvider(AbsSecretProvider):

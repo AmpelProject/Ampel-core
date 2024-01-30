@@ -8,19 +8,21 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from collections.abc import Collection
+from typing import Any, Literal
+
 from pymongo.cursor import Cursor
-from typing import Literal, Any
-from ampel.types import ChannelId, Tag
-from ampel.mongo.query.stock import build_stock_query
-from ampel.util.logicschema import to_logical_dict
-from ampel.log.utils import safe_query_dict
-from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
+
 from ampel.abstract.AbsT3Selector import AbsT3Selector
+from ampel.log.AmpelLogger import VERBOSE, AmpelLogger
+from ampel.log.utils import safe_query_dict
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.OneOf import OneOf
 from ampel.model.time.TimeConstraintModel import TimeConstraintModel
+from ampel.mongo.query.stock import build_stock_query
+from ampel.types import ChannelId, Tag
 from ampel.util.collections import try_reduce
+from ampel.util.logicschema import to_logical_dict
 
 
 class T3StockSelector(AbsT3Selector):

@@ -8,8 +8,9 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
-from ampel.log.AmpelLogger import VERBOSE
+
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
+from ampel.log.AmpelLogger import VERBOSE
 
 
 class ResourceConfigCollector(AbsDictConfigCollector):
@@ -40,13 +41,12 @@ class ResourceConfigCollector(AbsDictConfigCollector):
 				if k and k[0] == "%":
 					key = k[1:]
 					scope = "global"
+				# Distribution scoped alias
+				elif dist_name:
+					key = f"{dist_name}/{k}"
+					scope = "scoped"
 				else:
-					# Distribution scoped alias
-					if dist_name:
-						key = f"{dist_name}/{k}"
-						scope = "scoped"
-					else:
-						scope = ""
+					scope = ""
 
 				if self.verbose:
 					self.logger.log(VERBOSE,

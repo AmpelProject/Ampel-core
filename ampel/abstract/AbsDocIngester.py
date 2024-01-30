@@ -8,11 +8,12 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any, Generic
-from ampel.types import T
+
 from ampel.base.AmpelABC import AmpelABC
-from ampel.base.decorator import abstractmethod
 from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.base.decorator import abstractmethod
 from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
+from ampel.types import T
 
 
 class AbsDocIngester(AmpelABC, AmpelBaseModel, Generic[T], abstract=True):

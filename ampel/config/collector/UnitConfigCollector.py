@@ -7,19 +7,24 @@
 # Last Modified Date:  02.01.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import os, sys, re, importlib, traceback
-from typing import Any
-from os.path import sep
+import importlib
+import os
+import re
+import sys
+import traceback
 from contextlib import contextmanager
+from os.path import sep
+from typing import Any
+
 from xxhash import xxh64_intdigest
 
-from ampel.protocol.LoggingHandlerProtocol import AggregatingLoggingHandlerProtocol
-from ampel.log.handlers.AmpelStreamHandler import AmpelStreamHandler
-from ampel.util.collections import ampel_iter
-from ampel.util.distrib import get_files
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 from ampel.log import VERBOSE
+from ampel.log.handlers.AmpelStreamHandler import AmpelStreamHandler
+from ampel.protocol.LoggingHandlerProtocol import AggregatingLoggingHandlerProtocol
+from ampel.util.collections import ampel_iter
+from ampel.util.distrib import get_files
 
 
 class RemoteUnitDefinition(AmpelBaseModel):
@@ -43,7 +48,7 @@ class UnitConfigCollector(AbsDictConfigCollector):
 	) -> None:
 
 		# Cosmetic
-		if isinstance(self.logger.handlers[0], (AggregatingLoggingHandlerProtocol, AmpelStreamHandler)):
+		if isinstance(self.logger.handlers[0], AggregatingLoggingHandlerProtocol | AmpelStreamHandler):
 			agg_int = self.logger.handlers[0].aggregate_interval
 			self.logger.handlers[0].aggregate_interval = 1000
 
@@ -71,16 +76,15 @@ class UnitConfigCollector(AbsDictConfigCollector):
 						continue
 
 					# Standart unit definition (ex: ampel.t3.stage.T3AggregatingStager)
-					else:
-						class_name = self.get_class_name(el)
-						if not (ret := self.get_mro(el, class_name)):
-							self.logger.break_aggregation()
-							continue
-						entry: dict[str, Any] = {
-							'fqn': el,
-							'base': ret[1],
-							'xxh64': ret[0]
-						}
+					class_name = self.get_class_name(el)
+					if not (ret := self.get_mro(el, class_name)):
+						self.logger.break_aggregation()
+						continue
+					entry: dict[str, Any] = {
+						'fqn': el,
+						'base': ret[1],
+						'xxh64': ret[0]
+					}
 
 				elif isinstance(el, dict):
 					try:
@@ -145,7 +149,7 @@ class UnitConfigCollector(AbsDictConfigCollector):
 		Note: we here assume the ampel convention that module name equals class name
 		(i.e that we have one class per module)
 		"""
-		return re.sub(r'.*\.', '', fqn) # noqa
+		return re.sub(r'.*\.', '', fqn)
 
 
 	def get_mro(self, module_fqn: str, class_name: str) -> None | tuple[int, list[str]]:

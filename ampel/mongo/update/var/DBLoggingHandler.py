@@ -7,19 +7,22 @@
 # Last Modified Date:  15.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import struct, socket
-from bson import ObjectId
-from typing import TYPE_CHECKING
+import socket
+import struct
 from logging import LogRecord
+from typing import TYPE_CHECKING
+
+from bson import ObjectId
 from pymongo.errors import BulkWriteError
+
 from ampel.base.AmpelUnit import AmpelUnit
-from ampel.util.mappings import compare_dict_values
-from ampel.util.collections import try_reduce
 from ampel.log.AmpelLogger import AmpelLogger
-from ampel.log.LightLogRecord import LightLogRecord
 from ampel.log.AmpelLoggingError import AmpelLoggingError
+from ampel.log.LightLogRecord import LightLogRecord
 from ampel.log.LogFlag import LogFlag
 from ampel.log.utils import log_exception, report_exception
+from ampel.util.collections import try_reduce
+from ampel.util.mappings import compare_dict_values
 
 if TYPE_CHECKING:
 	from ampel.core.AmpelDB import AmpelDB
@@ -138,10 +141,10 @@ class DBLoggingHandler(AmpelUnit):
 					return
 
 				# Generate object id with log record.created as current time
-				with ObjectId._inc_lock:
+				with ObjectId._inc_lock:  # noqa: SLF001
 					oid = struct.pack(">i", int(record.created)) + \
-						self.oid_middle + struct.pack(">i", ObjectId._inc)[1:4]
-					ObjectId._inc = (ObjectId._inc + 1) % 0xFFFFFF # limit result to 32bits
+						self.oid_middle + struct.pack(">i", ObjectId._inc)[1:4]  # noqa: SLF001
+					ObjectId._inc = (ObjectId._inc + 1) % 0xFFFFFF # limit result to 32bits  # noqa: SLF001
 
 				if 'extra' in rd:
 					for k in ('_id', 'r', 'f'):
@@ -177,7 +180,7 @@ class DBLoggingHandler(AmpelUnit):
 				if record.filename and (record.levelno > self.warn_lvl or self.log_provenance):
 					ldict['p'] = [record.filename.replace('.py', ''), record.lineno]
 
-				if getattr(record, 'unit'):
+				if hasattr(record, 'unit'):
 					ldict['u'] = record.unit # type: ignore[union-attr]
 
 				if record.msg:
@@ -270,7 +273,11 @@ class DBLoggingHandler(AmpelUnit):
 
 		try:
 
-			from ampel.log.utils import get_tier_from_log_flags, convert_dollars, log_exception
+			from ampel.log.utils import (
+				convert_dollars,
+				get_tier_from_log_flags,
+				log_exception,
+			)
 			raise_exc = False
 
 			for err_dict in bwe.details.get('writeErrors', []):
@@ -284,18 +291,18 @@ class DBLoggingHandler(AmpelUnit):
 
 					# if runIds are equal, just print out a feedback
 					if db_rec['run'] == self.run_id:
-						print("Disregardable E11000: %s" % err_dict['op'])
+						print("Disregardable E11000: %s" % err_dict['op'])  # noqa: T201
 
 					# Otherwise print error and create trouble doc
 					else:
 
 						raise_exc = True
 
-						print("CRITICAL: OID collision occured between two different log entries")
-						print("Current process:")
-						print(err_dict['op'])
-						print("In DB:")
-						print(db_rec)
+						print("CRITICAL: OID collision occured between two different log entries")  # noqa: T201
+						print("Current process:")  # noqa: T201
+						print(err_dict['op'])  # noqa: T201
+						print("In DB:")  # noqa: T201
+						print(db_rec)  # noqa: T201
 
 						self._ampel_db.get_collection('trouble').insert_one(
 							{
@@ -309,7 +316,7 @@ class DBLoggingHandler(AmpelUnit):
 				else:
 
 					raise_exc = True
-					print("writeError dict entry: %s" % err_dict)
+					print("writeError dict entry: %s" % err_dict)  # noqa: T201
 
 					self._ampel_db.get_collection('trouble').insert_one(
 						{

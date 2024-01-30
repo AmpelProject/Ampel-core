@@ -9,7 +9,9 @@
 
 from time import time
 from typing import Any
+
 from ampel.types import ChannelId, StockId
+
 
 class LightLogRecord:
 	"""

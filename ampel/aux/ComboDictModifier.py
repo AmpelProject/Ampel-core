@@ -7,12 +7,13 @@
 # Last Modified Date:  21.06.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Literal, Any
-from collections.abc import Container, Callable, Sequence
+from collections.abc import Callable, Container, Sequence
+from typing import Any, Literal
+
 from ampel.abstract.AbsApplicable import AbsApplicable
-from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.base.AmpelBaseModel import AmpelBaseModel
-from ampel.log import AmpelLogger, VERBOSE
+from ampel.base.AuxUnitRegister import AuxUnitRegister
+from ampel.log import VERBOSE, AmpelLogger
 from ampel.util.collections import to_set
 from ampel.view.ReadOnlyDict import ReadOnlyDict
 
@@ -142,12 +143,12 @@ class ComboDictModifier(AbsApplicable):
 				keys = f.key.split(".")
 				d = self._nested_ko
 				for k in keys[:-1]:
-					if kk not in d:
-						d[kk] = {}
-					d = d[kk]
+					if k not in d:
+						d[k] = {}
+					d = d[k]
 				d[keys[-1]] = to_set(f.keep)
 
-			elif isinstance(f, (self.ClassModifyModel, self.FuncModifyModel)):
+			elif isinstance(f, self.ClassModifyModel | self.FuncModifyModel):
 
 				if isinstance(f, self.ClassModifyModel):
 					unit = AuxUnitRegister.new_unit(
@@ -171,9 +172,9 @@ class ComboDictModifier(AbsApplicable):
 				keys = f.key.split(".")
 				d = self._nested_mods
 				for k in keys[:-1]:
-					if kk not in d:
-						d[kk] = {}
-					d = d[kk]
+					if k not in d:
+						d[k] = {}
+					d = d[k]
 				if keys[-1] not in d:
 					d[keys[-1]] = []
 				d[keys[-1]].append(func)
@@ -341,12 +342,12 @@ class ComboDictModifier(AbsApplicable):
 
 		dsi = dict.__setitem__
 
-		for k, mod in (modifications or self._nested_mods).items():
+		for k, mods in (modifications or self._nested_mods).items():
 			if k in d:
-				if isinstance(mod, dict):
-					dsi(d, k, self.apply_modify(d[k], mod))
+				if isinstance(mods, dict):
+					dsi(d, k, self.apply_modify(d[k], mods))
 				else:
-					for mod in mod:
+					for mod in mods:
 						dsi(d, k, mod(d[k]))
 
 		return ReadOnlyDict(d) if self.freeze else d

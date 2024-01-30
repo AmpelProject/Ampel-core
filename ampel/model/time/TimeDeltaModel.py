@@ -7,8 +7,9 @@
 # Last Modified Date:  06.06.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+from datetime import datetime, timedelta, timezone
 from typing import Literal
-from datetime import datetime, timedelta
+
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 
 
@@ -25,7 +26,7 @@ class TimeDeltaModel(AmpelBaseModel):
 
 	def get_timestamp(self, **kwargs) -> float:
 
-		dt = (kwargs.get('now') or datetime.today()) + timedelta(
+		dt = (kwargs.get('now') or datetime.now(tz=timezone.utc)) + timedelta(
 			days=self.days, seconds=self.seconds, microseconds=self.microseconds,
 			milliseconds=self.milliseconds, minutes=self.minutes,
 			hours=self.hours, weeks=self.weeks

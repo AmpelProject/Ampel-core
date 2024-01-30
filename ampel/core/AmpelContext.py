@@ -7,18 +7,19 @@
 # Last Modified Date:  09.01.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any, Literal, TYPE_CHECKING
 from collections.abc import Iterable
-from ampel.config.AmpelConfig import AmpelConfig
+from typing import TYPE_CHECKING, Any, Literal
+
 from ampel.base.AuxUnitRegister import AuxUnitRegister
-from ampel.secret.AmpelVault import AmpelVault
-from ampel.secret.AESecretProvider import AESecretProvider
+from ampel.config.AmpelConfig import AmpelConfig
 from ampel.config.builder.DisplayOptions import DisplayOptions
+from ampel.secret.AESecretProvider import AESecretProvider
+from ampel.secret.AmpelVault import AmpelVault
 
 # Avoid cyclic import issues
 if TYPE_CHECKING:
 	from ampel.core.AmpelDB import AmpelDB
-	from ampel.core.UnitLoader import UnitLoader # noqa
+	from ampel.core.UnitLoader import UnitLoader
 
 
 class AmpelContext:
@@ -53,7 +54,7 @@ class AmpelContext:
 		try:
 			AuxUnitRegister.initialize(config)
 		except Exception:
-			print("UnitLoader auxiliary units auto-registration failed")
+			print("UnitLoader auxiliary units auto-registration failed")  # noqa: T201
 
 
 	@classmethod
@@ -93,7 +94,7 @@ class AmpelContext:
 				AESecretProvider(pwds)
 			)
 		elif pwd_file_path:
-			with open(pwd_file_path, "r") as f:
+			with open(pwd_file_path) as f:
 				vault.providers.append(
 					AESecretProvider([l.strip() for l in f.readlines()])
 				)
@@ -126,7 +127,7 @@ class AmpelContext:
 		"""
 
 		if pwd_file_path:
-			with open(pwd_file_path, "r") as f:
+			with open(pwd_file_path) as f:
 				pwds = [l.strip() for l in f.readlines()]
 
 		# Import here to avoid cyclic import error
@@ -185,7 +186,7 @@ class AmpelContext:
 
 	def add_conf_id(self, conf_id: int, unit_config: dict[str, Any]) -> None:
 		self.db.add_conf_id(conf_id, unit_config)
-		dict.__setitem__(self.config._config["confid"], conf_id, unit_config)
+		dict.__setitem__(self.config._config["confid"], conf_id, unit_config)  # noqa: SLF001
 
 
 	def add_run_time_alias(self, key: str, value: Any, overwrite: bool = False) -> None:

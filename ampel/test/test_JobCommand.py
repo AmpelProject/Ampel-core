@@ -1,15 +1,17 @@
-import sys, pytest, yaml
-from pathlib import Path
-from typing import Any, Optional
-from pytest_mock import MockerFixture
+import sys
 from contextlib import contextmanager
+from pathlib import Path
+from typing import Any
+
+import pytest
+import yaml
+from pytest_mock import MockerFixture
 
 from ampel.cli.main import main
 from ampel.cli.utils import get_vault
-from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.config.AmpelConfig import AmpelConfig
+from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.secret.AmpelVault import AmpelVault
-
 from ampel.test.dummy import DummyInputUnit
 
 
@@ -39,12 +41,12 @@ def dump(payload, tmpdir, name: str) -> Path:
     return f
 
 
-@pytest.fixture
+@pytest.fixture()
 def vault(tmpdir):
     return dump({"foo": "bar"}, tmpdir, "secrets.yml")
 
 
-@pytest.fixture
+@pytest.fixture()
 def secrets():
     return {
         "str": "str",
@@ -54,7 +56,7 @@ def secrets():
     }
 
 
-@pytest.fixture
+@pytest.fixture()
 def dir_secret_store(tmpdir, secrets):
     parent_dir = Path(tmpdir) / "secrets"
     parent_dir.mkdir()
@@ -63,17 +65,17 @@ def dir_secret_store(tmpdir, secrets):
     return parent_dir
 
 
-@pytest.fixture
+@pytest.fixture()
 def schema(tmpdir):
     return dump({"name": "job", "task": [{"unit": "Nonesuch"}]}, tmpdir, "schema.yml")
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_db(mocker: MockerFixture):
     return mocker.patch("ampel.core.AmpelDB.AmpelDB.get_collection")
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_new_context_unit(mocker: MockerFixture, mock_db):
     return mocker.patch("ampel.core.UnitLoader.UnitLoader.new_context_unit")
 
@@ -95,7 +97,7 @@ def test_secrets(testing_config, vault: Path, schema: Path, mock_new_context_uni
         is None
     )
     assert mock_new_context_unit.call_count == 1
-    loader_vault: Optional[AmpelVault] = mock_new_context_unit.call_args.kwargs[
+    loader_vault: None | AmpelVault = mock_new_context_unit.call_args.kwargs[
         "context"
     ].loader.vault
     assert loader_vault is not None

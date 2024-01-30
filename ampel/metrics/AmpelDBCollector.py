@@ -8,10 +8,11 @@
 # Last Modified By:    jvs
 
 
+from collections.abc import Sequence
+from contextlib import suppress
 from dataclasses import dataclass
-from typing import Sequence
 
-from prometheus_client.metrics_core import GaugeMetricFamily, Metric # type: ignore
+from prometheus_client.metrics_core import GaugeMetricFamily, Metric  # type: ignore
 
 from ampel.core.AmpelDB import AmpelDB
 from ampel.enum.DocumentCode import DocumentCode
@@ -29,7 +30,7 @@ class AmpelDBCollector:
     def collect(self) -> Sequence[Metric]:
 
         metrics = []
-        try:
+        with suppress(Exception):
             metrics.append(
                 GaugeMetricFamily(
                     "ampel_t2_docs_queued",
@@ -39,6 +40,4 @@ class AmpelDBCollector:
                     ),
                 )
             )
-        except Exception:
-            ...
         return metrics

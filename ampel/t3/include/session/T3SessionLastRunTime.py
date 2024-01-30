@@ -7,10 +7,11 @@
 # Last Modified Date:  09.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+from datetime import datetime, timedelta, timezone
 from typing import ClassVar
-from datetime import datetime, timedelta
-from ampel.mongo.query.var.events import get_last_run
+
 from ampel.abstract.AbsT3Supplier import AbsT3Supplier
+from ampel.mongo.query.var.events import get_last_run
 from ampel.struct.T3Store import T3Store
 
 
@@ -39,7 +40,7 @@ class T3SessionLastRunTime(AbsT3Supplier[dict]):
 		if last_run is None:
 			self.logger.warn(f"Event {self.event_hdlr.process_name}: last run time unavailable")
 			if self.fallback:
-				t = (datetime.now() + timedelta(**self.fallback)).timestamp()
+				t = (datetime.now(tz=timezone.utc) + timedelta(**self.fallback)).timestamp()
 				self.logger.warn(f"Fallback last run time: {t}")
 				return {self.key: t}
 

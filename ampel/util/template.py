@@ -7,19 +7,20 @@
 # Last Modified Date: 04.04.2023
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Type, Any, Literal
-from importlib import import_module
-from functools import cache
 from collections.abc import Sequence
-from ampel.types import JDict
-from ampel.abstract.AbsTiedT2Unit import AbsTiedT2Unit
+from functools import cache
+from importlib import import_module
+from typing import Any
+
 from ampel.abstract.AbsConfigMorpher import AbsConfigMorpher
 from ampel.abstract.AbsConfigUpdater import AbsConfigUpdater
+from ampel.abstract.AbsTiedT2Unit import AbsTiedT2Unit
+from ampel.config.builder.FirstPassConfig import FirstPassConfig
 from ampel.core.AmpelContext import AmpelContext
 from ampel.log.AmpelLogger import AmpelLogger
-from ampel.model.UnitModel import UnitModel
 from ampel.model.ingest.T2Compute import T2Compute
-from ampel.config.builder.FirstPassConfig import FirstPassConfig
+from ampel.model.UnitModel import UnitModel
+from ampel.types import JDict
 from ampel.util.collections import ampel_iter
 
 
@@ -30,10 +31,10 @@ def check_tied_units(
 	"""
 	:raises: ValueError if tied t2 units are present in t2_units but the requred t2 units are not present in t2_compute
 	"""
-	tied_units: list[T2Compute] = []
-	for el in all_t2_units:
-		if "AbsTiedT2Unit" in first_pass_config['unit'][el.unit]['base']:
-			tied_units.append(el)
+	tied_units: list[T2Compute] = [
+		el for el in all_t2_units
+		if "AbsTiedT2Unit" in first_pass_config['unit'][el.unit]['base']
+	]
 		
 	def as_unitmodel(t2_unit_model: T2Compute) -> UnitModel:
 		return UnitModel(**{k: v for k, v in t2_unit_model.dict().items() if k in UnitModel.get_model_keys()})
@@ -60,7 +61,7 @@ def check_tied_units(
 				override=t2_dep.get("override")
 			)
 			candidates = [as_unitmodel(unit) for unit in all_t2_units if unit.unit == dependency_config.unit]
-			if not any((c.dict() == dependency_config.dict() for c in candidates)):
+			if not any(c.dict() == dependency_config.dict() for c in candidates):
 				raise ValueError(
 					f"Unit {tied_unit.unit} depends on unit {dependency_config.dict()}, "
 					f"which was not configured. Possible matches are: "
@@ -93,7 +94,7 @@ def resolve_shortcut(unit: str | JDict) -> JDict:
 	return unit if isinstance(unit, dict) else {'unit': unit}
 
 
-def load_tpl_class(fqn) -> Type:
+def load_tpl_class(fqn) -> type:
 	if ':' in fqn:
 		fqn, class_name = fqn.split(':')
 	else:
@@ -112,7 +113,7 @@ def apply_templates(
 		Tpl = load_tpl_class(ctx.config.get(f'template.{name}', str, raise_exc=True))
 		if issubclass(Tpl, AbsConfigMorpher):
 			logger.info(f"Morphing config using {name}")
-			target = Tpl(**target).morph(ctx.config._config, logger)
+			target = Tpl(**target).morph(ctx.config._config, logger)  # noqa: SLF001
 		elif issubclass(Tpl, AbsConfigUpdater):
 			logger.info(f"Altering config using {name}")
 			target = Tpl().alter(ctx, target, logger)

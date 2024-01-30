@@ -7,17 +7,19 @@
 # Last Modified Date:  03.04.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import collections, ujson
-from bson.codec_options import CodecOptions
+import collections
 from collections.abc import Iterable, Iterator
 from typing import ClassVar
 
-from ampel.types import StockId, StrictIterable
+import ujson
+from bson.codec_options import CodecOptions
+
 from ampel.abstract.AbsT3Loader import AbsT3Loader
-from ampel.struct.AmpelBuffer import AmpelBuffer
-from ampel.util.collections import to_set
 from ampel.mongo.query.t1 import latest_fast_query, latest_general_query
 from ampel.mongo.view.FrozenValuesDict import FrozenValuesDict
+from ampel.struct.AmpelBuffer import AmpelBuffer
+from ampel.types import StockId, StrictIterable
+from ampel.util.collections import to_set
 
 
 class T3LatestStateDataLoader(AbsT3Loader):
@@ -50,13 +52,19 @@ class T3LatestStateDataLoader(AbsT3Loader):
 
 		for directive in self.directives:
 
-			if directive.col == "t1":
-				if directive.query_complement and '_id' in directive.query_complement:
-					raise ValueError("query complement parameter '_id' cannot be used on t1 collection")
+			if (
+				directive.col == "t1" and
+				directive.query_complement and
+				'_id' in directive.query_complement
+			):
+				raise ValueError("query complement parameter '_id' cannot be used on t1 collection")
 
-			if directive.col == "t2":
-				if directive.query_complement and 'link' in directive.query_complement:
-					raise ValueError("query complement parameter 'link' cannot be used on t2 collection")
+			if (
+				directive.col == "t2" and
+				directive.query_complement and
+				'link' in directive.query_complement
+			):
+				raise ValueError("query complement parameter 'link' cannot be used on t2 collection")
 
 
 	def load(self,

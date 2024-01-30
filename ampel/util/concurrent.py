@@ -15,15 +15,21 @@ Unlike pebble (or concurrent.futures.ProcessPoolExecutor), no extra Python
 threads are needed to manage the process lifecycle.
 """
 
-import asyncio, io, itertools, os, signal, sys, traceback
-from typing import Any
-from functools import wraps, partial
+import asyncio
+import io
+import itertools
+import os
+import signal
+import sys
+import traceback
+from functools import partial, wraps
 from multiprocessing import reduction, spawn  # type: ignore
 from multiprocessing.context import set_spawning_popen
 from subprocess import _args_from_interpreter_flags  # type: ignore
+from typing import Any
 
-import ampel.vendor.aiopipe as aiopipe  # type: ignore
 from ampel.metrics.prometheus import prometheus_cleanup_worker, prometheus_setup_worker
+from ampel.vendor import aiopipe  # type: ignore
 
 
 def process(function=None, **kwargs):
@@ -37,8 +43,7 @@ def process(function=None, **kwargs):
     """
     if function is None:
         return partial(_process_wrapper, **kwargs)
-    else:
-        return _process_wrapper(function)
+    return _process_wrapper(function)
 
 
 class RemoteTraceback(Exception):
@@ -84,9 +89,9 @@ def prepare(data):
         os.chdir(data["dir"])
 
     if "init_main_from_name" in data:
-        spawn._fixup_main_from_name(data["init_main_from_name"])
+        spawn._fixup_main_from_name(data["init_main_from_name"])  # noqa: SLF001
     elif "init_main_from_path" in data:
-        spawn._fixup_main_from_path(data["init_main_from_path"])
+        spawn._fixup_main_from_path(data["init_main_from_path"])  # noqa: SLF001
 
     if "process_name" in data:
         prometheus_setup_worker({"process": data["process_name"]})
@@ -115,7 +120,7 @@ def spawn_main(read_fd, write_fd):
         with open(write_fd, "wb") as tx:
             tx.write(payload)
     except Exception:
-        print(f"Process {obj._name} (pid {os.getpid()}):", file=sys.stderr)
+        print(f"Process {obj._name} (pid {os.getpid()}):", file=sys.stderr)  # noqa: SLF001, T201
         traceback.print_exc(file=sys.stderr)
         exitcode = 1
 
@@ -129,7 +134,7 @@ class _Process:
     #: Replica ids that can be recycled
     _expired: dict[str, set[int]] = {}
 
-    def __init__(self, target=None, name=None, timeout=3.0, args=(), kwargs={}):
+    def __init__(self, target=None, name=None, timeout=3.0, args=(), kwargs=None):
         self._target = target
         count = next(self._counter)
         # infer the process name from a ProcessModel-like dict
@@ -144,11 +149,10 @@ class _Process:
             self._name = name
         self._timeout = timeout
         self._args = tuple(args)
-        self._kwargs = dict(kwargs)
+        self._kwargs = dict(kwargs) if kwargs else {}
 
     def __call__(self):
-        if self._target:
-            return self._target(*self._args, **self._kwargs)
+        return self._target(*self._args, **self._kwargs) if self._target else None
 
     def _get_command_line(self, read_fd, write_fd):
         return (
@@ -174,8 +178,8 @@ class _Process:
 
         with child_r.detach() as crx, child_w.detach() as ctx:
             proc = await asyncio.subprocess.create_subprocess_exec(
-                *self._get_command_line(crx._fd, ctx._fd),
-                pass_fds=sorted(p._fd for p in (crx, ctx)),
+                *self._get_command_line(crx._fd, ctx._fd),  # noqa: SLF001
+                pass_fds=sorted(p._fd for p in (crx, ctx)),  # noqa: SLF001
                 start_new_session=True,
             )
 
@@ -204,17 +208,15 @@ class _Process:
                     )
                     if isinstance(exitcode, BaseException):
                         raise exitcode
-                    elif exitcode < 0:
+                    if exitcode < 0:
                         signame = signal.Signals(-exitcode).name
                         raise RuntimeError(f"Process {self._name} (pid {proc.pid}) died on {signame}")
                     if isinstance(payload, BaseException):
                         raise payload
-                    else:
-                        ret = reduction.pickle.loads(payload) # type: ignore
+                    ret = reduction.pickle.loads(payload) # type: ignore
                     if isinstance(ret, BaseException):
                         raise ret
-                    else:
-                        return ret
+                    return ret
                 except asyncio.CancelledError:
                     proc.terminate()
                     try:
@@ -230,12 +232,11 @@ class _Process:
                 # only process active, reset everything
                 del self._active[self._name]
                 self._expired.pop(self._name, None)
+            # at least one other process of the same name; recycle replica
+            elif self._name in self._expired:
+                self._expired[self._name].add(replica_idx)
             else:
-                # at least one other process of the same name; recycle replica
-                if self._name in self._expired:
-                    self._expired[self._name].add(replica_idx)
-                else:
-                    self._expired[self._name] = {replica_idx}
+                self._expired[self._name] = {replica_idx}
             if "PROMETHEUS_MULTIPROC_DIR" in os.environ:
                 prometheus_cleanup_worker(proc.pid)
 
@@ -244,8 +245,6 @@ _registered_functions = {}
 
 
 def _register_function(function):
-    global _registered_functions
-
     _registered_functions[(function.__qualname__, function.__module__)] = function
 
 
@@ -282,7 +281,7 @@ def _process_wrapper(function, timeout=3.0):
     @wraps(function)
     def wrapper(*args, **kwargs):
         target = _trampoline
-        args = [function.__qualname__, function.__module__] + list(args)
+        args = [function.__qualname__, function.__module__, *args]
         proc = _Process(target=target, timeout=timeout, args=args, kwargs=kwargs)
         return asyncio.create_task(proc.launch())
 

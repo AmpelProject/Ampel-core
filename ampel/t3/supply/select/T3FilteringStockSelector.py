@@ -7,17 +7,17 @@
 # Last Modified Date:  02.08.2020
 # Last Modified By	: Jakob van Santen <jakob.van.santen@desy.de>
 
+from collections.abc import Generator
 from itertools import islice
 from typing import Any
-from collections.abc import Sequence, Generator
 
-from ampel.types import StockId
-from ampel.t3.supply.select.T3StockSelector import T3StockSelector
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.t3.T2FilterModel import T2FilterModel
 from ampel.mongo.query.general import build_general_query
 from ampel.mongo.utils import maybe_match_array
+from ampel.t3.supply.select.T3StockSelector import T3StockSelector
+from ampel.types import StockId
 
 
 class T3FilteringStockSelector(T3StockSelector):
@@ -56,7 +56,7 @@ class T3FilteringStockSelector(T3StockSelector):
 		output_count = 0
 		while (stock_ids := [doc['stock'] for doc in islice(cursor, self.chunk_size)]):
 			count = 0
-			for count, doc in enumerate(
+			for count, doc in enumerate( # noqa: B007
 				self.context.db.get_collection('t2').aggregate(
 					self._t2_filter_pipeline(stock_ids),
 				),
@@ -74,18 +74,18 @@ class T3FilteringStockSelector(T3StockSelector):
 	def _build_match(self, f: T2FilterModel | AllOf[T2FilterModel] | AnyOf[T2FilterModel]) -> dict[str, Any]:
 		if isinstance(f, T2FilterModel):
 			return {f"{f.unit}.{k}": v for k, v in f.match.items()}
-		elif isinstance(f, AllOf):
+		if isinstance(f, AllOf):
 			return {'$and': [self._build_match(el) for el in f.all_of]}
-		elif isinstance(f, AnyOf):
+		if isinstance(f, AnyOf):
 			return {'$or': [self._build_match(el) for el in f.any_of]}
-		else:
-			raise TypeError()
+		raise TypeError()
 
 
 	def _t2_filter_pipeline(self, stock_ids: list[StockId]) -> list[dict]:
-		return self._t2_merge_pipeline(stock_ids) + [
+		return [
+			*self._t2_merge_pipeline(stock_ids),
 			{'$match': self._build_match(self.t2_filter)},
-			{'$replaceRoot': {'newRoot': {'stock': '$_id'}}}
+			{'$replaceRoot': {'newRoot': {'stock': '$_id'}}},
 		]
 
 
@@ -193,10 +193,9 @@ def _all_units(filters: T2FilterModel | AllOf[T2FilterModel] | AnyOf[T2FilterMod
 	"""
 	if isinstance(filters, T2FilterModel):
 		return [filters.unit]
-	elif isinstance(filters, AllOf):
+	if isinstance(filters, AllOf):
 		return list(set(f.unit for f in filters.all_of))
-	elif isinstance(filters, AnyOf):
+	if isinstance(filters, AnyOf):
 		# NB: AnyOf may contain AllOf
 		return list(set(sum((_all_units(f) for f in filters.any_of), [])))
-	else:
-		raise TypeError()
+	raise TypeError()

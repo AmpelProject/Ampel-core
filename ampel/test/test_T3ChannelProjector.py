@@ -4,12 +4,12 @@ from pathlib import Path
 import pytest
 
 from ampel.content.StockDocument import StockDocument
+from ampel.log.AmpelLogger import DEBUG, AmpelLogger
 from ampel.struct.AmpelBuffer import AmpelBuffer
-from ampel.log.AmpelLogger import AmpelLogger, DEBUG
 from ampel.t3.stage.project.T3ChannelProjector import T3ChannelProjector
 
 
-@pytest.fixture
+@pytest.fixture()
 def stock_doc() -> StockDocument:
     with open(Path(__file__).parent / "test-data" / "ZTF20abxvcrk.pkl", "rb") as f:
         doc = pickle.load(f)
@@ -19,14 +19,14 @@ def stock_doc() -> StockDocument:
         channel: {
             "tied": doc["created"][channel],
             "upd": doc["modified"][channel],
-        } for channel in doc["created"].keys() if channel != "any"
+        } for channel in doc["created"] if channel != "any"
     }
     del doc["created"]
     doc["updated"] = doc.pop("modified")["any"]
     return doc
 
 
-@pytest.fixture
+@pytest.fixture()
 def logger():
     return AmpelLogger.get_logger(console={"level": DEBUG})
 
@@ -61,7 +61,7 @@ def test_single_channel(stock_doc: StockDocument, logger):
         if "channel" in jentry:
             assert jentry["channel"] == target
 
-    for jentry, stripped in zip(input_stock_doc["journal"], before_no_channel):
+    for jentry, stripped in zip(input_stock_doc["journal"], before_no_channel, strict=False):
         if "channel" in jentry:
             try:
                 after_no_channel.index(
@@ -98,13 +98,13 @@ def test_multi_channel(stock_doc, logger, logic_op):
     for jentry in after["stock"]["journal"]:
         if (channel := jentry.get("channel")) is None:
             continue
-        if isinstance(channel, (int, str)):
+        if isinstance(channel, int | str):
             assert channel in target
         else:
             assert len(channel) > 1
             assert set(channel).issubset(target)
 
-    for jentry, stripped in zip(before["stock"]["journal"], before_no_channel):
+    for jentry, stripped in zip(before["stock"]["journal"], before_no_channel, strict=False):
         if (channel := jentry.get("channel")) is None:
             continue
         try:
@@ -112,7 +112,7 @@ def test_multi_channel(stock_doc, logger, logic_op):
                 stripped
             ), "entry with channel in target was preserved"
         except ValueError:
-            if (isinstance(channel, (int, str)) and channel in target) or set(
+            if (isinstance(channel, int | str) and channel in target) or set(
                 channel
             ).issubset(target):
                 raise

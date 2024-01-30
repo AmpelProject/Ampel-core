@@ -9,18 +9,20 @@
 
 import json
 from typing import Any, Literal
-from ampel.log.AmpelLogger import AmpelLogger
 
 from ampel.config.builder.DisplayOptions import DisplayOptions
-from ampel.config.collector.ConfigCollector import ConfigCollector
-from ampel.config.collector.LoggingCollector import LoggingCollector
-from ampel.config.collector.DBConfigCollector import DBConfigCollector
-from ampel.config.collector.UnitConfigCollector import UnitConfigCollector
 from ampel.config.collector.AliasConfigCollector import AliasConfigCollector
-from ampel.config.collector.ProcessConfigCollector import ProcessConfigCollector
 from ampel.config.collector.ChannelConfigCollector import ChannelConfigCollector
+from ampel.config.collector.ConfigCollector import ConfigCollector
+from ampel.config.collector.DBConfigCollector import DBConfigCollector
+from ampel.config.collector.ForwardProcessConfigCollector import (
+	ForwardProcessConfigCollector,
+)
+from ampel.config.collector.LoggingCollector import LoggingCollector
+from ampel.config.collector.ProcessConfigCollector import ProcessConfigCollector
 from ampel.config.collector.ResourceConfigCollector import ResourceConfigCollector
-from ampel.config.collector.ForwardProcessConfigCollector import ForwardProcessConfigCollector
+from ampel.config.collector.UnitConfigCollector import UnitConfigCollector
+from ampel.log.AmpelLogger import AmpelLogger
 
 tiers: tuple[Literal[0, 1, 2, 3], ...] = (0, 1, 2, 3)
 

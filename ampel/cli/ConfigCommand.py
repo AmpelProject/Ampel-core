@@ -7,25 +7,30 @@
 # Last Modified Date:  19.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import os, subprocess, json, yaml, shutil
+import json
+import os
+import shutil
+import subprocess
+from argparse import ArgumentParser, FileType
+from collections.abc import Iterable, Mapping, Sequence
 from io import StringIO, UnsupportedOperation
 from pathlib import Path
 from time import time
-from typing import Any, TextIO, Iterable
-from argparse import ArgumentParser, FileType
-from collections.abc import Sequence, Mapping
+from typing import Any, TextIO
 
-from ampel.core.AmpelContext import AmpelContext
-from ampel.secret.AmpelVault import AmpelVault
-from ampel.secret.DictSecretProvider import DictSecretProvider
-from ampel.secret.PotemkinSecretProvider import PotemkinSecretProvider
-from ampel.log.AmpelLogger import AmpelLogger, DEBUG, INFO
+import yaml
+
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
 from ampel.cli.ArgParserBuilder import ArgParserBuilder
 from ampel.cli.config import get_user_data_config_path
-from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
 from ampel.config.builder.DisplayOptions import DisplayOptions
+from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
+from ampel.core.AmpelContext import AmpelContext
+from ampel.log.AmpelLogger import DEBUG, INFO, AmpelLogger
+from ampel.secret.AmpelVault import AmpelVault
+from ampel.secret.DictSecretProvider import DictSecretProvider
+from ampel.secret.PotemkinSecretProvider import PotemkinSecretProvider
 from ampel.util.pretty import out_stack, prettyjson
 
 hlp = {
@@ -148,19 +153,18 @@ class ConfigCommand(AbsCoreCommand):
 			assert '__nonstring_keys' not in obj
 			doc = {str(k): cls._to_strict_json(v) for k, v in obj.items()}
 			nonstring_keys = {
-				str(k): cls._to_strict_json(k) for k in obj.keys() if not isinstance(k, str)
+				str(k): cls._to_strict_json(k) for k in obj if not isinstance(k, str)
 			}
 			if nonstring_keys:
 				doc['__nonstring_keys'] = nonstring_keys
 			return doc
-		elif isinstance(obj, Iterable) and not isinstance(obj, str):
+		if isinstance(obj, Iterable) and not isinstance(obj, str):
 			return [cls._to_strict_json(v) for v in obj]
-		elif isinstance(obj, int) and abs(obj) >> 53:
+		if isinstance(obj, int) and abs(obj) >> 53:
 			# use canonical BSON representation for ints larger than the precision
 			# of a double
 			return {'$numberLong': str(obj)}
-		else:
-			return obj
+		return obj
 
 
 	@staticmethod
@@ -168,19 +172,17 @@ class ConfigCommand(AbsCoreCommand):
 		""" Invert to_strict_json() """
 		if '$numberLong' in doc:
 			return int(doc['$numberLong'])
-		elif '__nonstring_keys' in doc:
+		if '__nonstring_keys' in doc:
 			nonstring_keys = doc.pop('__nonstring_keys')
 			return {nonstring_keys[k]: v for k, v in doc.items()}
-		else:
-			return doc
+		return doc
 
 
 	@staticmethod
 	def _load_dict(source: TextIO) -> dict[str, Any]:
 		if isinstance((payload := yaml.safe_load(source)), dict):
 			return payload
-		else:
-			raise TypeError('buf does not deserialize to a dict')
+		raise TypeError('buf does not deserialize to a dict')
 
 
 	@classmethod
@@ -254,8 +256,7 @@ class ConfigCommand(AbsCoreCommand):
 
 			dm = divmod(time() - start_time, 60)
 			logger.info(
-				'Total time required: %s minutes %s seconds\n' %
-				(round(dm[0]), round(dm[1]))
+				f'Total time required: {round(dm[0])} minutes {round(dm[1])} seconds\n' 
 			)
 
 			logger.flush()
@@ -281,7 +282,7 @@ class ConfigCommand(AbsCoreCommand):
 			if not os.path.exists(conf_path):
 				logger.info(f'Config with path {conf_path} not found')
 				return
-			with open(conf_path, 'r') as f:
+			with open(conf_path) as f:
 				if args['json']:
 					if args['pretty']:
 						print(prettyjson(yaml.safe_load(f.read())))
@@ -305,7 +306,7 @@ class ConfigCommand(AbsCoreCommand):
 			# - preserve non-string keys
 			input_json = json.dumps(self._to_strict_json(yaml.safe_load(args['file'])))
 			config = json.loads(
-				subprocess.check_output(['jq'] + jq_args, input=input_json.encode()),
+				subprocess.check_output(['jq', *jq_args], input=input_json.encode()),
 				object_hook=self._from_strict_json,
 			)
 			args['file'].close()

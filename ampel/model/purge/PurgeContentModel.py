@@ -9,6 +9,7 @@
 
 from datetime import timedelta
 from typing import Literal
+
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 
 

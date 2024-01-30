@@ -8,10 +8,11 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
-from ampel.log.AmpelLogger import AmpelLogger
-from ampel.base.decorator import abstractmethod
+
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.base.decorator import abstractmethod
+from ampel.log.AmpelLogger import AmpelLogger
 
 
 class AbsConfigMorpher(AmpelABC, AmpelBaseModel, abstract=True):

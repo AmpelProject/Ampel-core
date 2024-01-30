@@ -1,5 +1,6 @@
 from ampel.util.mappings import unflatten_dict
 
+
 def test_unflatten_dict():
     assert unflatten_dict({"count.chans.HU_SN": 10}) == {
         "count": {"chans": {"HU_SN": 10}}

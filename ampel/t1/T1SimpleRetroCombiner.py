@@ -8,10 +8,11 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from collections.abc import Generator, Iterable
-from ampel.content.DataPoint import DataPoint
-from ampel.types import DataPointId
-from ampel.struct.T1CombineResult import T1CombineResult
+
 from ampel.abstract.AbsT1CombineUnit import AbsT1CombineUnit
+from ampel.content.DataPoint import DataPoint
+from ampel.struct.T1CombineResult import T1CombineResult
+from ampel.types import DataPointId
 
 
 class T1SimpleRetroCombiner(AbsT1CombineUnit):

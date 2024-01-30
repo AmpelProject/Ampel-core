@@ -7,8 +7,9 @@
 # Last Modified Date:  27.05.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from ampel.types import OneOrMany
 from ampel.model.UnitModel import UnitModel
+from ampel.types import OneOrMany
+
 
 class T1CombineCompute(UnitModel[str]):
 	"""

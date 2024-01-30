@@ -8,30 +8,38 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import collections.abc
-from typing import Any, Literal
+from collections.abc import Sequence
+from contextlib import suppress
 from functools import cached_property
+from typing import Any, Literal
+
 from pymongo import MongoClient
-from pymongo.database import Database
 from pymongo.collection import Collection
-from pymongo.errors import ConfigurationError, DuplicateKeyError, OperationFailure, CollectionInvalid
+from pymongo.database import Database
+from pymongo.errors import (
+	CollectionInvalid,
+	ConfigurationError,
+	DuplicateKeyError,
+	OperationFailure,
+)
 from pymongo.read_preferences import SecondaryPreferred
 
-from ampel.types import ChannelId
-from ampel.mongo.utils import get_ids
-from ampel.log.AmpelLogger import AmpelLogger
-from ampel.config.AmpelConfig import AmpelConfig
 from ampel.base.AmpelUnit import AmpelUnit
-from ampel.secret.AmpelVault import AmpelVault
-from ampel.mongo.view.AbsMongoView import AbsMongoView
-from ampel.mongo.view.MongoOneView import MongoOneView
-from ampel.mongo.view.MongoOrView import MongoOrView
-from ampel.mongo.view.MongoAndView import MongoAndView
+from ampel.config.AmpelConfig import AmpelConfig
+from ampel.log.AmpelLogger import AmpelLogger
 from ampel.mongo.model.AmpelColModel import AmpelColModel
 from ampel.mongo.model.AmpelDBModel import AmpelDBModel
 from ampel.mongo.model.IndexModel import IndexModel
-from ampel.mongo.model.ShortIndexModel import ShortIndexModel
 from ampel.mongo.model.MongoClientOptionsModel import MongoClientOptionsModel
 from ampel.mongo.model.MongoClientRoleModel import MongoClientRoleModel
+from ampel.mongo.model.ShortIndexModel import ShortIndexModel
+from ampel.mongo.utils import get_ids
+from ampel.mongo.view.AbsMongoView import AbsMongoView
+from ampel.mongo.view.MongoAndView import MongoAndView
+from ampel.mongo.view.MongoOneView import MongoOneView
+from ampel.mongo.view.MongoOrView import MongoOrView
+from ampel.secret.AmpelVault import AmpelVault
+from ampel.types import ChannelId
 from ampel.util.collections import try_reduce
 
 intcol = {'t0': 0, 't1': 1, 't2': 2, 't3': 3, 'stock': 4}
@@ -172,7 +180,7 @@ class AmpelDB(AmpelUnit):
 			role = MongoClientRoleModel(r='logger', w='logger')
 		)
 
-		self.databases = list(self.databases) + [db_config]
+		self.databases = [*self.databases, db_config]
 
 		for col in db_config.collections:
 			self.col_config[col.name] = col
@@ -235,7 +243,7 @@ class AmpelDB(AmpelUnit):
 				self.mongo_clients[role] = MongoClient(self.mongo_uri, **kwargs)
 			except ConfigurationError as exc:
 				# hint at error source
-				raise ConfigurationError(exc.args[0] + f' (from secret {key})', *exc.args[1:])
+				raise ConfigurationError(exc.args[0] + f' (from secret {key})', *exc.args[1:]) from exc
 
 		return self.mongo_clients[role].get_database(
 			f"{self.prefix}_{db_name}" if (db_name and not self.one_db) else self.prefix
@@ -462,10 +470,8 @@ class AmpelDB(AmpelUnit):
 		self.mongo_clients.clear()
 		# deleting the attribute resets cached_property
 		for attr in ("col_trace_ids", "col_conf_ids", "trace_ids", "conf_ids"):
-			try:
+			with suppress(AttributeError):
 				delattr(self, attr)
-			except AttributeError:
-				pass
 
 
 	def add_trace_id(self, trace_id: int, arg: dict[str, Any]) -> None:
@@ -473,11 +479,9 @@ class AmpelDB(AmpelUnit):
 		# Save trace id to external collection
 		if trace_id not in self.trace_ids:
 
-			# Using try insert except on purpose because update_one/upsert does not maintain dict key order
-			try:
+			# Suppress duplicate key error on purpose because update_one/upsert does not maintain dict key order
+			with suppress(DuplicateKeyError):
 				self.col_trace_ids.insert_one({'_id': trace_id} | arg)
-			except DuplicateKeyError:
-				pass
 
 		self.trace_ids.add(trace_id)
 
@@ -487,10 +491,8 @@ class AmpelDB(AmpelUnit):
 		# Save conf id to external collection
 		if conf_id not in self.conf_ids:
 
-			# Using try insert except on purpose because update_one/upsert does not maintain dict key order
-			try:
+			# Suppress duplicate key error on purpose because update_one/upsert does not maintain dict key order
+			with suppress(DuplicateKeyError):
 				self.col_conf_ids.insert_one({'_id': conf_id} | arg)
-			except DuplicateKeyError:
-				pass
 
 		self.conf_ids.add(conf_id)

@@ -9,14 +9,14 @@
 
 from collections.abc import Generator
 
-from ampel.types import OneOrMany, Annotated
-from ampel.struct.T3Store import T3Store
-from ampel.model.UnitModel import UnitModel
-from ampel.content.T3Document import T3Document
 from ampel.abstract.AbsT3Unit import AbsT3Unit
+from ampel.content.T3Document import T3Document
+from ampel.model.UnitModel import UnitModel
 from ampel.struct.AmpelBuffer import AmpelBuffer
-from ampel.t3.stage.T3ThreadedStager import T3ThreadedStager
+from ampel.struct.T3Store import T3Store
 from ampel.t3.stage.SimpleViewGenerator import SimpleViewGenerator
+from ampel.t3.stage.T3ThreadedStager import T3ThreadedStager
+from ampel.types import Annotated, OneOrMany
 
 
 class T3SimpleStager(T3ThreadedStager):

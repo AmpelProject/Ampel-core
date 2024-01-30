@@ -7,7 +7,7 @@
 # Last Modified Date:  Unspecified
 # Last Modified By:    jvs
 
-from typing import Any, ClassVar, Type, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from pydantic import model_validator
 
@@ -26,7 +26,7 @@ class AliasableModel(AmpelBaseModel):
 	_config: ClassVar['None | AmpelConfig'] = None
 
 	@model_validator(mode="before")
-	def resolve_alias(cls: Type["AliasableModel"], value: Any) -> dict[str, Any]:
+	def resolve_alias(cls: type["AliasableModel"], value: Any) -> dict[str, Any]:
 		if cls._config and isinstance(value, str):
 			d = cls._config.get(f"alias.t3.%{value}", dict)
 			if d:

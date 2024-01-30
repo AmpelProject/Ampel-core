@@ -7,12 +7,14 @@
 # Last Modified Date:  20.06.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+from datetime import datetime, timedelta, timezone
+from typing import Any, Literal, overload
+
 from bson import ObjectId
 from pymongo.collection import Collection
-from datetime import datetime, timedelta
-from typing import Literal, Any, overload
 
 from ampel.enum.EventCode import EventCode
+
 
 def build_query(
 	tier: Literal[0, 1, 2, 3] = 0,
@@ -77,7 +79,7 @@ def get_last_run(
 	if ret := list(col.find(query).sort('_id', -1).limit(2)):
 		if require_success and ret:
 			return ret[0]['_id'].generation_time.timestamp() if timestamp else ret[0]['_id']
-		elif len(ret) > 1:
+		if len(ret) > 1:
 			return ret[1]['_id'].generation_time.timestamp() if ret[1]['_id'] else ret[1]['_id']
 	return None
 
@@ -108,8 +110,8 @@ def build_t0_stats_query(
 
 
 def _get_datetime(t: int | float | dict) -> datetime:
-	if isinstance(t, (int, float)):
-		return datetime.fromtimestamp(t)
-	elif isinstance(t, dict):
-		return datetime.today() + timedelta(**t)
+	if isinstance(t, int | float):
+		return datetime.fromtimestamp(t, tz=timezone.utc)
+	if isinstance(t, dict):
+		return datetime.now(tz=timezone.utc) + timedelta(**t)
 	return None

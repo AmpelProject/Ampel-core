@@ -7,21 +7,27 @@
 # Last Modified Date:  11.11.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import sys, traceback, contextlib
+import contextlib
+import sys
+import traceback
+from collections.abc import Generator
+from datetime import datetime, timezone
 from math import log2
+from typing import overload
+
 from bson import ObjectId
-from datetime import datetime
-from typing import overload, Generator
 from pymongo import WriteConcern
 
-from ampel.types import JDict
-from ampel.core.AmpelDB import AmpelDB
 from ampel.config.AmpelConfig import AmpelConfig
-from ampel.util.collections import has_nested_type
+from ampel.core.AmpelDB import AmpelDB
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogFlag import LogFlag
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 from ampel.protocol.LoggerProtocol import LoggerProtocol
+from ampel.types import JDict
+from ampel.util.collections import has_nested_type
+
+# ruff: noqa: RUF002
 
 exception_counter = AmpelMetricsRegistry.counter(
 	"exceptions",
@@ -96,8 +102,8 @@ def report_exception(
 	in the document inserted into Ampel_troubles
 	"""
 
-	from traceback import format_exc
 	from sys import exc_info
+	from traceback import format_exc
 
 	# Don't create report for executions canceled manually
 	if exc_info()[0] == KeyboardInterrupt:
@@ -108,7 +114,7 @@ def report_exception(
 
 	trouble: JDict = {
 		'_id': ObjectId(),
-		'datetime': datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
+		'datetime': datetime.now(tz=timezone.utc).strftime('%d/%m/%Y %H:%M:%S'),
 		'tier': get_tier_from_logger(logger)
 	}
 
@@ -153,9 +159,9 @@ def report_error(
 
 	trouble: dict[str, None | int | str | ObjectId] = {
 		'_id': ObjectId(),
-		'datetime': datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
+		'datetime': datetime.now(tz=timezone.utc).strftime('%d/%m/%Y %H:%M:%S'),
 		'tier': get_tier_from_logger(logger),
-		'location': '%s:%s' % (filename, line_number),
+		'location': f'{filename}:{line_number}',
 	}
 
 	if msg:
@@ -181,11 +187,11 @@ def get_tier_from_logger(logger: AmpelLogger) -> None | int:
 	lb = LogFlag(logger.base_flag)
 	if LogFlag.T0 in lb:
 		return 0
-	elif LogFlag.T1 in lb:
+	if LogFlag.T1 in lb:
 		return 1
-	elif LogFlag.T2 in lb:
+	if LogFlag.T2 in lb:
 		return 2
-	elif LogFlag.T3 in lb:
+	if LogFlag.T3 in lb:
 		return 3
 
 	return None
@@ -218,7 +224,7 @@ def insert_trouble(
 		)
 
 		logger.error(
-			msg = f"Unpublished 'troubles' document: {str(trouble)}",
+			msg = f"Unpublished 'troubles' document: {trouble!s}",
 			exc_info=e
 		)
 
@@ -228,7 +234,7 @@ def safe_query_dict(
 	update: None | JDict = None,
 	dict_key: None | str = 'query'
 ) -> JDict:
-	u"""
+	"""
 	| Builds a dict that can be passed as "extra" parameter to instances of AmpelLogger.
 	| Returned dict has the following structure:
 
@@ -277,7 +283,7 @@ def convert_dollars(arg: JDict | list[JDict]) -> JDict | list[JDict]:
 
 	if isinstance(arg, dict):
 
-		pblm_keys = [key for key in arg.keys() if "$" in key or "." in key]
+		pblm_keys = [key for key in arg if "$" in key or "." in key]
 		if pblm_keys:
 			arg = arg.copy() # shallow copy
 			for key in pblm_keys:
@@ -293,7 +299,7 @@ def convert_dollars(arg: JDict | list[JDict]) -> JDict | list[JDict]:
 		if not pblm_keys:
 			arg = arg.copy()
 
-		for key in arg.keys():
+		for key in arg:
 			arg[key] = convert_dollars(arg[key])
 
 	elif isinstance(arg, list):

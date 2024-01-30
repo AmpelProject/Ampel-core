@@ -7,20 +7,21 @@
 # Last Modified Date:  24.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import yaml
-from datetime import datetime
-from typing import Any, Callable
 from argparse import ArgumentParser
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
+from datetime import datetime
+from typing import Any
+
+import yaml
 from bson.objectid import ObjectId
 
+from ampel.cli.AbsCoreCommand import AbsCoreCommand
+from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
+from ampel.cli.LoadJSONAction import LoadJSONAction
+from ampel.cli.MaybeIntAction import MaybeIntAction
 from ampel.core.AmpelContext import AmpelContext
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogFlag import LogFlag
-from ampel.cli.AbsCoreCommand import AbsCoreCommand
-from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
-from ampel.cli.MaybeIntAction import MaybeIntAction
-from ampel.cli.LoadJSONAction import LoadJSONAction
 from ampel.util.pretty import prettyjson
 
 
@@ -98,11 +99,11 @@ class EventCommand(AbsCoreCommand):
 
 		col = ctx.db.get_collection('event', mode='r')
 		if 'event' not in col.database.list_collection_names():
-			logger.info(f"Event collection does not exist (db: {col.database._Database__name})")
+			logger.info(f"Event collection does not exist (db: {col.database.name})")
 			return
 
 		if args['debug']:
-			logger.debug(f"Querying {col.database._Database__name} database {col.database.client.address}")
+			logger.debug(f"Querying {col.database.name} database {col.database.client.address}")
 
 		matchd: dict[str, Any] = {} if args['all'] else {'code': 0}
 
@@ -125,12 +126,12 @@ class EventCommand(AbsCoreCommand):
 		morphers: list[Callable[[dict[str, Any]], None]] = []
 
 		if args['no_pretty']:
-			printfunc = lambda x: print(x, end='')
+			printfunc = lambda x: print(x, end='')  # noqa: E731
 		elif args['yaml'] != -1:
-			printfunc = lambda x: print(yaml.dump(x, sort_keys=False, default_flow_style=args['yaml']), end='')
+			printfunc = lambda x: print(yaml.dump(x, sort_keys=False, default_flow_style=args['yaml']), end='')  # noqa: E731
 			sep = ''
 		else:
-			printfunc = lambda x: print(prettyjson(x), end='')
+			printfunc = lambda x: print(prettyjson(x), end='')  # noqa: E731
 
 		if not args['keep_oids']:
 			morphers.append(
@@ -141,7 +142,7 @@ class EventCommand(AbsCoreCommand):
 
 		if args['resolve_jobs']:
 			jcol = ctx.db.get_collection('job', mode='r')
-			def resolve_jobs(d): # noqa
+			def resolve_jobs(d):
 				if jobd := next(jcol.find({'_id': d.get('jobid')}), None):
 					d['job'] = jobd
 					del d['jobid']

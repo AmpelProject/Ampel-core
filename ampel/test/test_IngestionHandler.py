@@ -1,21 +1,21 @@
-import contextlib, pytest
-from ampel.content.T2Document import T2Document
-from ampel.content.T1Document import T1Document
+import contextlib
 import datetime
-
-from itertools import count
-from typing import Any, Sequence
 from collections import defaultdict
 from collections.abc import Generator
-from ampel.config.AmpelConfig import AmpelConfig
-from ampel.content.MetaRecord import MetaRecord
-from ampel.enum.MetaActionCode import MetaActionCode
-from ampel.util.freeze import recursive_unfreeze
+from itertools import count
+from typing import Any
+
+import pytest
 from pymongo.errors import DuplicateKeyError
 from pytest_mock import MockFixture
 
+from ampel.config.AmpelConfig import AmpelConfig
 from ampel.content.DataPoint import DataPoint
+from ampel.content.MetaRecord import MetaRecord
+from ampel.content.T1Document import T1Document
+from ampel.content.T2Document import T2Document
 from ampel.dev.DevAmpelContext import DevAmpelContext
+from ampel.enum.MetaActionCode import MetaActionCode
 from ampel.ingest.ChainedIngestionHandler import ChainedIngestionHandler, IngestBody
 from ampel.log.AmpelLogger import DEBUG, AmpelLogger
 from ampel.model.ingest.CompilerOptions import CompilerOptions
@@ -30,16 +30,17 @@ from ampel.mongo.update.MongoT0Ingester import MongoT0Ingester
 from ampel.mongo.update.MongoT1Ingester import MongoT1Ingester
 from ampel.mongo.update.MongoT2Ingester import MongoT2Ingester
 from ampel.test.dummy import (
-    DummyMuxer,
     DummyHistoryMuxer,
+    DummyMuxer,
     DummyPointT2Unit,
     DummyStateT2Unit,
     DummyStockT2Unit,
 )
+from ampel.util.freeze import recursive_unfreeze
 
 
-@pytest.fixture
-def dummy_units(dev_context: DevAmpelContext):
+@pytest.fixture()
+def _dummy_units(dev_context: DevAmpelContext):
     for unit in (
         DummyStockT2Unit,
         DummyPointT2Unit,
@@ -52,7 +53,7 @@ def dummy_units(dev_context: DevAmpelContext):
 
 @pytest.fixture(params=["T1SimpleCombiner", "T1SimpleRetroCombiner"])
 def single_source_directive(
-    dev_context: DevAmpelContext, dummy_units, request
+    dev_context: DevAmpelContext, _dummy_units, request
 ) -> IngestDirective:
     return IngestDirective(
         channel="TEST_CHANNEL",
@@ -72,7 +73,7 @@ def single_source_directive(
 
 @pytest.fixture(params=["T1SimpleCombiner", "T1SimpleRetroCombiner"])
 def multiplex_directive(
-    dev_context: DevAmpelContext, dummy_units, request
+    dev_context: DevAmpelContext, _dummy_units, request
 ) -> IngestDirective:
     return IngestDirective(
         channel="TEST_CHANNEL",
@@ -112,11 +113,11 @@ def get_handler(context: DevAmpelContext, directives) -> ChainedIngestionHandler
 
 
 def test_no_directive(dev_context):
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Need at least 1 directive"):
         get_handler(dev_context, [])
 
 
-@pytest.fixture
+@pytest.fixture()
 def datapoints() -> list[DataPoint]:
     return [
         {"id": i, "stock": "stockystock", "body": {"thing": i}}  # type: ignore[typeddict-item]
@@ -392,7 +393,7 @@ def test_t0_ttl(
     """
     Previously inserted datapoint ttls are updated when used by a muxer
     """
-    time = mocker.patch(
+    mocker.patch(
         "ampel.ingest.ChainedIngestionHandler.time", side_effect=count().__next__
     )
     mock_context.register_units(DummyHistoryMuxer)

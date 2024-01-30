@@ -1,15 +1,13 @@
-import base64, json, sys, pytest, yaml
+import sys
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Optional
 from unittest.mock import MagicMock
+
+import pytest
+import yaml
 from pytest_mock import MockerFixture
-from contextlib import contextmanager, nullcontext
 
 from ampel.cli.main import main
-from ampel.cli.utils import get_vault
-from ampel.model.job.JobModel import JobModel
-from ampel.config.AmpelConfig import AmpelConfig
-from ampel.secret.AmpelVault import AmpelVault
 
 
 @contextmanager
@@ -38,12 +36,12 @@ def dump(payload, tmpdir, name: str) -> Path:
     return f
 
 
-@pytest.fixture
+@pytest.fixture()
 def vault(tmpdir):
     return dump({"foo": "bar"}, tmpdir, "secrets.yml")
 
 
-@pytest.fixture
+@pytest.fixture()
 def secrets():
     return {
         "str": "str",
@@ -53,7 +51,7 @@ def secrets():
     }
 
 
-@pytest.fixture
+@pytest.fixture()
 def dir_secret_store(tmpdir, secrets):
     parent_dir = Path(tmpdir) / "secrets"
     parent_dir.mkdir()
@@ -62,17 +60,17 @@ def dir_secret_store(tmpdir, secrets):
     return parent_dir
 
 
-@pytest.fixture
+@pytest.fixture()
 def schema(tmpdir):
     return dump({"name": "job", "task": [{"unit": "Nonesuch"}]}, tmpdir, "schema.yml")
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_db(mocker: MockerFixture):
     return mocker.patch("ampel.core.AmpelDB.AmpelDB.get_collection")
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_new_context_unit(mocker: MockerFixture, mock_db):
     return mocker.patch("ampel.core.UnitLoader.UnitLoader.new_context_unit")
 

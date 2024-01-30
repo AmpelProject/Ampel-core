@@ -7,11 +7,13 @@
 # Last Modified Date:  05.01.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from ampel.log.AmpelLogger import AmpelLogger
 from typing import Any
-from ampel.config.builder.FirstPassConfig import FirstPassConfig
+
 from ampel.abstract.AbsChannelTemplate import AbsChannelTemplate
+from ampel.config.builder.FirstPassConfig import FirstPassConfig
+from ampel.log.AmpelLogger import AmpelLogger
 from ampel.model.ChannelModel import ChannelModel
+
 
 class ChannelWithProcsTemplate(AbsChannelTemplate):
 	""" Convenience class allowing channel definitions to include processes.  """

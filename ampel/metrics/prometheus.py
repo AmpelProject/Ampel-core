@@ -32,11 +32,11 @@
 import glob
 import os
 import tempfile
-from typing import Collection
+from collections.abc import Collection
 
 from prometheus_client import (
-    Metric,
     CollectorRegistry,
+    Metric,
     core,
     generate_latest,
     mmap_dict,

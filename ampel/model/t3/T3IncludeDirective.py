@@ -7,9 +7,9 @@
 # Last Modified Date:  17.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from ampel.types import OneOrMany
-from ampel.model.UnitModel import UnitModel
 from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.model.UnitModel import UnitModel
+from ampel.types import OneOrMany
 
 
 class T3IncludeDirective(AmpelBaseModel):

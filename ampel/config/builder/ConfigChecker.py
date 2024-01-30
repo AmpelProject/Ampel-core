@@ -8,17 +8,21 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 
-import json, os, sys, traceback
+import json
+import os
+import sys
+import traceback
 from typing import Any
-from ampel.util.pretty import prettyjson
-from ampel.util.recursion import walk_and_process_dict
-from ampel.core.AmpelContext import AmpelContext
+
 from ampel.base.AuxUnitRegister import AuxUnitRegister
+from ampel.config.builder.BaseConfigChecker import BaseConfigChecker
+from ampel.core.AmpelContext import AmpelContext
 from ampel.model.UnitModel import UnitModel
+from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
 from ampel.secret.AmpelVault import AmpelVault
 from ampel.secret.PotemkinSecretProvider import PotemkinSecretProvider
-from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
-from ampel.config.builder.BaseConfigChecker import BaseConfigChecker
+from ampel.util.pretty import prettyjson
+from ampel.util.recursion import walk_and_process_dict
 
 
 class ConfigChecker(BaseConfigChecker):
@@ -62,7 +66,7 @@ class ConfigChecker(BaseConfigChecker):
 		tier: str, proc: str, load_callable: Any,
 		model_args: dict[str, Any], raise_exc: bool = False,
 		ignore_ressource_not_avail: bool = False,
-		load_args: dict[str, Any] = {}
+		load_args: None | dict[str, Any] = None
 	) -> bool:
 		"""
 		:param proc: super process name
@@ -72,8 +76,8 @@ class ConfigChecker(BaseConfigChecker):
 		try:
 			# block potential "Offending value..." print from AmpelBaseModel
 			# since we pretty print the input values in case of errors
-			sys.stdout = open(os.devnull, 'w')
-			load_callable(**(model_args | load_args))
+			sys.stdout = open(os.devnull, 'w') # noqa: SIM115
+			load_callable(**(model_args | load_args if load_args else model_args))
 	
 		except Exception as e:
 
@@ -152,7 +156,7 @@ class ConfigChecker(BaseConfigChecker):
 					if self.verbose:
 						self.logger.debug("Checking model %s" % um['path'])
 
-					if um['model']['unit'] in AuxUnitRegister._defs:
+					if um['model']['unit'] in AuxUnitRegister._defs:  # noqa: SLF001
 						self.load_model(
 							tier = tier, proc = proc,
 							load_callable = AuxUnitRegister.new_unit,
@@ -160,28 +164,27 @@ class ConfigChecker(BaseConfigChecker):
 							raise_exc = raise_exc,
 							ignore_ressource_not_avail = ignore_ressource_not_avail,
 						)
-					else:
-						if um['model']['unit'] in self.config["unit"]["admin"]:
-							# Deactivated for now, too complicated
-							self.load_model(
-								tier = tier, proc = proc,
-								load_callable = self.loader.new_context_unit,
-								load_args = {"context": self.ctx},
-								model_args = self._customize_admin_models(um),
-								raise_exc = raise_exc,
-								ignore_ressource_not_avail = ignore_ressource_not_avail,
-							)
-						elif um['model']['unit'] in self.config["unit"]["base"]:
-							self.load_model(
-								tier = tier, proc = proc,
-								load_callable = self.loader.new_logical_unit,
-								load_args = {"logger": self.logger},
-								model_args = um["model"],
-								raise_exc = raise_exc,
-								ignore_ressource_not_avail = ignore_ressource_not_avail,
-							)
+					elif um['model']['unit'] in self.config["unit"]["admin"]:
+						# Deactivated for now, too complicated
+						self.load_model(
+							tier = tier, proc = proc,
+							load_callable = self.loader.new_context_unit,
+							load_args = {"context": self.ctx},
+							model_args = self._customize_admin_models(um),
+							raise_exc = raise_exc,
+							ignore_ressource_not_avail = ignore_ressource_not_avail,
+						)
+					elif um['model']['unit'] in self.config["unit"]["base"]:
+						self.load_model(
+							tier = tier, proc = proc,
+							load_callable = self.loader.new_logical_unit,
+							load_args = {"logger": self.logger},
+							model_args = um["model"],
+							raise_exc = raise_exc,
+							ignore_ressource_not_avail = ignore_ressource_not_avail,
+						)
 
-				except Exception as e:
+				except Exception as e:  # noqa: PERF203
 
 					if raise_exc:
 						raise e
@@ -227,12 +230,14 @@ class ConfigChecker(BaseConfigChecker):
 		model = um['model']
 		unit = model['unit']
 
-		if unit in self.config["unit"]["aux"]:
-			if "AbsT3Projector" in self.config["unit"]["aux"][unit]["base"]:
-				model = json.loads(json.dumps(model))
-				if "config" not in model or model["config"] is None:
-					model["config"] = {}
-				model["config"]["logger"] = self.logger
+		if (
+			unit in self.config["unit"]["aux"] and
+			"AbsT3Projector" in self.config["unit"]["aux"][unit]["base"]
+		):
+			model = json.loads(json.dumps(model))
+			if "config" not in model or model["config"] is None:
+				model["config"] = {}
+			model["config"]["logger"] = self.logger
 
 		return model
 

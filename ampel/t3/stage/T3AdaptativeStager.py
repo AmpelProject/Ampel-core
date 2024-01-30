@@ -7,26 +7,26 @@
 # Last Modified Date:  09.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from time import time
+from collections.abc import Generator, Sequence
 from itertools import islice
 from multiprocessing import JoinableQueue
-from multiprocessing.pool import ThreadPool, AsyncResult
-from collections.abc import Generator, Sequence
+from multiprocessing.pool import AsyncResult, ThreadPool
+from time import time
 
-from ampel.types import ChannelId
-from ampel.struct.T3Store import T3Store
-from ampel.view.SnapView import SnapView
-from ampel.model.UnitModel import UnitModel
-from ampel.content.T3Document import T3Document
-from ampel.log import VERBOSE
-from ampel.struct.AmpelBuffer import AmpelBuffer
-from ampel.base.AuxUnitRegister import AuxUnitRegister
-from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.abstract.AbsT3Filter import AbsT3Filter
 from ampel.abstract.AbsT3Projector import AbsT3Projector
-from ampel.t3.stage.T3ThreadedStager import T3ThreadedStager
+from ampel.abstract.AbsT3Unit import AbsT3Unit
+from ampel.base.AuxUnitRegister import AuxUnitRegister
+from ampel.content.T3Document import T3Document
+from ampel.log import VERBOSE
+from ampel.model.UnitModel import UnitModel
+from ampel.struct.AmpelBuffer import AmpelBuffer
+from ampel.struct.T3Store import T3Store
 from ampel.t3.stage.T3ProjectingStager import RunBlock
+from ampel.t3.stage.T3ThreadedStager import T3ThreadedStager
 from ampel.t3.stage.ThreadedViewGenerator import ThreadedViewGenerator
+from ampel.types import ChannelId
+from ampel.view.SnapView import SnapView
 
 
 class T3AdaptativeStager(T3ThreadedStager):
@@ -153,9 +153,9 @@ class T3AdaptativeStager(T3ThreadedStager):
 						# Dict used to potentially optimize views generation
 						rb.qdict = {}
 						for unit in rb.units:
-							if unit.__class__._View not in rb.qdict:
-								rb.qdict[unit.__class__._View] = []
-							rb.qdict[unit.__class__._View].append(qs[unit])
+							if unit.__class__._View not in rb.qdict:  # noqa: SLF001
+								rb.qdict[unit.__class__._View] = []  # noqa: SLF001
+							rb.qdict[unit.__class__._View].append(qs[unit])  # noqa: SLF001
 
 						self.run_blocks[chan] = rb
 
@@ -181,12 +181,14 @@ class T3AdaptativeStager(T3ThreadedStager):
 				q.put(None) # type: ignore[arg-type]
 
 			for async_res, generator, t3_unit in zip(
-				self.async_results, self.generators, list(self.queues.keys())
+				self.async_results, self.generators, list(self.queues.keys()), strict=False
 			):
 				# potential T3Record to be included in the T3Document
-				if (t3_unit_result := async_res.get()):
-					if (z := self.handle_t3_result(t3_unit, t3_unit_result, t3s, generator.stocks, ts)):
-						yield z
+				if (
+					(t3_unit_result := async_res.get()) and
+					(z := self.handle_t3_result(t3_unit, t3_unit_result, t3s, generator.stocks, ts))
+				):
+					yield z
 
 			if self.stock_updr.update_journal:
 				self.stock_updr.flush()

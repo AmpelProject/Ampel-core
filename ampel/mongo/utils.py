@@ -7,8 +7,9 @@
 # Last Modified Date:  09.10.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any
 from collections.abc import Sequence
+from typing import Any
+
 from ampel.types import StrictIterable, strict_iterable
 
 
@@ -52,7 +53,7 @@ def maybe_match_array(arg: StrictIterable):
 
 def match_one_or_many(arg: Any) -> Any:
 
-	if isinstance(arg, (int, float, str)):
+	if isinstance(arg, int | float | str):
 		return arg
 
 	return maybe_match_array(arg)

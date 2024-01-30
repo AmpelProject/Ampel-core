@@ -9,11 +9,12 @@
 
 import datetime
 from typing import Any, NamedTuple
-from ampel.types import ChannelId, UnitId, T2Link, StockId
-from ampel.content.T2Document import T2Document
-from ampel.content.MetaActivity import MetaActivity
-from ampel.abstract.AbsDocIngester import AbsDocIngester
+
 from ampel.abstract.AbsCompiler import AbsCompiler, ActivityRegister
+from ampel.abstract.AbsDocIngester import AbsDocIngester
+from ampel.content.MetaActivity import MetaActivity
+from ampel.content.T2Document import T2Document
+from ampel.types import ChannelId, StockId, T2Link, UnitId
 
 
 class T2Compiler(AbsCompiler):

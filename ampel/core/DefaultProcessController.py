@@ -7,21 +7,25 @@
 # Last Modified Date:  17.04.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import asyncio, datetime, logging, schedule
+import asyncio
+import datetime
+import logging
+from collections.abc import Sequence
 from functools import partial
 from typing import Any, Literal
-from collections.abc import Sequence
 
-from ampel.util import concurrent
+import schedule
+
 from ampel.abstract.AbsEventUnit import AbsEventUnit
-from ampel.core.AmpelContext import AmpelContext
 from ampel.abstract.AbsProcessController import AbsProcessController
-from ampel.secret.AmpelVault import AmpelVault
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.config.ScheduleEvaluator import ScheduleEvaluator
-from ampel.model.ProcessModel import ProcessModel
+from ampel.core.AmpelContext import AmpelContext
 from ampel.core.AmpelDB import AmpelDB
 from ampel.core.UnitLoader import UnitLoader
+from ampel.model.ProcessModel import ProcessModel
+from ampel.secret.AmpelVault import AmpelVault
+from ampel.util import concurrent
 
 log = logging.getLogger(__name__)
 
@@ -155,7 +159,7 @@ class DefaultProcessController(AbsProcessController):
 		"""
 		self.scheduler.clear()
 		evaluator = ScheduleEvaluator()
-		every = lambda appointment: evaluator(self.scheduler, appointment)
+		every = partial(evaluator, self.scheduler)
 		for pm in self.processes:
 			for appointment in pm.schedule:
 				if not appointment:
@@ -171,7 +175,7 @@ class DefaultProcessController(AbsProcessController):
 				)
 				# Pull back the first run if the first wait time is within 10
 				# seconds of the period
-				if now and abs((job.next_run-datetime.datetime.now()-job.period).total_seconds()) < 10:
+				if now and abs((job.next_run-datetime.datetime.now()-job.period).total_seconds()) < 10: # noqa: DTZ005
 					job.next_run -= job.period
 
 

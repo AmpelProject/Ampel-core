@@ -8,9 +8,10 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
-from ampel.log.AmpelLogger import AmpelLogger
-from ampel.core.AmpelContext import AmpelContext
+
 from ampel.abstract.AbsConfigUpdater import AbsConfigUpdater
+from ampel.core.AmpelContext import AmpelContext
+from ampel.log.AmpelLogger import AmpelLogger
 from ampel.util.recursion import walk_and_process_dict
 
 
@@ -34,7 +35,7 @@ class ResolveRunTimeAliases(AbsConfigUpdater):
 		# print(f"# path: {path}\n# d: {d}\n")
 		for k, v in current_d.items():
 			if isinstance(v, str) and v[0] == '%' == v[1]:
-				for rt_key, rt_val in kwargs['run_time_aliases'].items():
+				for rt_key in kwargs['run_time_aliases']:
 					if v == rt_key:
 						if kwargs['logger'].verbose:
 							kwargs['logger'].info(

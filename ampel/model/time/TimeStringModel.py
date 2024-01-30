@@ -7,8 +7,9 @@
 # Last Modified Date:  06.06.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+from datetime import datetime, timezone
 from typing import Literal
-from datetime import datetime
+
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 
 
@@ -22,4 +23,5 @@ class TimeStringModel(AmpelBaseModel):
 
 		return datetime \
 			.strptime(self.dateTimeStr, self.dateTimeFormat) \
+			.astimezone(timezone.utc) \
 			.timestamp()
