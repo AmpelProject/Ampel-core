@@ -416,7 +416,7 @@ class ConfigBuilder:
 		
 		d = {
 			'build': {
-				'date': (now := datetime.datetime.now()).strftime("%d/%m/%Y"),
+				'date': (now := datetime.datetime.now(tz=datetime.timezone.utc)).strftime("%d/%m/%Y"),
 				'time': now.strftime("%H:%M:%S"),
 				'by': getpass.getuser(),
 				'conda': os.environ.get('CONDA_DEFAULT_ENV') or False,

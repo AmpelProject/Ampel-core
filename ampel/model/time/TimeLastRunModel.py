@@ -7,7 +7,7 @@
 # Last Modified Date:  31.07.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Literal
 
 from ampel.base.AmpelBaseModel import AmpelBaseModel
@@ -24,7 +24,7 @@ class TimeLastRunModel(AmpelBaseModel):
 
 
 	def get_timestamp(self, **kwargs) -> None | float:
-		now = kwargs.get('now') or datetime.today()
+		now = kwargs.get('now') or datetime.now(tz=timezone.utc)
 		if ts := self._query_events_col(kwargs['db'], now, self):
 			return ts
 		if self.fallback:

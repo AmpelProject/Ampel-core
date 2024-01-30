@@ -175,7 +175,7 @@ class DefaultProcessController(AbsProcessController):
 				)
 				# Pull back the first run if the first wait time is within 10
 				# seconds of the period
-				if now and abs((job.next_run-datetime.datetime.now()-job.period).total_seconds()) < 10:
+				if now and abs((job.next_run-datetime.datetime.now()-job.period).total_seconds()) < 10: # noqa: DTZ005
 					job.next_run -= job.period
 
 

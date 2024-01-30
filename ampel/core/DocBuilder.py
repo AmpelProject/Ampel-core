@@ -7,7 +7,7 @@
 # Last Modified Date:  04.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal, TypeVar
 
 from ampel.abstract.AbsUnitResultAdapter import AbsUnitResultAdapter
@@ -81,7 +81,7 @@ class DocBuilder(ContextUnit):
 
 		d: T = {'process': event_hdlr.process_name} # type: ignore[typeddict-item]
 		actact = MetaActionCode(0)
-		now = datetime.now()
+		now = datetime.now(tz=timezone.utc)
 
 		if self.human_timestamp:
 			d['datetime'] = now.strftime(self.human_timestamp_format)
@@ -169,7 +169,7 @@ class DocBuilder(ContextUnit):
 				ids.append("[%s]" % confid)
 			if 'run' in self.human_id:
 				ids.append("[%s]" % event_hdlr.get_run_id())
-			ids.append(datetime.now().strftime(self.human_timestamp_format))
+			ids.append(datetime.now(tz=timezone.utc).strftime(self.human_timestamp_format))
 			d['_id'] = " ".join(ids)
 
 		return d

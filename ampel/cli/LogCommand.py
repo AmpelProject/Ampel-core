@@ -212,10 +212,10 @@ class LogCommand(AbsCoreCommand):
 
 		if sub_op == 'tail':
 			import time
-			from datetime import datetime
+			from datetime import datetime, timezone
 
 			from bson.objectid import ObjectId
-			mcrit['_id'] = {'$gte': ObjectId.from_datetime(datetime.utcnow())}
+			mcrit['_id'] = {'$gte': ObjectId.from_datetime(datetime.now(tz=timezone.utc))}
 			ld.datetime_key = 'date'
 			loader.datetime_key = 'date'
 

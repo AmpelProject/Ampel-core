@@ -94,7 +94,7 @@ class AmpelExceptionPublisher(AbsOpsUnit):
 
     def run(self, beacon: None | dict[str, Any] = None) -> None | dict[str, Any]:
 
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(tz=datetime.timezone.utc)
         t0 = beacon["updated"] if beacon else now - datetime.timedelta(hours=1)
         dt = now - t0
 

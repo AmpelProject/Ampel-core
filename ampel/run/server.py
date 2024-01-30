@@ -8,7 +8,7 @@ import logging
 import operator
 import os
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from functools import reduce
 from typing import (
     TYPE_CHECKING,
@@ -505,9 +505,9 @@ def get_stock(stock_id: int):
         json_util.RELAXED_JSON_OPTIONS,
     )
     for k in "created", "updated":
-        doc[k] = {facet: datetime.fromtimestamp(ts) for facet, ts in doc[k].items()}
+        doc[k] = {facet: datetime.fromtimestamp(ts, tz=timezone.utc) for facet, ts in doc[k].items()}
     for jentry in doc["journal"]:
-        jentry["ts"] = datetime.fromtimestamp(jentry["ts"])
+        jentry["ts"] = datetime.fromtimestamp(jentry["ts"], tz=timezone.utc)
     return doc
 
 
@@ -544,13 +544,13 @@ def stock_summary():
 def transform_doc(doc: dict[str, Any], tier: int) -> dict[str, Any]:
     doc = json_util._json_convert(doc, json_util.RELAXED_JSON_OPTIONS)
     if tier == 1:
-        doc["added"] = datetime.fromtimestamp(doc["added"])
+        doc["added"] = datetime.fromtimestamp(doc["added"], tz=timezone.utc)
     if tier == 2:
         for jentry in doc["journal"]:
-            jentry["dt"] = datetime.fromtimestamp(jentry["dt"])
+            jentry["dt"] = datetime.fromtimestamp(jentry["dt"], tz=timezone.utc)
         doc["code"] = DocumentCode(doc["code"]).name
         for subrecord in doc.get("body", []):
-            subrecord["ts"] = datetime.fromtimestamp(subrecord["ts"])
+            subrecord["ts"] = datetime.fromtimestamp(subrecord["ts"], tz=timezone.utc)
     return doc
 
 

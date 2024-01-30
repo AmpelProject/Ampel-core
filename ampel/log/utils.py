@@ -11,7 +11,7 @@ import contextlib
 import sys
 import traceback
 from collections.abc import Generator
-from datetime import datetime
+from datetime import datetime, timezone
 from math import log2
 from typing import overload
 
@@ -114,7 +114,7 @@ def report_exception(
 
 	trouble: JDict = {
 		'_id': ObjectId(),
-		'datetime': datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
+		'datetime': datetime.now(tz=timezone.utc).strftime('%d/%m/%Y %H:%M:%S'),
 		'tier': get_tier_from_logger(logger)
 	}
 
@@ -159,7 +159,7 @@ def report_error(
 
 	trouble: dict[str, None | int | str | ObjectId] = {
 		'_id': ObjectId(),
-		'datetime': datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
+		'datetime': datetime.now(tz=timezone.utc).strftime('%d/%m/%Y %H:%M:%S'),
 		'tier': get_tier_from_logger(logger),
 		'location': '%s:%s' % (filename, line_number),
 	}

@@ -8,7 +8,7 @@
 # Last Modified By:    Marcus Fenner <mf@physik.hu-berlin.de>
 
 from collections.abc import Iterable
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from bson.objectid import ObjectId
@@ -38,8 +38,9 @@ class T3LogsAppender(AbsBufferComplement):
 		if t3s.session and self.use_last_run and t3s.session.get('last_run'):
 			query['_id'] = {
 				'$gte': ObjectId.from_datetime(
-					datetime.utcfromtimestamp(
-						t3s.session['last_run']
+					datetime.fromtimestamp(
+						t3s.session['last_run'],
+						tz=timezone.utc,
 					)
 				)
 			}

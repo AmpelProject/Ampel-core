@@ -7,7 +7,7 @@
 # Last Modified Date:  20.06.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Literal, overload
 
 from bson import ObjectId
@@ -111,7 +111,7 @@ def build_t0_stats_query(
 
 def _get_datetime(t: int | float | dict) -> datetime:
 	if isinstance(t, (int, float)):
-		return datetime.fromtimestamp(t)
+		return datetime.fromtimestamp(t, tz=timezone.utc)
 	elif isinstance(t, dict):
-		return datetime.today() + timedelta(**t)
+		return datetime.now(tz=timezone.utc) + timedelta(**t)
 	return None

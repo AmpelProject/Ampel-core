@@ -203,7 +203,7 @@ def out_stack():
 	"""
 	default_value = getattr(sys, "tracebacklimit", 1000)
 	sys.tracebacklimit = 0
-	print(" ") # noqa: T201
+	print(" ")
 	yield
 	sys.tracebacklimit = default_value
 

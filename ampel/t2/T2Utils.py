@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from collections.abc import Iterable, Sequence
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Literal
 
 from pymongo.collection import Collection
@@ -49,7 +49,7 @@ class T2Utils:
 			self.logger.warn("Danger zone: please confirm you know what you are doing")
 			return 0
 
-		jrec = JournalRecord(tier=-1, run=run_id, ts=datetime.utcnow().timestamp())
+		jrec = JournalRecord(tier=-1, run=run_id, ts=datetime.now(tz=timezone.utc).timestamp())
 
 		if cli:
 			jrec['extra'] = {'cli': True}

@@ -9,7 +9,7 @@
 
 from argparse import ArgumentParser
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import datetime, timezone
 from json import dumps
 from typing import Any
 
@@ -254,7 +254,7 @@ class T2Command(AbsCoreCommand):
 		if human_times:
 			for el in doc['meta']:
 				if 'ts' in el:
-					el['ts'] = datetime.utcfromtimestamp(el['ts']).isoformat() # type: ignore[typeddict-item]
+					el['ts'] = datetime.fromtimestamp(el['ts'], tz=timezone.utc).isoformat() # type: ignore[typeddict-item]
 
 		if id_mapper:
 			doc['stock'] = id_mapper.to_ext_id(doc['stock']) # type: ignore[arg-type]

@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Annotated
 
 from ampel.abstract.AbsEventUnit import AbsEventUnit
@@ -63,7 +63,7 @@ class T4Processor(AbsEventUnit, DocBuilder):
 
 				logger.log(SHOUT, f'Running {self.process_name}', extra={'unit': t4_unit.__class__.__name__})
 
-				ts = datetime.now().timestamp()
+				ts = datetime.now(tz=timezone.utc).timestamp()
 
 				if isinstance(t4_unit, AbsT4Unit):
 

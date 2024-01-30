@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import partial
 from typing import Any, Literal
 
@@ -148,7 +148,7 @@ class MongoStockDeleter(AbsOpsUnit):
     def run(self, beacon: None | dict[str, Any] = None) -> None | dict[str, Any]:
 
         if self.now == "now":
-            now = datetime.today()
+            now = datetime.now(tz=timezone.utc)
         elif self.now == "latest_stock":
             # use the timestamp of the most recently inserted stock as a marker for "now"
             try:
@@ -160,7 +160,7 @@ class MongoStockDeleter(AbsOpsUnit):
                 )
             except StopIteration:
                 return None
-            now = datetime.fromtimestamp(latest_stock["ts"]["any"]["tied"])
+            now = datetime.fromtimestamp(latest_stock["ts"]["any"]["tied"], tz=timezone.utc)
             self.logger.info(f"Last stock inserted {now} ({now.timestamp():.0f})")
 
         # TODO: specify conditions for stocks to delete (e.g. per channel), and then $and them

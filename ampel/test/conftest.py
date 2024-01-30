@@ -134,7 +134,7 @@ def ingest_stock(integration_context, ampel_logger):
         channel="TEST_CHANNEL",
         journal=JournalRecord(tier=0, extra={"alert": 123}),
     )
-    compiler.commit(ingester, datetime.datetime.now())
+    compiler.commit(ingester, datetime.datetime.now(tz=datetime.timezone.utc))
     ingester.updates_buffer.push_updates()
     assert integration_context.db.get_collection("stock").count_documents({}) == 1
 
@@ -144,7 +144,7 @@ def ingest_stock_t2(integration_context: DevAmpelContext, ampel_logger):
     run_id = 0
     updates_buffer = DBUpdatesBuffer(integration_context.db, run_id=run_id, logger=ampel_logger)
     stock_id = "stockystock"
-    now = datetime.datetime.now().timestamp()
+    now = datetime.datetime.now(datetime.timezone.utc).timestamp()
     t2_compiler = T2Compiler(run_id=run_id, tier=2)
     t2_compiler.add(
         unit="DummyStockT2Unit",
