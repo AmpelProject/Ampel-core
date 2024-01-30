@@ -421,8 +421,8 @@ class DBUpdatesBuffer(Schedulable):
 				# Log exc and try to insert doc into trouble collection (raises no exception)
 				report_exception(self._ampel_db, self.logger, exc=e)
 
-			print(f"Update of {col_name} collection has failed")
-			print(db_ops)
+			print(f"Update of {col_name} collection has failed")  # noqa: T201
+			print(db_ops)  # noqa: T201
 
 			self._err_db_ops[col_name] += db_ops
 			if self.error_callback:

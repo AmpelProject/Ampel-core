@@ -140,7 +140,7 @@ select = [
     "UP",
     "B",
     "DTZ",
-    # "T20",
+    "T20",
     "PT",
     "RET",
     "SLF",
@@ -160,6 +160,11 @@ ignore = [
     "B006", # mutable defaults
     "RUF012", # mutable class properties (are harmless everywhere BaseModel is used)
 ]
+
+[tool.ruff.lint.per-file-ignores]
+"ampel/test/*" = ["T20"]
+"ampel/cli/*" = ["T20"]
+"ampel/config/collector/*" = ["T20"]
 
 [tool.ruff.lint.flake8-bugbear]
 # Allow default arguments like, e.g., `data: List[str] = fastapi.Query(None)`.

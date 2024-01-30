@@ -291,18 +291,18 @@ class DBLoggingHandler(AmpelUnit):
 
 					# if runIds are equal, just print out a feedback
 					if db_rec['run'] == self.run_id:
-						print("Disregardable E11000: %s" % err_dict['op'])
+						print("Disregardable E11000: %s" % err_dict['op'])  # noqa: T201
 
 					# Otherwise print error and create trouble doc
 					else:
 
 						raise_exc = True
 
-						print("CRITICAL: OID collision occured between two different log entries")
-						print("Current process:")
-						print(err_dict['op'])
-						print("In DB:")
-						print(db_rec)
+						print("CRITICAL: OID collision occured between two different log entries")  # noqa: T201
+						print("Current process:")  # noqa: T201
+						print(err_dict['op'])  # noqa: T201
+						print("In DB:")  # noqa: T201
+						print(db_rec)  # noqa: T201
 
 						self._ampel_db.get_collection('trouble').insert_one(
 							{
@@ -316,7 +316,7 @@ class DBLoggingHandler(AmpelUnit):
 				else:
 
 					raise_exc = True
-					print("writeError dict entry: %s" % err_dict)
+					print("writeError dict entry: %s" % err_dict)  # noqa: T201
 
 					self._ampel_db.get_collection('trouble').insert_one(
 						{

@@ -20,7 +20,7 @@ def yes_no(question: str) -> bool:
 			sys.stdout.write('\x1b[1A')
 			sys.stdout.write('\x1b[2K')
 	except KeyboardInterrupt as e:
-		print('\nAbording...\n\n')
+		print('\nAbording...\n\n')  # noqa: T201
 		raise e
 
 	if c in ('y', 'yes'):

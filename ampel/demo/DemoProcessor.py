@@ -55,4 +55,4 @@ class DemoProcessor(AbsEventUnit):
 			sub_type = AbsT3Unit
 		)
 
-		print(unit)
+		print(unit)  # noqa: T201

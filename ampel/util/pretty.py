@@ -202,7 +202,7 @@ def out_stack():
 	"""
 	default_value = getattr(sys, "tracebacklimit", 1000)
 	sys.tracebacklimit = 0
-	print(" ")
+	print(" ")  # noqa: T201
 	yield
 	sys.tracebacklimit = default_value
 
@@ -260,4 +260,4 @@ class TimeFeedback:
 	def _print(self, s: str) -> None:
 		if self.logger:
 			self.logger.info(s)
-		print(s)
+		print(s)  # noqa: T201

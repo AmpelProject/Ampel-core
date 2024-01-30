@@ -54,7 +54,7 @@ class AmpelContext:
 		try:
 			AuxUnitRegister.initialize(config)
 		except Exception:
-			print("UnitLoader auxiliary units auto-registration failed")
+			print("UnitLoader auxiliary units auto-registration failed")  # noqa: T201
 
 
 	@classmethod

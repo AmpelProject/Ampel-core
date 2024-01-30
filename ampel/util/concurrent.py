@@ -120,7 +120,7 @@ def spawn_main(read_fd, write_fd):
         with open(write_fd, "wb") as tx:
             tx.write(payload)
     except Exception:
-        print(f"Process {obj._name} (pid {os.getpid()}):", file=sys.stderr)  # noqa: SLF001
+        print(f"Process {obj._name} (pid {os.getpid()}):", file=sys.stderr)  # noqa: SLF001, T201
         traceback.print_exc(file=sys.stderr)
         exitcode = 1
 
