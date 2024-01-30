@@ -141,7 +141,7 @@ select = [
     "B",
     "DTZ",
     # "T20",
-    # "PT",
+    "PT",
     # "RET",
     # "SLF",
     # "SIM",

@@ -32,7 +32,8 @@ def collect_diff(store):
     store.update(delta)
 
 
-def test_metrics(integration_context, ingest_stock_t2):
+@pytest.mark.usefixtures("_ingest_stock_t2")
+def test_metrics(integration_context):
     t2 = T2Worker(context=integration_context, raise_exc=True, process_name="t2")
 
     stats = {}

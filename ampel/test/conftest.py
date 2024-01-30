@@ -71,7 +71,7 @@ def mongod(pytestconfig):
 
 
 @pytest.fixture()
-def patch_mongo(monkeypatch):
+def _patch_mongo(monkeypatch):
     monkeypatch.setattr("ampel.core.AmpelDB.MongoClient", mongomock.MongoClient)
     # ignore codec_options in DataLoader
     monkeypatch.setattr("mongomock.codec_options.is_supported", lambda *args: None)
@@ -94,7 +94,7 @@ def core_config():
 
 
 @pytest.fixture()
-def mock_context(patch_mongo, testing_config: PosixPath):
+def mock_context(_patch_mongo, testing_config: PosixPath):
     return DevAmpelContext.load(config=str(testing_config), purge_db=True)
 
 
@@ -119,7 +119,7 @@ def ampel_logger():
 
 
 @pytest.fixture()
-def ingest_stock(integration_context, ampel_logger):
+def _ingest_stock(integration_context, ampel_logger):
     run_id = 0
     updates_buffer = DBUpdatesBuffer(integration_context.db, run_id=run_id, logger=ampel_logger)
     ingester = MongoStockIngester(
@@ -140,7 +140,7 @@ def ingest_stock(integration_context, ampel_logger):
 
 
 @pytest.fixture()
-def ingest_stock_t2(integration_context: DevAmpelContext, ampel_logger):
+def _ingest_stock_t2(integration_context: DevAmpelContext, ampel_logger):
     run_id = 0
     updates_buffer = DBUpdatesBuffer(integration_context.db, run_id=run_id, logger=ampel_logger)
     stock_id = "stockystock"

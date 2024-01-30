@@ -30,7 +30,7 @@ def secret_context(dev_context: DevAmpelContext, secrets, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "expected_type,key", [(dict, "dict"), (str, "str"), (tuple, "tuple")]
+    ("expected_type","key"), [(dict, "dict"), (str, "str"), (tuple, "tuple")]
 )
 def test_resolve_secrets_correct_type(
     dev_context: DevAmpelContext,
@@ -53,7 +53,7 @@ def test_resolve_secrets_correct_type(
 
 
 @pytest.mark.parametrize(
-    "expected_type,key", [(dict, "str"), (str, "tuple"), (tuple, "dict")]
+    ("expected_type","key"), [(dict, "str"), (str, "tuple"), (tuple, "dict")]
 )
 def test_resolve_secrets_wrong_type(
     secrets, dev_context: DevAmpelContext, monkeypatch, expected_type, key, ampel_logger
@@ -65,12 +65,12 @@ def test_resolve_secrets_wrong_type(
     
     vault = AmpelVault(providers=[secrets])
     s = Modelo(logger=ampel_logger).seekrit
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Secret not yet resolved"):
         s.get()
     assert vault.resolve_secret(s, expected_type) is False
     
     monkeypatch.setattr(dev_context.loader, "vault", vault)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=f"Could not resolve Modelo.seekrit as {expected_type.__name__:s}"):
         dev_context.loader.new(
             UnitModel(unit="Modelo"), logger=ampel_logger, unit_type=Modelo
         )
@@ -186,7 +186,7 @@ def test_use_secret_in_init(
                 self.seekrit.get() == secrets.store[self.seekrit.label]
             ), "secret is populated"
     
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Secret not yet resolved"):
         NeedsSecretInInit(logger=ampel_logger).seekrit.get()
 
     dev_context.register_unit(NeedsSecretInInit)
@@ -234,8 +234,8 @@ def test_unit_validation(dev_context: DevAmpelContext):
         # recursive validation
         UnitModel(unit="T3Processor", config=t3_config)
 
-        with pytest.raises(TypeError):
-            t3_config["supply"]["config"]["select"]["unit"] = "NotActuallyAUnit" # type: ignore
+        t3_config["supply"]["config"]["select"]["unit"] = "NotActuallyAUnit" # type: ignore
+        with pytest.raises(TypeError, match=".*Ampel unit not found: NotActuallyAUnit.*"):
             UnitModel(unit="T3Processor", config=t3_config)
 
 

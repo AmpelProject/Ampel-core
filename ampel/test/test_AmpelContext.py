@@ -41,17 +41,13 @@ def test_load_old_configids(mock_context: DevAmpelContext, ampel_logger):
         db=mock_context.db,
         loader=mock_context.loader,
     )
-    assert (
-        isinstance(
-            pre_register_confid := pre_register_context.config.get("confid", dict), dict
-        )
-        and len(pre_register_confid) == 0
-    ), "config not present before registration"
+    assert isinstance(
+        pre_register_confid := pre_register_context.config.get("confid", dict), dict
+    )
+    assert len(pre_register_confid) == 0, "config not present before registration"
 
-    assert (
-        isinstance(confid := mock_context.config.get("confid", dict), dict)
-        and len(confid) == 1
-    ), "config present after registration"
+    assert isinstance(confid := mock_context.config.get("confid", dict), dict)
+    assert len(confid) == 1, "config present after registration"
     assert next(iter(confid.values())) == unit_config
     assert (
         post_register_context.config.get("confid", dict) == confid

@@ -124,7 +124,7 @@ def test_transform_config(doc, tmpdir):
 
 
 @pytest.mark.parametrize(
-    "patch,result", [({}, None), ({"channel.LONG_CHANNEL.purge": {}}, ValidationError)]
+    ("patch","result"), [({}, None), ({"channel.LONG_CHANNEL.purge": {}}, ValidationError)]
 )
 def test_validate_config(testing_config, tmpdir, patch, result):
     """Validate validates config"""

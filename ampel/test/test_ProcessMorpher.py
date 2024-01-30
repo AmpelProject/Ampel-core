@@ -32,7 +32,7 @@ def config_collector(first_pass_config, ampel_logger):
 
 
 @pytest.mark.parametrize(
-    "config,hashed_config",
+    ("config","hashed_config"),
     [
         ({}, {"test_parameter": 1, "chatty": False}),
         ({"test_parameter": 1, "chatty": False}, {"test_parameter": 1, "chatty": False}),

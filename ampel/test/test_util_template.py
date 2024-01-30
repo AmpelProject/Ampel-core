@@ -31,7 +31,7 @@ def test_dependency_present(first_pass_config: dict[str, Any], dependency: str):
 
 def test_missing_dependency(first_pass_config: dict[str, Any]):
     units = [T2Compute(unit="DummyTiedStateT2Unit")] # type: ignore[var-annotated, arg-type]
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r"^Unit DummyTiedStateT2Unit depends on unit.*Possible matches are: \[\]$"):
         check_tied_units(units, first_pass_config)
 
 
@@ -45,7 +45,7 @@ def test_misconfigured_dependency(first_pass_config: dict[str, Any]):
         ),
         T2Compute(unit="DummyStateT2Unit", config={"foo": 42}) # type: ignore [arg-type]
     ]
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r"^Unit DummyTiedStateT2Unit depends on unit.*Possible matches are: (?!\[\])"):
         check_tied_units(units, first_pass_config)
 
 @pytest.fixture()

@@ -59,15 +59,16 @@ def mutineer_process(config={}):
     }
 
 
+@pytest.mark.usefixtures("_ingest_stock")
 @pytest.mark.parametrize(
-    "config,expect_success",
+    ("config","expect_success"),
     [
         ({}, True),
         ({"raise_on_process": True}, False),
     ]
 )
 def test_unit_raises_error(
-    dev_context: DevAmpelContext, ingest_stock, config, expect_success
+    dev_context: DevAmpelContext, config, expect_success
 ):
     """Run is marked failed if units raise an exception"""
     dev_context.register_unit(Mutineer)
@@ -80,7 +81,8 @@ def test_unit_raises_error(
     assert event["code"] == EventCode.OK.value if expect_success else EventCode.EXCEPTION
 
 
-def test_view_generator(integration_context: DevAmpelContext, ingest_stock):
+@pytest.mark.usefixtures("_ingest_stock")
+def test_view_generator(integration_context: DevAmpelContext):
 
     class SendySend(AbsT3Unit):
         raise_on_process: bool = False
@@ -133,7 +135,8 @@ def test_view_generator(integration_context: DevAmpelContext, ingest_stock):
     jentry = entries[0]
     assert jentry["extra"] == {"foo": "bar"}
 
-def test_empty_generator(integration_context: DevAmpelContext, ingest_stock):
+@pytest.mark.usefixtures("_ingest_stock")
+def test_empty_generator(integration_context: DevAmpelContext):
     """
     Empty selection returns cleanly, rather than raising
     """

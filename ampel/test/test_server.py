@@ -64,15 +64,16 @@ async def test_get_config(dev_context: AmpelContext, test_client: AsyncClient):
 
 
 @pytest.fixture()
-def db_collector(dev_context):
+def _db_collector(dev_context):
     c = AmpelDBCollector(dev_context.db)
     AmpelMetricsRegistry.register_collector(c)
     yield
     AmpelMetricsRegistry.deregister_collector(c)
 
 
+@pytest.mark.usefixtures("_db_collector")
 @pytest.mark.asyncio()
-async def test_db_metrics(test_client, db_collector, dev_context):
+async def test_db_metrics(test_client, dev_context):
     async def check_metric(name, value):
         response = await test_client.get("/metrics")
         assert response.status_code == 200
@@ -90,7 +91,7 @@ async def test_db_metrics(test_client, db_collector, dev_context):
 
 
 @pytest.mark.parametrize(
-    "section,proc",
+    ("section","proc"),
     [
         (
             "t2",
@@ -191,7 +192,7 @@ async def test_processes_start(test_client):
 
 
 @pytest.mark.parametrize(
-    "patches,should_raise",
+    ("patches","should_raise"),
     [
         (None, False),
         ({"processor.config": {"nonexistant_param": True}}, True),
@@ -199,7 +200,7 @@ async def test_processes_start(test_client):
     ],
 )
 @pytest.fixture()
-def config_in_env(monkeypatch, tmp_path, dev_context, patches, should_raise):
+def _config_in_env(monkeypatch, tmp_path, dev_context, patches, should_raise):
     config = recursive_unfreeze(dev_context.config.get())
     config["process"]["t3"]["sleepy"] = {
         "name": "sleepy",
@@ -221,7 +222,7 @@ def config_in_env(monkeypatch, tmp_path, dev_context, patches, should_raise):
 
 
 @pytest.mark.parametrize(
-    "patches,should_raise",
+    ("patches","should_raise"),
     [
         ({}, False),
         ({"processor.config": {"nonexistant_param": True}}, True),

@@ -5,7 +5,7 @@ from ampel.model.UnitModel import UnitModel
 
 
 @pytest.mark.parametrize(
-    "filter,count",
+    ("filter","count"),
     [
         (None, 0),
         ("SimpleTagFilter", 5),

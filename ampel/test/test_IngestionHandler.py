@@ -40,7 +40,7 @@ from ampel.util.freeze import recursive_unfreeze
 
 
 @pytest.fixture()
-def dummy_units(dev_context: DevAmpelContext):
+def _dummy_units(dev_context: DevAmpelContext):
     for unit in (
         DummyStockT2Unit,
         DummyPointT2Unit,
@@ -53,7 +53,7 @@ def dummy_units(dev_context: DevAmpelContext):
 
 @pytest.fixture(params=["T1SimpleCombiner", "T1SimpleRetroCombiner"])
 def single_source_directive(
-    dev_context: DevAmpelContext, dummy_units, request
+    dev_context: DevAmpelContext, _dummy_units, request
 ) -> IngestDirective:
     return IngestDirective(
         channel="TEST_CHANNEL",
@@ -73,7 +73,7 @@ def single_source_directive(
 
 @pytest.fixture(params=["T1SimpleCombiner", "T1SimpleRetroCombiner"])
 def multiplex_directive(
-    dev_context: DevAmpelContext, dummy_units, request
+    dev_context: DevAmpelContext, _dummy_units, request
 ) -> IngestDirective:
     return IngestDirective(
         channel="TEST_CHANNEL",
@@ -113,7 +113,7 @@ def get_handler(context: DevAmpelContext, directives) -> ChainedIngestionHandler
 
 
 def test_no_directive(dev_context):
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Need at least 1 directive"):
         get_handler(dev_context, [])
 
 
