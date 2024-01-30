@@ -210,11 +210,11 @@ async def test_multiprocess_metrics_deduplication(prometheus_multiproc_dir):
 
     def get_help_lines():
         expo = generate_latest(AmpelMetricsRegistry)
-        helps = []
-        for line in expo.split(b"\n"):
-            if line.startswith(b"# HELP"):
-                helps.append(line.split(b" ")[2])
-        return helps
+        return [
+            line.split(b" ")[2]
+            for line in expo.split(b"\n")
+            if line.startswith(b"# HELP")
+        ]
 
     await set_counter(42, {"name": "0"})
     # register metric again in main process

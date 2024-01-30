@@ -185,7 +185,7 @@ class ConfigChecker(BaseConfigChecker):
 								ignore_ressource_not_avail = ignore_ressource_not_avail,
 							)
 
-				except Exception as e:
+				except Exception as e:  # noqa: PERF203
 
 					if raise_exc:
 						raise e

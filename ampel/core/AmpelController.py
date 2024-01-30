@@ -343,7 +343,7 @@ class AmpelController:
 					logging.info(
 						f"Updated {controller.__class__.__name__} with processes: {[pm.name for pm in processes]} "
 					)
-				except Exception:
+				except Exception:  # noqa: PERF203
 					logging.exception(
 						f"Failed to update {controller.__class__.__name__} with processes: {[pm.name for pm in processes]}"
 					)

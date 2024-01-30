@@ -43,7 +43,7 @@ class AESecretProvider(AbsSecretProvider):
 							.decode("utf-8")
 					)
 					return True
-				except Exception:
+				except Exception:  # noqa: PERF203
 					continue
 
 		return False

@@ -136,7 +136,7 @@ class MongoStockDeleter(AbsOpsUnit):
                     partial(self._purge_chunk_in_transaction, stock_ids=stock_ids),
                     write_concern=WriteConcern(**self.write_concern.dict()),
                 )
-            except OperationFailure as exc:
+            except OperationFailure as exc:  # noqa: PERF203
                 # operation was interrupted because the transaction exceeded the configured 'transactionLifetimeLimitSeconds'
                 if attempt == self.retry or exc.code != 290:
                     raise

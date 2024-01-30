@@ -57,7 +57,7 @@ class AmpelExceptionPublisher(AbsOpsUnit):
             fields.append({"title": "run", "value": doc["run"], "short": True})
         if doc["tier"] == 0:
             for field in "section", "stock":
-                fields.append(
+                fields.append(  # noqa: PERF401
                     {"title": field, "value": doc.get(field, None), "short": True}
                 )
             if "alert" in doc:

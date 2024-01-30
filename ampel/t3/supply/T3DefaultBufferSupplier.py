@@ -120,5 +120,5 @@ class T3DefaultBufferSupplier(AbsT3Supplier[Generator[AmpelBuffer, None, None]])
 
 				yield from tran_data
 
-			except Exception as e:
+			except Exception as e:  # noqa: PERF203
 				self.event_hdlr.handle_error(e, self.logger)

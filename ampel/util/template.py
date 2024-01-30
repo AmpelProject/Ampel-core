@@ -31,10 +31,10 @@ def check_tied_units(
 	"""
 	:raises: ValueError if tied t2 units are present in t2_units but the requred t2 units are not present in t2_compute
 	"""
-	tied_units: list[T2Compute] = []
-	for el in all_t2_units:
-		if "AbsTiedT2Unit" in first_pass_config['unit'][el.unit]['base']:
-			tied_units.append(el)
+	tied_units: list[T2Compute] = [
+		el for el in all_t2_units
+		if "AbsTiedT2Unit" in first_pass_config['unit'][el.unit]['base']
+	]
 		
 	def as_unitmodel(t2_unit_model: T2Compute) -> UnitModel:
 		return UnitModel(**{k: v for k, v in t2_unit_model.dict().items() if k in UnitModel.get_model_keys()})
