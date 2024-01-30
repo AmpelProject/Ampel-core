@@ -20,5 +20,4 @@ jobs:
     secrets: inherit
     with:
       mongo: true
-      # renovate: datasource=conda depName=conda-forge/python
-      python-version: "3.12.1"
+      python-version: "3.10"
