@@ -113,7 +113,7 @@ class T0Compiler(AbsCompiler):
 			nowdt = datetime.datetime.fromtimestamp(
 				now, tz=datetime.timezone.utc
 			)
-			ingester.update_expiry({k: nowdt + v for k, v in self.retained.items()})  # type: ignore[attr-defined]
+			ingester.update_expiry({k: nowdt + self.retained[k] for k in retained})  # type: ignore[attr-defined]
 
 		self.register.clear()
 		self.retained.clear()
