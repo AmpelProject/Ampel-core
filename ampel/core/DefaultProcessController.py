@@ -159,7 +159,7 @@ class DefaultProcessController(AbsProcessController):
 		"""
 		self.scheduler.clear()
 		evaluator = ScheduleEvaluator()
-		every = lambda appointment: evaluator(self.scheduler, appointment)
+		every = partial(evaluator, self.scheduler)
 		for pm in self.processes:
 			for appointment in pm.schedule:
 				if not appointment:

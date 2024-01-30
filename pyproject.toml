@@ -153,7 +153,6 @@ select = [
 ]
 ignore = [
     "E741", # ambiguous variable name
-    "E731", # Do not assign to a lambda
     "UP009", # UTF-8 encoding declaration is unnecessary
     "PLR09", # too many (arguments|branches)
     "PLR2004", # Magic value used in comparison
@@ -161,7 +160,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"ampel/test/*" = ["T20"]
+"ampel/test/*" = ["T20", "E731"]
 "ampel/cli/*" = ["T20"]
 "ampel/config/collector/*" = ["T20"]
 

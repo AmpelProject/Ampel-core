@@ -126,12 +126,12 @@ class EventCommand(AbsCoreCommand):
 		morphers: list[Callable[[dict[str, Any]], None]] = []
 
 		if args['no_pretty']:
-			printfunc = lambda x: print(x, end='')
+			printfunc = lambda x: print(x, end='')  # noqa: E731
 		elif args['yaml'] != -1:
-			printfunc = lambda x: print(yaml.dump(x, sort_keys=False, default_flow_style=args['yaml']), end='')
+			printfunc = lambda x: print(yaml.dump(x, sort_keys=False, default_flow_style=args['yaml']), end='')  # noqa: E731
 			sep = ''
 		else:
-			printfunc = lambda x: print(prettyjson(x), end='')
+			printfunc = lambda x: print(prettyjson(x), end='')  # noqa: E731
 
 		if not args['keep_oids']:
 			morphers.append(
