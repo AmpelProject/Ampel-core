@@ -21,6 +21,8 @@ from ampel.mongo.schema import apply_schema
 from ampel.types import ChannelId, StockId, StrictIterable
 from ampel.util.collections import check_seq_inner_type
 
+# ruff: noqa: RUF002
+
 """
 Lastest by mean of compound 'body' length.
 Validity requirement: compound size should always increase with time.

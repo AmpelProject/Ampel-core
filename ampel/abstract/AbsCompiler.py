@@ -214,10 +214,9 @@ class AbsCompiler(AmpelUnit, AmpelABC, abstract=True):
 
 				ad = dict(
 					sorted(
-						(
-							list(activity) +
-							[("channel", next(iter(chan)) if len(chan) == 1 else list(chan))]
-						)
+						[
+							*activity, ("channel", next(iter(chan)) if len(chan) == 1 else list(chan))
+						]
 						if chan else activity
 					)
 				)

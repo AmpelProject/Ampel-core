@@ -27,6 +27,8 @@ from ampel.protocol.LoggerProtocol import LoggerProtocol
 from ampel.types import JDict
 from ampel.util.collections import has_nested_type
 
+# ruff: noqa: RUF002
+
 exception_counter = AmpelMetricsRegistry.counter(
 	"exceptions",
 	"Number of exceptions caught and logged",

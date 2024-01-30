@@ -310,7 +310,7 @@ class ConfigCommand(AbsCoreCommand):
 			# - preserve non-string keys
 			input_json = json.dumps(self._to_strict_json(yaml.safe_load(args['file'])))
 			config = json.loads(
-				subprocess.check_output(['jq'] + jq_args, input=input_json.encode()),
+				subprocess.check_output(['jq', *jq_args], input=input_json.encode()),
 				object_hook=self._from_strict_json,
 			)
 			args['file'].close()

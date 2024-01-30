@@ -288,7 +288,7 @@ def _process_wrapper(function, timeout=3.0):
     @wraps(function)
     def wrapper(*args, **kwargs):
         target = _trampoline
-        args = [function.__qualname__, function.__module__] + list(args)
+        args = [function.__qualname__, function.__module__, *args]
         proc = _Process(target=target, timeout=timeout, args=args, kwargs=kwargs)
         return asyncio.create_task(proc.launch())
 

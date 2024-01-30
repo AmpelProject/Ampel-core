@@ -194,7 +194,7 @@ class MongoStockDeleter(AbsOpsUnit):
                 .sort("stock", 1),
                 self.chunk_size,
             ):
-                self.logger.debug(f"Purging chunk")
+                self.logger.debug("Purging chunk")
                 deleted_in_chunk = self._purge_chunk(
                     session, stock_ids=[doc["stock"] for doc in docs]
                 )

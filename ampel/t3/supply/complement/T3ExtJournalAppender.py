@@ -79,5 +79,4 @@ class T3ExtJournalAppender(AbsBufferComplement):
 							)
 						)
 			else:
-				print(albuf)
 				raise ValueError("No stock information available")

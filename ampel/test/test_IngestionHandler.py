@@ -393,7 +393,7 @@ def test_t0_ttl(
     """
     Previously inserted datapoint ttls are updated when used by a muxer
     """
-    time = mocker.patch(
+    mocker.patch(
         "ampel.ingest.ChainedIngestionHandler.time", side_effect=count().__next__
     )
     mock_context.register_units(DummyHistoryMuxer)

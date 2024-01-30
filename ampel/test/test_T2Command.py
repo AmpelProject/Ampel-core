@@ -70,7 +70,7 @@ def test_auth(ampel_cli_opts, check_mongo_auth):
 
     cli_op, sub_op = T2Command(), "reset"
     parser = cli_op.get_parser(sub_op)
-    args, unknown_args = parser.parse_known_args(ampel_cli_opts + [])
+    args, unknown_args = parser.parse_known_args(ampel_cli_opts)
 
     with pytest.raises(UnknownDatabase):
         cli_op.run(vars(args), unknown_args, sub_op)

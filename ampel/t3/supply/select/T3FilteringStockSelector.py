@@ -83,9 +83,10 @@ class T3FilteringStockSelector(T3StockSelector):
 
 
 	def _t2_filter_pipeline(self, stock_ids: list[StockId]) -> list[dict]:
-		return self._t2_merge_pipeline(stock_ids) + [
+		return [
+			*self._t2_merge_pipeline(stock_ids),
 			{'$match': self._build_match(self.t2_filter)},
-			{'$replaceRoot': {'newRoot': {'stock': '$_id'}}}
+			{'$replaceRoot': {'newRoot': {'stock': '$_id'}}},
 		]
 
 

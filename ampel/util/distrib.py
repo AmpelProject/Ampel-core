@@ -29,8 +29,8 @@ def get_dist_names(distrib_prefixes: list[str] = ["ampel-", "pyampel-"]) -> list
 	]
 
 	if ret:
-		ret.insert(0, ret.pop([i for i, el in enumerate(ret) if "interface" in el][0]))
-		ret.insert(0, ret.pop([i for i, el in enumerate(ret) if "core" in el][0]))
+		ret.insert(0, ret.pop(next(i for i, el in enumerate(ret) if "interface" in el)))
+		ret.insert(0, ret.pop(next(i for i, el in enumerate(ret) if "core" in el)))
 
 	return ret
 
