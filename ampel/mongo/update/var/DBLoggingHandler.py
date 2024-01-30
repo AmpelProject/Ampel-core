@@ -141,10 +141,10 @@ class DBLoggingHandler(AmpelUnit):
 					return
 
 				# Generate object id with log record.created as current time
-				with ObjectId._inc_lock:
+				with ObjectId._inc_lock:  # noqa: SLF001
 					oid = struct.pack(">i", int(record.created)) + \
-						self.oid_middle + struct.pack(">i", ObjectId._inc)[1:4]
-					ObjectId._inc = (ObjectId._inc + 1) % 0xFFFFFF # limit result to 32bits
+						self.oid_middle + struct.pack(">i", ObjectId._inc)[1:4]  # noqa: SLF001
+					ObjectId._inc = (ObjectId._inc + 1) % 0xFFFFFF # limit result to 32bits  # noqa: SLF001
 
 				if 'extra' in rd:
 					for k in ('_id', 'r', 'f'):

@@ -186,7 +186,7 @@ class AmpelContext:
 
 	def add_conf_id(self, conf_id: int, unit_config: dict[str, Any]) -> None:
 		self.db.add_conf_id(conf_id, unit_config)
-		dict.__setitem__(self.config._config["confid"], conf_id, unit_config)
+		dict.__setitem__(self.config._config["confid"], conf_id, unit_config)  # noqa: SLF001
 
 
 	def add_run_time_alias(self, key: str, value: Any, overwrite: bool = False) -> None:

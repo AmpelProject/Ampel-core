@@ -26,5 +26,5 @@ class FlatDictArrayFilter(AbsLogicOperatorFilter[MutableMapping]):
 	def _apply_filter(dicts: Sequence[Mapping], f: FilterCriterion) -> list[MutableMapping]:
 		return [
 			unflatten_dict(ell)
-			for ell in SimpleDictArrayFilter._apply_filter([flatten_dict(el) for el in dicts], f)
+			for ell in SimpleDictArrayFilter._apply_filter([flatten_dict(el) for el in dicts], f)  # noqa: SLF001
 		]

@@ -27,7 +27,7 @@ class SimpleViewGenerator(BaseViewGenerator[T]):
 
 		super().__init__(unit_name = unit.__class__.__name__, stock_updr = stock_updr)
 		self.buffers = buffers
-		self.View = unit._View
+		self.View = unit._View  # noqa: SLF001
 		# ensure this generator's queue is consumed at most once 
 		self._it = iter(self.buffers)
 		self._config = config

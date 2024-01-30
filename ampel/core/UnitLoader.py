@@ -72,8 +72,8 @@ class UnitLoader:
 		self.vault = vault
 		self.config = config
 		self.provenance = provenance
-		self.unit_defs: dict = config._config['unit']
-		self.aliases: list[dict] = [config._config['alias'][f"t{el}"] for el in (0, 3, 1, 2)]
+		self.unit_defs: dict = config._config['unit']  # noqa: SLF001
+		self.aliases: list[dict] = [config._config['alias'][f"t{el}"] for el in (0, 3, 1, 2)]  # noqa: SLF001
 		self._dyn_register: None | dict[str, type[LogicalUnit] | type[ContextUnit]] = None # potentially updated by DevAmpelContext
 
 
@@ -209,7 +209,7 @@ class UnitLoader:
 					'version': self.config.get(f"unit.{model.unit}.version", str, raise_exc=True)
 				}
 
-				if c := unit._get_trace_content():
+				if c := unit._get_trace_content():  # noqa: SLF001
 					trace_dict['config'] = c
 
 				if deps := self.config.get(f"unit.{model.unit}.dependencies"):
@@ -233,7 +233,7 @@ class UnitLoader:
 					trace_id = 0
 					# raise e
 
-			unit._trace_id = trace_id # type: ignore[union-attr]
+			unit._trace_id = trace_id # type: ignore[union-attr]  # noqa: SLF001
 
 			if hasattr(unit, "post_init"):
 				unit.post_init() # type: ignore[union-attr]
@@ -270,7 +270,7 @@ class UnitLoader:
 
 		:raises: ValueError if unit cannot be found or loaded or if parent class is unrecognized
 		"""
-		if name in AuxUnitRegister._defs:
+		if name in AuxUnitRegister._defs:  # noqa: SLF001
 			return AuxUnitRegister.get_aux_class(name, sub_type=unit_type)
 
 		if self._dyn_register and name in self._dyn_register:
@@ -348,7 +348,7 @@ class UnitLoader:
 		Add a resolved Secret instance to init_kwargs for every Secret field of
 		unit_type.
 		"""
-		for k, annotation in unit_type._annots.items():
+		for k, annotation in unit_type._annots.items():  # noqa: SLF001
 			# for unions, consider the first member that is not NoneType
 			if get_origin(annotation) in (Union, UnionType):
 				annotation = next((f for f in get_args(annotation) if f is not type(None)), type(None))
@@ -357,9 +357,9 @@ class UnitLoader:
 				default = False
 				if isinstance(kwargs := init_kwargs.get(k), Mapping):
 					v = field_type(**kwargs)
-				elif k in unit_type._defaults:
+				elif k in unit_type._defaults:  # noqa: SLF001
 					default = True
-					v = deepcopy(unit_type._defaults[k])
+					v = deepcopy(unit_type._defaults[k])  # noqa: SLF001
 				else:
 					# missing required field; will be caught in validation later
 					continue
@@ -415,12 +415,12 @@ class UnitLoader:
 			return value
 
 		UnitModel.post_validate_hook = validate_unit
-		AliasableModel._config = self.config
+		AliasableModel._config = self.config  # noqa: SLF001
 		try:
 			yield
 		finally:
 			UnitModel.post_validate_hook = None
-			AliasableModel._config = None
+			AliasableModel._config = None  # noqa: SLF001
 
 
 	"""

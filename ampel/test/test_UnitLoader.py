@@ -262,6 +262,6 @@ def test_result_adapter_trace(mock_context: DevAmpelContext):
     u1 = mock_context.loader.new_context_unit(model, mock_context, run_id=1)
     u2 = mock_context.loader.new_context_unit(model, mock_context, run_id=2)
     assert (
-        u1._get_trace_content() == u2._get_trace_content()
+        u1._get_trace_content() == u2._get_trace_content()  # noqa: SLF001
     ), "trace content is identical for different run_id"
-    assert u1._trace_id == u2._trace_id, "trace id is identical for different run_id"
+    assert u1._trace_id == u2._trace_id, "trace id is identical for different run_id"  # noqa: SLF001

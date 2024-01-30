@@ -276,7 +276,7 @@ class DBUpdatesBuffer(Schedulable):
 		self._last_update = time()
 		if self._autopush_asap:
 			self._autopush_asap = False
-			self._job._schedule_next_run()
+			self._job._schedule_next_run()  # noqa: SLF001
 
 		# Reference instance buffer locally before creating a new one
 		db_ops = self.db_ops
@@ -446,13 +446,13 @@ class DBUpdatesBuffer(Schedulable):
 		if self.log_doc_ids and ret['col'] in self.log_doc_ids:
 			try:
 				if ret['col'] != 2:
-					ret['docs'] = [op._filter['_id'] for op in ops] # type: ignore
+					ret['docs'] = [op._filter['_id'] for op in ops] # type: ignore  # noqa: SLF001
 				else:
 					ret['docs'] = [
 						{
-							'unit': op._filter['unit'], # type: ignore
-							'config': op._filter['config'], # type: ignore
-							'link': op._filter['link'] # type: ignore
+							'unit': op._filter['unit'], # type: ignore  # noqa: SLF001
+							'config': op._filter['config'], # type: ignore  # noqa: SLF001
+							'link': op._filter['link'] # type: ignore  # noqa: SLF001
 						}
 						for op in ops
 					]

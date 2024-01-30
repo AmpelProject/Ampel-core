@@ -99,11 +99,11 @@ class EventCommand(AbsCoreCommand):
 
 		col = ctx.db.get_collection('event', mode='r')
 		if 'event' not in col.database.list_collection_names():
-			logger.info(f"Event collection does not exist (db: {col.database._Database__name})")
+			logger.info(f"Event collection does not exist (db: {col.database.name})")
 			return
 
 		if args['debug']:
-			logger.debug(f"Querying {col.database._Database__name} database {col.database.client.address}")
+			logger.debug(f"Querying {col.database.name} database {col.database.client.address}")
 
 		matchd: dict[str, Any] = {} if args['all'] else {'code': 0}
 

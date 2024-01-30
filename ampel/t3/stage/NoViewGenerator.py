@@ -25,7 +25,7 @@ class NoViewGenerator(BaseViewGenerator[T]):
 
 		super().__init__(unit_name = unit.__class__.__name__, stock_updr = stock_updr)
 		self.buffers = buffers
-		self.View = unit._View
+		self.View = unit._View  # noqa: SLF001
 
 	def __iter__(self) -> Generator[T, T3Send, None]:
 		yield from self.buffers # type: ignore

@@ -24,7 +24,7 @@ class HashT2Config(AbsConfigUpdater):
 		pm = ProcessMorpher(process={}, logger=logger, proc_name='<off-config>')
 		cc = T02ConfigCollector(conf_section="confid")
 		# Note: *process* templating could be possible there as well, add if ever needed
-		ac = context.config._config
+		ac = context.config._config  # noqa: SLF001
 		pm.hash_t2_config(
 			{'unit': ac['unit'], 'alias': ac['alias'], 'confid': cc},
 			target=content['directives'] if 'directives' in content else content['config']['directives']

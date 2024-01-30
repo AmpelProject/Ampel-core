@@ -113,7 +113,7 @@ def apply_templates(
 		Tpl = load_tpl_class(ctx.config.get(f'template.{name}', str, raise_exc=True))
 		if issubclass(Tpl, AbsConfigMorpher):
 			logger.info(f"Morphing config using {name}")
-			target = Tpl(**target).morph(ctx.config._config, logger)
+			target = Tpl(**target).morph(ctx.config._config, logger)  # noqa: SLF001
 		elif issubclass(Tpl, AbsConfigUpdater):
 			logger.info(f"Altering config using {name}")
 			target = Tpl().alter(ctx, target, logger)

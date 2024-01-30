@@ -249,7 +249,7 @@ class T2Command(AbsCoreCommand):
 	) -> T2Document:
 
 		if resolve_config and doc['config']:
-			doc['config'] = ctx.config._config['confid'].get(doc['config'])
+			doc['config'] = ctx.config._config['confid'].get(doc['config'])  # noqa: SLF001
 
 		if human_times:
 			for el in doc['meta']:

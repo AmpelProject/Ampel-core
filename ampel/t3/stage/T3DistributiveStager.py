@@ -59,7 +59,7 @@ class T3DistributiveStager(T3ThreadedStager):
 
 				# Create queues and generators for all instanciated t3 units
 				queues, generators, async_results = self.create_threaded_generators(pool, self.t3_units, t3s)
-				View = self.t3_units[0]._View
+				View = self.t3_units[0]._View  # noqa: SLF001
 				qs = queues.values()
 				iqs = cycle(qs)
 

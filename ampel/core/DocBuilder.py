@@ -89,7 +89,7 @@ class DocBuilder(ContextUnit):
 		d['unit'] = unit.__class__.__name__
 		d['code'] = actact
 
-		conf = unit._get_trace_content()
+		conf = unit._get_trace_content()  # noqa: SLF001
 		meta: MetaRecord = {
 			'run': event_hdlr.get_run_id(),
 			'ts': int(now.timestamp()),
@@ -100,8 +100,8 @@ class DocBuilder(ContextUnit):
 		self.context.db.add_conf_id(confid, conf)
 
 		# Live dangerously
-		if confid not in self.context.config._config['confid']:
-			dict.__setitem__(self.context.config._config['confid'], confid, conf)
+		if confid not in self.context.config._config['confid']:  # noqa: SLF001
+			dict.__setitem__(self.context.config._config['confid'], confid, conf)  # noqa: SLF001
 
 		d['confid'] = confid
 

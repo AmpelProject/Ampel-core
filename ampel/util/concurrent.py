@@ -89,9 +89,9 @@ def prepare(data):
         os.chdir(data["dir"])
 
     if "init_main_from_name" in data:
-        spawn._fixup_main_from_name(data["init_main_from_name"])
+        spawn._fixup_main_from_name(data["init_main_from_name"])  # noqa: SLF001
     elif "init_main_from_path" in data:
-        spawn._fixup_main_from_path(data["init_main_from_path"])
+        spawn._fixup_main_from_path(data["init_main_from_path"])  # noqa: SLF001
 
     if "process_name" in data:
         prometheus_setup_worker({"process": data["process_name"]})
@@ -120,7 +120,7 @@ def spawn_main(read_fd, write_fd):
         with open(write_fd, "wb") as tx:
             tx.write(payload)
     except Exception:
-        print(f"Process {obj._name} (pid {os.getpid()}):", file=sys.stderr)
+        print(f"Process {obj._name} (pid {os.getpid()}):", file=sys.stderr)  # noqa: SLF001
         traceback.print_exc(file=sys.stderr)
         exitcode = 1
 
@@ -178,8 +178,8 @@ class _Process:
 
         with child_r.detach() as crx, child_w.detach() as ctx:
             proc = await asyncio.subprocess.create_subprocess_exec(
-                *self._get_command_line(crx._fd, ctx._fd),
-                pass_fds=sorted(p._fd for p in (crx, ctx)),
+                *self._get_command_line(crx._fd, ctx._fd),  # noqa: SLF001
+                pass_fds=sorted(p._fd for p in (crx, ctx)),  # noqa: SLF001
                 start_new_session=True,
             )
 

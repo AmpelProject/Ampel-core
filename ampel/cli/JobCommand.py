@@ -364,7 +364,7 @@ class JobCommand(AbsCoreCommand):
 			one_db = True
 		)
 
-		config_dict = ctx.config._config
+		config_dict = ctx.config._config  # noqa: SLF001
 
 		# Check for outdated config
 		if 'build' in config_dict and not args['no_conf_check']:
@@ -398,7 +398,7 @@ class JobCommand(AbsCoreCommand):
 						break
 
 		self._patch_config(config_dict, job, logger)
-		ctx.config._config = recursive_freeze(config_dict)
+		ctx.config._config = recursive_freeze(config_dict)  # noqa: SLF001
 
 		# Ensure that job content saved in DB reflects options set dynamically
 		if args['task']:
@@ -528,7 +528,7 @@ class JobCommand(AbsCoreCommand):
 						result_queue: Queue = Queue()
 						p = Process(
 							target = run_mp_process,
-							args = (result_queue, ctx.config._config, taskd, process_name),
+							args = (result_queue, ctx.config._config, taskd, process_name),  # noqa: SLF001
 							daemon = True
 						)
 						p.start()

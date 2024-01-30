@@ -169,7 +169,7 @@ class ChainedIngestionHandler:
 		self.shaper = self.context.loader.new_logical_unit(
 			model=shaper, logger=logger, sub_type=AbsT0Unit
 		)
-		self.shaper_trace_id = self.shaper._trace_id
+		self.shaper_trace_id = self.shaper._trace_id  # noqa: SLF001
 
 		# Base compiler parameters
 		bopts: dict[str, Any] = {"origin": origin, "tier": tier, "run_id": run_id}
@@ -299,7 +299,7 @@ class ChainedIngestionHandler:
 				setattr(muxer, '_buf_hdlr', buf_hdlr) # noqa: B010
 
 			muxb.unit = muxer
-			muxb.trace_id = muxer._trace_id
+			muxb.trace_id = muxer._trace_id  # noqa: SLF001
 
 			if directive.mux.combine:
 
@@ -390,7 +390,7 @@ class ChainedIngestionHandler:
 			self._t1_combine_units_cache[t1b.trace_id] = t1_unit
 
 		t1b.unit = t1_unit
-		t1b.trace_id = t1_unit._trace_id
+		t1b.trace_id = t1_unit._trace_id  # noqa: SLF001
 		if g := t1_combine.group:
 			t1b.group = g if isinstance(g, Sequence) else [g]
 
@@ -427,7 +427,7 @@ class ChainedIngestionHandler:
 					self._t1_compute_units_cache[i] = t1_compute_unit
 
 				t1b.compute.unit = t1_compute_unit
-				t1b.compute.trace_id = t1_compute_unit._trace_id
+				t1b.compute.trace_id = t1_compute_unit._trace_id  # noqa: SLF001
 
 		return t1b
 
@@ -456,10 +456,10 @@ class ChainedIngestionHandler:
 		if im.ingest:
 
 			if isinstance(im.ingest, str):
-				if im.ingest not in self.context.config._config['alias']['t2']:
+				if im.ingest not in self.context.config._config['alias']['t2']:  # noqa: SLF001
 					raise ValueError(f"Ingest alias {im.ingest} not found")
 				ingest_opts.update(
-					self.context.config._config['alias']['t2'][im.ingest]
+					self.context.config._config['alias']['t2'][im.ingest]  # noqa: SLF001
 				)
 			else: # AmpelBaseModel
 				ingest_opts.update(im.ingest.dict())
@@ -617,14 +617,14 @@ class ChainedIngestionHandler:
 
 				logger = self.logger
 				for muxer, (_, _, chans) in mux_cache.items():
-					if muxer._buf_hdlr.buffer: # type: ignore[attr-defined]
-						muxer._buf_hdlr.forward( # type: ignore[attr-defined]
+					if muxer._buf_hdlr.buffer: # type: ignore[attr-defined]  # noqa: SLF001
+						muxer._buf_hdlr.forward( # type: ignore[attr-defined]  # noqa: SLF001
 							logger, stock=stock_id, channel=list(chans), extra = jm_extra
 						)
 
 				for (t1_unit, _), (_, chans) in t1_comb_cache.items():
-					if t1_unit._buf_hdlr.buffer: # type: ignore[union-attr]
-						t1_unit._buf_hdlr.forward( # type: ignore[union-attr]
+					if t1_unit._buf_hdlr.buffer: # type: ignore[union-attr]  # noqa: SLF001
+						t1_unit._buf_hdlr.forward( # type: ignore[union-attr]  # noqa: SLF001
 							logger, stock=stock_id, channel=list(chans), extra = jm_extra
 						)
 

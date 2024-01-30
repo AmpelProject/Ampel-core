@@ -71,7 +71,7 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 					except json.JSONDecodeError:
 						v = value
 					logger.info(f"Setting config parameter '{k}' from environment")
-					set_by_path(ampel_conf._config, k, v)
+					set_by_path(ampel_conf._config, k, v)  # noqa: SLF001
 
 		for k, v in self.get_custom_args(unknown_args):
 
@@ -80,10 +80,10 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 					raise ValueError(f"Unknown config parameter '{k}'\n")
 
 			logger.info(f"Setting config parameter '{k}' value to: {v}")
-			set_by_path(ampel_conf._config, k, v)
+			set_by_path(ampel_conf._config, k, v)  # noqa: SLF001
 
 		if freeze:
-			ampel_conf._config = recursive_freeze(ampel_conf._config)
+			ampel_conf._config = recursive_freeze(ampel_conf._config)  # noqa: SLF001
 
 		return ampel_conf
 

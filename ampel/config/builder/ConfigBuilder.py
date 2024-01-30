@@ -261,7 +261,7 @@ class ConfigBuilder:
 						self.logger.log(VERBOSE, f'Morphing standalone {tier_name} processes: {p["name"]}')
 						pass
 
-					dist_name = fp_procs_collector._origin[p["name"]][0]
+					dist_name = fp_procs_collector._origin[p["name"]][0]  # noqa: SLF001
 					try:
 						p_collector.add(
 							ProcessMorpher(p, self.logger, self.templates, self.verbose) \
@@ -269,7 +269,7 @@ class ConfigBuilder:
 								.apply_template(self.first_pass_config) \
 								.hash_t2_config(out) \
 								.get(),
-							*fp_procs_collector._origin[p["name"]]
+							*fp_procs_collector._origin[p["name"]]  # noqa: SLF001
 						)
 					except Exception as e:
 						self.logger.error(f'Unable to morph process {p["name"]}', exc_info=e)
@@ -297,7 +297,7 @@ class ConfigBuilder:
 				# Template processing is required for this particular channel
 				try:
 					tpl = self._get_channel_tpl(
-						chan_dict, fp_chan_collector._origin[chan_name][-1]
+						chan_dict, fp_chan_collector._origin[chan_name][-1]  # noqa: SLF001
 					)
 				except Exception as ee:
 					log_exception(self.logger, msg=f'Unable to load template ({chan_name})', exc=ee)
@@ -312,7 +312,7 @@ class ConfigBuilder:
 					try:
 						out['channel'].add(
 							tpl.get_channel(self.logger),
-							*fp_chan_collector._origin[chan_name]
+							*fp_chan_collector._origin[chan_name]  # noqa: SLF001
 						)
 					except Exception as ee:
 						log_exception(
@@ -346,7 +346,7 @@ class ConfigBuilder:
 
 						try:
 							# Add transformed process to final process collector
-							dist_name = fp_chan_collector._origin[chan_name][0]
+							dist_name = fp_chan_collector._origin[chan_name][0]  # noqa: SLF001
 							out['process'][f't{p["tier"]}'].add(
 								ProcessMorpher(p, self.logger, self.templates, self.verbose) \
 									.scope_aliases(self.first_pass_config, dist_name) \
@@ -354,7 +354,7 @@ class ConfigBuilder:
 									.hash_t2_config(out) \
 									.enforce_t3_channel_selection(chan_name) \
 									.get(),
-								*fp_chan_collector._origin[chan_name]
+								*fp_chan_collector._origin[chan_name]  # noqa: SLF001
 							)
 						except Exception as ee:
 							morph_errors.append(p["name"])
@@ -370,7 +370,7 @@ class ConfigBuilder:
 					# Raw/Simple/Standard channel definition
 					# (encouraged behavior actually)
 					out['channel'].add(
-						chan_dict, *fp_chan_collector._origin[chan_name]
+						chan_dict, *fp_chan_collector._origin[chan_name]  # noqa: SLF001
 					)
 
 		if ext_resource:
@@ -439,7 +439,7 @@ class ConfigBuilder:
 
 		dists: set[tuple[str, str | float | int]] = set()
 		for k in ('unit', 'channel'):
-			for kk, v in out[k]._origin.items():
+			for kk, v in out[k]._origin.items():  # noqa: SLF001
 				dists.add((v[0], v[1]))
 				out[k][kk]['distrib'] = v[0]
 				out[k][kk]['version'] = v[1]
@@ -448,7 +448,7 @@ class ConfigBuilder:
 		for tier in ("t0", "t1", "t2", "t3", "ops"):
 			for k in ('alias', 'process'):
 				if tier in out[k]:
-					for kk, v in out[k][tier]._origin.items():
+					for kk, v in out[k][tier]._origin.items():  # noqa: SLF001
 						dists.add((v[0], v[1]))
 						if k != 'alias':
 							out[k][tier][kk]['distrib'] = v[0]

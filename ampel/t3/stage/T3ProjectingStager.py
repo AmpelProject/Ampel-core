@@ -206,7 +206,7 @@ class T3ProjectingStager(T3ThreadedStager):
 				for rb in self.run_blocks:
 
 					# Number of view types for this this run block
-					rb.len_view_types = len({t3_unit._View for t3_unit in rb.units})
+					rb.len_view_types = len({t3_unit._View for t3_unit in rb.units})  # noqa: SLF001
 
 					# Subset of queues for this run block
 					rb.qvals = [q for u, q in queues.items() if u in rb.units]
@@ -214,9 +214,9 @@ class T3ProjectingStager(T3ThreadedStager):
 					# Optimize by potentially grouping units associated with the same view type
 					rb.qdict = {}
 					for unit in rb.units:
-						if unit.__class__._View not in rb.qdict:
-							rb.qdict[unit.__class__._View] = []
-						rb.qdict[unit.__class__._View].append(queues[unit])
+						if unit.__class__._View not in rb.qdict:  # noqa: SLF001
+							rb.qdict[unit.__class__._View] = []  # noqa: SLF001
+						rb.qdict[unit.__class__._View].append(queues[unit])  # noqa: SLF001
 
 
 				# Chunk input buffers (loaded from generator)

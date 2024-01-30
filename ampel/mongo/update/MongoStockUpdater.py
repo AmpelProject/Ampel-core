@@ -190,8 +190,8 @@ class MongoStockUpdater:
 
 		if stock in self._multi_updates:
 			for um in self._multi_updates.pop(stock):
-				um._filter['stock']['$in'].remove(stock)
-				self._merge_updates(uo, um._doc)
+				um._filter['stock']['$in'].remove(stock)  # noqa: SLF001
+				self._merge_updates(uo, um._doc)  # noqa: SLF001
 
 		if stock in self._one_updates:
 			self._merge_updates(self._one_updates[stock], upd)
@@ -231,7 +231,7 @@ class MongoStockUpdater:
 		:raises: ValueError in case update structures are not conform ex: {'$addToSet': {'name': {'a': 1}}}
 		"""
 
-		opd = op._doc
+		opd = op._doc  # noqa: SLF001
 		assert isinstance(d, Mapping)
 		assert isinstance(opd, dict)
 

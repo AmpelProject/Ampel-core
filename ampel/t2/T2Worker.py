@@ -170,7 +170,7 @@ class T2Worker(AbsWorker[T2Document]):
 			# New (channel-less) journal entry for the associated stock document
 			trace_id = (
 				({'t2worker': self._trace_id} if self._trace_id else {}) |
-				({'t2unit': t2_unit._trace_id} if t2_unit._trace_id else {})
+				({'t2unit': t2_unit._trace_id} if t2_unit._trace_id else {})  # noqa: SLF001
 			)
 
 			jrec = stock_updr.add_journal_record(
@@ -184,7 +184,7 @@ class T2Worker(AbsWorker[T2Document]):
 			# New meta entry (code appended later)
 			meta = self.gen_meta(
 				stock_updr.run_id,
-				t2_unit._trace_id,
+				t2_unit._trace_id,  # noqa: SLF001
 				round(now - before_run, 3),
 				MetaActionCode.BUMP_STOCK_UPD
 			)
@@ -256,7 +256,7 @@ class T2Worker(AbsWorker[T2Document]):
 				)
 
 			# Update stock document
-			if len(stock_updr._updates) >= self.updates_buffer_size:
+			if len(stock_updr._updates) >= self.updates_buffer_size:  # noqa: SLF001
 				stock_updr.flush()
 
 		except Exception as e:
@@ -266,7 +266,7 @@ class T2Worker(AbsWorker[T2Document]):
 
 			self._processing_error(
 				logger, doc, None, exception=e, msg='An exception occured',
-				meta = self.gen_meta(stock_updr.run_id, t2_unit._trace_id, round(now - before_run, 3))
+				meta = self.gen_meta(stock_updr.run_id, t2_unit._trace_id, round(now - before_run, 3))  # noqa: SLF001
 			)
 			code = DocumentCode.EXCEPTION
 
@@ -663,8 +663,8 @@ class T2Worker(AbsWorker[T2Document]):
 			with stat_time.labels(t2_doc["unit"], "process").time():
 				ret = t2_unit.process(*args)
 
-			if t2_unit._buf_hdlr.buffer: # type: ignore[union-attr]
-				t2_unit._buf_hdlr.forward( # type: ignore[union-attr]
+			if t2_unit._buf_hdlr.buffer: # type: ignore[union-attr]  # noqa: SLF001
+				t2_unit._buf_hdlr.forward( # type: ignore[union-attr]  # noqa: SLF001
 					logger, stock=t2_doc['stock']
 				)
 

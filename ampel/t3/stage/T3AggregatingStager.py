@@ -103,7 +103,7 @@ class T3AggregatingStager(T3SequentialStager):
 		super().__init__(**kwargs)
 
 		for um in self.execute:
-			if um.unit not in self.context.config._config['unit']:
+			if um.unit not in self.context.config._config['unit']:  # noqa: SLF001
 				raise ValueError(f"Unknown unit: {um.unit}")
 
 

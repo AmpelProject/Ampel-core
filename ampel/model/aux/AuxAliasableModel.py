@@ -24,7 +24,7 @@ class AuxAliasableModel(AmpelBaseModel):
 	@model_validator(mode="before")
 	def resolve_alias(cls: type["AuxAliasableModel"], value: Any) -> dict[str, Any]:
 		if isinstance(value, str):
-			if value in AuxUnitRegister._defs:
+			if value in AuxUnitRegister._defs:  # noqa: SLF001
 				return AuxUnitRegister.new_unit(model=UnitModel(unit=value), sub_type=cls).model_dump()
 			raise ValueError(f"{cls.__name__} '{value}' not registered")
 		return value

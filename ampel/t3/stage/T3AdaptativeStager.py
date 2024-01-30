@@ -153,9 +153,9 @@ class T3AdaptativeStager(T3ThreadedStager):
 						# Dict used to potentially optimize views generation
 						rb.qdict = {}
 						for unit in rb.units:
-							if unit.__class__._View not in rb.qdict:
-								rb.qdict[unit.__class__._View] = []
-							rb.qdict[unit.__class__._View].append(qs[unit])
+							if unit.__class__._View not in rb.qdict:  # noqa: SLF001
+								rb.qdict[unit.__class__._View] = []  # noqa: SLF001
+							rb.qdict[unit.__class__._View].append(qs[unit])  # noqa: SLF001
 
 						self.run_blocks[chan] = rb
 

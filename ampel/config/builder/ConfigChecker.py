@@ -156,7 +156,7 @@ class ConfigChecker(BaseConfigChecker):
 					if self.verbose:
 						self.logger.debug("Checking model %s" % um['path'])
 
-					if um['model']['unit'] in AuxUnitRegister._defs:
+					if um['model']['unit'] in AuxUnitRegister._defs:  # noqa: SLF001
 						self.load_model(
 							tier = tier, proc = proc,
 							load_callable = AuxUnitRegister.new_unit,

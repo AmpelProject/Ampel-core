@@ -96,7 +96,7 @@ class T3SequentialStager(T3BaseStager):
 
 	def get_views(self, gen: Generator[AmpelBuffer, None, None]) -> dict[AbsT3Unit, list[SnapView]]:
 
-		Views: set[type[SnapView]] = {u._View for u in self.units}
+		Views: set[type[SnapView]] = {u._View for u in self.units}  # noqa: SLF001
 		conf = self.context.config
 
 		if len(Views) == 1:
@@ -114,14 +114,14 @@ class T3SequentialStager(T3BaseStager):
 		if self.paranoia_level:
 			return {
 				unit: [View.of(ab, conf) for ab in buffers]
-				for unit, View in (lambda x: [(u, u._View) for u in x])(self.units)
+				for unit, View in (lambda x: [(u, u._View) for u in x])(self.units)  # noqa: SLF001
 			}
 
 		optd: dict[type[SnapView], list[AbsT3Unit]] = {}
 		for unit in self.units:
-			if unit._View not in optd:
-				optd[unit._View] = []
-			optd[unit._View].append(unit)
+			if unit._View not in optd:  # noqa: SLF001
+				optd[unit._View] = []  # noqa: SLF001
+			optd[unit._View].append(unit)  # noqa: SLF001
 
 		d = {}
 		for View, units in optd.items():

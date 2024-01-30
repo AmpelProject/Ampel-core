@@ -66,9 +66,9 @@ class T3ThreadedStager(T3BaseStager, abstract=True):
 				# Optimize by potentially grouping units associated with the same view type
 				qdict: dict[type, list[JoinableQueue]] = {}
 				for unit in t3_units:
-					if unit.__class__._View not in qdict:
-						qdict[unit.__class__._View] = []
-					qdict[unit.__class__._View].append(queues[unit])
+					if unit.__class__._View not in qdict:  # noqa: SLF001
+						qdict[unit.__class__._View] = []  # noqa: SLF001
+					qdict[unit.__class__._View].append(queues[unit])  # noqa: SLF001
 
 				qv = queues.values()
 

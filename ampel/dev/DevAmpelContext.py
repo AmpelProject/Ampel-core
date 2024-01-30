@@ -40,7 +40,7 @@ class DevAmpelContext(AmpelContext):
 		super().__init__(**kwargs)
 
 		if db_prefix:
-			dict.__setitem__(self.config._config['mongo'], 'prefix', db_prefix)
+			dict.__setitem__(self.config._config['mongo'], 'prefix', db_prefix)  # noqa: SLF001
 
 		if custom_conf or db_prefix:
 			conf = self._get_unprotected_conf()
@@ -54,7 +54,7 @@ class DevAmpelContext(AmpelContext):
 
 		for stored_conf in self.db.get_collection("conf").find({}):
 			confid = stored_conf.pop("_id")
-			dict.__setitem__(self.config._config["confid"], confid, stored_conf)
+			dict.__setitem__(self.config._config["confid"], confid, stored_conf)  # noqa: SLF001
 
 
 	def add_channel(self, name: int | str, access: list[str] = []):
@@ -73,7 +73,7 @@ class DevAmpelContext(AmpelContext):
 	def register_unit(self, Class: type[AmpelUnit]) -> None:
 
 		dict.__setitem__(
-			self.config._config['unit'],
+			self.config._config['unit'],  # noqa: SLF001
 			Class.__name__,
 			{
 				'fqn': Class.__module__,
@@ -86,19 +86,19 @@ class DevAmpelContext(AmpelContext):
 
 		if issubclass(Class, LogicalUnit | ContextUnit):
 
-			if self.loader._dyn_register is None:
-				self.loader._dyn_register = {}
+			if self.loader._dyn_register is None:  # noqa: SLF001
+				self.loader._dyn_register = {}  # noqa: SLF001
 
-			self.loader._dyn_register[Class.__name__] = Class
+			self.loader._dyn_register[Class.__name__] = Class  # noqa: SLF001
 
 		else:
-			AuxUnitRegister._dyn[Class.__name__] = Class
+			AuxUnitRegister._dyn[Class.__name__] = Class  # noqa: SLF001
 
 
 	def _get_unprotected_conf(self) -> dict[str, Any]:
 		if self.config.is_frozen():
-			return recursive_unfreeze(self.config._config) # type: ignore[arg-type]
-		return self.config._config
+			return recursive_unfreeze(self.config._config) # type: ignore[arg-type]  # noqa: SLF001
+		return self.config._config  # noqa: SLF001
 
 
 	def _set_new_conf(self, conf: dict[str, Any]) -> None:

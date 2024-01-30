@@ -16,25 +16,25 @@ from prometheus_client.multiprocess import MultiProcessCollector
 
 
 def reset_metric(metric: MetricWrapperBase) -> None:
-    if metric._is_parent():
-        for child in metric._metrics.values():
+    if metric._is_parent():  # noqa: SLF001
+        for child in metric._metrics.values():  # noqa: SLF001
             reset_metric(child)
     else:
         if isinstance(metric, Counter | Gauge):
-            metric._value.set(0)
+            metric._value.set(0)  # noqa: SLF001
         elif isinstance(metric, Summary):
-            metric._sum.set(0)
-            metric._count.set(0)
+            metric._sum.set(0)  # noqa: SLF001
+            metric._count.set(0)  # noqa: SLF001
         elif isinstance(metric, Histogram):
-            metric._sum.set(0)
-            for bucket in metric._buckets:
+            metric._sum.set(0)  # noqa: SLF001
+            for bucket in metric._buckets:  # noqa: SLF001
                 bucket.set(0)
         else:
             raise TypeError(f"don't know how to reset metric of type {type(metric)}")
 
 
 def reset_registry(registry: CollectorRegistry) -> None:
-    for metric in registry._names_to_collectors.values():
+    for metric in registry._names_to_collectors.values():  # noqa: SLF001
         if isinstance(metric, MetricWrapperBase):
             reset_metric(metric)
 

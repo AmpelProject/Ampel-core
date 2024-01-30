@@ -495,7 +495,7 @@ async def scale_process(
 
 @app.get("/stock/{stock_id}")
 def get_stock(stock_id: int):
-    doc = json_util._json_convert(
+    doc = json_util._json_convert(  # noqa: SLF001
         context.db.get_collection("stock").find_one({"_id": stock_id}),
         json_util.RELAXED_JSON_OPTIONS,
     )
@@ -537,7 +537,7 @@ def stock_summary():
 
 
 def transform_doc(doc: dict[str, Any], tier: int) -> dict[str, Any]:
-    doc = json_util._json_convert(doc, json_util.RELAXED_JSON_OPTIONS)
+    doc = json_util._json_convert(doc, json_util.RELAXED_JSON_OPTIONS)  # noqa: SLF001
     if tier == 1:
         doc["added"] = datetime.fromtimestamp(doc["added"], tz=timezone.utc)
     if tier == 2:

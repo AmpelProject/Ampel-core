@@ -26,7 +26,7 @@ class AmpelProcessCollector:
         Collect tuples of (labels, pid) for subprocesses, and, optionally, this process
         """
         processes: list[tuple[tuple[str, str], None | int]] = []
-        for name, replicas in _Process._active.items():
+        for name, replicas in _Process._active.items():  # noqa: SLF001
             for replica, pid in replicas.items():
                 processes.append(((name, str(replica)), pid))
         if self.name:

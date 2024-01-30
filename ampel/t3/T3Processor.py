@@ -35,9 +35,9 @@ class T3Processor(AbsEventUnit):
 
 
 	def post_init(self):
-		if self.supply.unit not in self.context.config._config['unit']:
+		if self.supply.unit not in self.context.config._config['unit']:  # noqa: SLF001
 			raise ValueError(f"Unknown supply unit: {self.supply.unit}")
-		if self.stage.unit not in self.context.config._config['unit']:
+		if self.stage.unit not in self.context.config._config['unit']:  # noqa: SLF001
 			raise ValueError(f"Unknown stager unit: {self.stage.unit}")
 
 

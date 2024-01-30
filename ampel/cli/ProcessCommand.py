@@ -119,7 +119,7 @@ class ProcessCommand(AbsCoreCommand):
             one_db=True,
         )
 
-        config_dict = ctx.config._config
+        config_dict = ctx.config._config  # noqa: SLF001
 
         # load channels if provided
         if args["channel"]:
@@ -143,7 +143,7 @@ class ProcessCommand(AbsCoreCommand):
                             dict.__setitem__(config_dict["alias"], k, {})
                         dict.__setitem__(config_dict["alias"][k], kk, vv)
 
-        ctx.config._config = recursive_freeze(config_dict)
+        ctx.config._config = recursive_freeze(config_dict)  # noqa: SLF001
 
         return ctx
 

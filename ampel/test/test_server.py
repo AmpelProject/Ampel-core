@@ -161,7 +161,7 @@ async def test_processes(test_client):
 @pytest.mark.asyncio()
 async def test_processes_start(test_client):
     dict.__setitem__(
-        server.context.config._config["process"]["t2"],
+        server.context.config._config["process"]["t2"],  # noqa: SLF001
         "sleepy",
         {
             "name": "sleepy",
@@ -274,7 +274,7 @@ async def test_config_reload(
 @pytest.mark.asyncio()
 async def test_process_stop(test_client):
     dict.__setitem__(
-        server.context.config._config["process"]["t2"],
+        server.context.config._config["process"]["t2"],  # noqa: SLF001
         "sleepy",
         {
             "name": "sleepy",

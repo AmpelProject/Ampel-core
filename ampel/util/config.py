@@ -17,7 +17,7 @@ from ampel.util.hash import build_unsafe_dict_id
 
 def get_unit_confid(loader: 'UnitLoader', unit: str, config: dict[str, Any]) -> int:
 	return build_unsafe_dict_id(
-		loader.new_logical_unit(
+		loader.new_logical_unit(  # noqa: SLF001
 			model = UnitModel(unit=unit, config=config),
 			logger = AmpelLogger.get_logger()
 		)._get_trace_content(),
