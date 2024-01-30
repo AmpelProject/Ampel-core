@@ -42,7 +42,7 @@ def build_stateless_query(
 	query = build_general_query(stock=stock, channel=channel)
 
 	if t2_subsel:
-		query['unit'] = t2_subsel if isinstance(t2_subsel, (str, int)) \
+		query['unit'] = t2_subsel if isinstance(t2_subsel, str | int) \
 			else maybe_match_array(t2_subsel)
 
 	return query
@@ -68,7 +68,7 @@ def build_statebound_t2_query(
 	query['link'] = get_compound_match(states)
 
 	if t2_subsel:
-		query['unit'] = t2_subsel if isinstance(t2_subsel, (str, int)) \
+		query['unit'] = t2_subsel if isinstance(t2_subsel, str | int) \
 			else maybe_match_array(t2_subsel)
 
 	return query
@@ -99,7 +99,7 @@ def get_compound_match(
 	"""
 
 	# Single state was provided
-	if isinstance(states, (str, bytes, Binary)):
+	if isinstance(states, str | bytes | Binary):
 		return _to_binary(states)
 
 	# Multiple states were provided

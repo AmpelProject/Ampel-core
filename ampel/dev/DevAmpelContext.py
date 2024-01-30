@@ -84,7 +84,7 @@ class DevAmpelContext(AmpelContext):
 			}
 		)
 
-		if issubclass(Class, (LogicalUnit, ContextUnit)):
+		if issubclass(Class, LogicalUnit | ContextUnit):
 
 			if self.loader._dyn_register is None:
 				self.loader._dyn_register = {}

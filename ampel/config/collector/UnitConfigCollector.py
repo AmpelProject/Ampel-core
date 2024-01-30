@@ -48,7 +48,7 @@ class UnitConfigCollector(AbsDictConfigCollector):
 	) -> None:
 
 		# Cosmetic
-		if isinstance(self.logger.handlers[0], (AggregatingLoggingHandlerProtocol, AmpelStreamHandler)):
+		if isinstance(self.logger.handlers[0], AggregatingLoggingHandlerProtocol | AmpelStreamHandler):
 			agg_int = self.logger.handlers[0].aggregate_interval
 			self.logger.handlers[0].aggregate_interval = 1000
 

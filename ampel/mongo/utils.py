@@ -53,7 +53,7 @@ def maybe_match_array(arg: StrictIterable):
 
 def match_one_or_many(arg: Any) -> Any:
 
-	if isinstance(arg, (int, float, str)):
+	if isinstance(arg, int | float | str):
 		return arg
 
 	return maybe_match_array(arg)

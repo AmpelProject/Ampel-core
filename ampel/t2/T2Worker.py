@@ -44,7 +44,7 @@ from ampel.struct.UnitResult import UnitResult
 from ampel.types import OneOrMany, T, UBson, ubson
 from ampel.view.T2DocView import T2DocView
 
-AbsT2 = Union[
+AbsT2 = Union[ # noqa: UP007
 	AbsStockT2Unit, AbsPointT2Unit, AbsStateT2Unit, AbsTiedPointT2Unit,
 	AbsTiedStateT2Unit, AbsCustomStateT2Unit[T], AbsTiedCustomStateT2Unit[T, U]
 ]
@@ -282,7 +282,7 @@ class T2Worker(AbsWorker[T2Document]):
 	# NB: spell out union arg to ensure a common context for the TypeVar T
 	def load_input_docs(self,
 		t2_unit: AbsT2, t2_doc: T2Document, logger: AmpelLogger, stock_updr: MongoStockUpdater
-	) -> Union[
+	) -> Union[ # noqa: UP007
 		None,
 		UnitResult,                                              # Error / missing dependency
 		DataPoint,                                               # point t2
@@ -313,9 +313,9 @@ class T2Worker(AbsWorker[T2Document]):
 		# State bound T2 units require loading of compound doc and datapoints
 		if isinstance(
 			t2_unit, (
-				AbsStateT2Unit,
-				AbsCustomStateT2Unit,
-				AbsTiedStateT2Unit,
+				AbsStateT2Unit |
+				AbsCustomStateT2Unit |
+				AbsTiedStateT2Unit |
 				AbsTiedCustomStateT2Unit
 			)
 		):
@@ -448,7 +448,7 @@ class T2Worker(AbsWorker[T2Document]):
 				)
 			return UnitResult(code=DocumentCode.T2_UNKNOWN_LINK)
 
-		elif isinstance(t2_unit, (AbsPointT2Unit, AbsTiedPointT2Unit)):
+		elif isinstance(t2_unit, AbsPointT2Unit | AbsTiedPointT2Unit):
 
 			if doc := next(self.col_t0.find({'id': t2_doc['link']}), None):
 				if isinstance(t2_unit, AbsTiedPointT2Unit):
@@ -631,7 +631,7 @@ class T2Worker(AbsWorker[T2Document]):
 			else: # State T2
 				raise BadConfig('Tied stock T2 cannot be linked with state T2s')
 
-		if isinstance(t2_unit, (AbsTiedStateT2Unit, AbsTiedCustomStateT2Unit)):
+		if isinstance(t2_unit, AbsTiedStateT2Unit | AbsTiedCustomStateT2Unit):
 
 			if 'AbsPointT2Unit' in t2_unit_info['base']:
 				d['link'] = None # Further checks required (link_override check)

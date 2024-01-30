@@ -193,7 +193,7 @@ class UnitLoader:
 			)
 		)
 				
-		if isinstance(unit, (LogicalUnit, ContextUnit)):
+		if isinstance(unit, LogicalUnit | ContextUnit):
 
 			trace_id = None
 
@@ -213,7 +213,7 @@ class UnitLoader:
 					trace_dict['config'] = c
 
 				if deps := self.config.get(f"unit.{model.unit}.dependencies"):
-					if not isinstance(deps, (list, tuple)):
+					if not isinstance(deps, list | tuple):
 						raise ValueError(f"Retrieved environment is not a list/tuple: {type(deps)}")
 					envd = self.config.get(f"environment.{env}", dict, raise_exc=True)
 					trace_dict['env'] = {k: envd[k] for k in deps}
@@ -295,7 +295,7 @@ class UnitLoader:
 
 		base_conf: dict[str, Any] = {}
 
-		if isinstance(config, (dict, str)):
+		if isinstance(config, dict | str):
 
 			base_conf = self.resolve_aliases(config)
 			if base_conf is None:

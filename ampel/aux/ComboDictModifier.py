@@ -148,7 +148,7 @@ class ComboDictModifier(AbsApplicable):
 					d = d[k]
 				d[keys[-1]] = to_set(f.keep)
 
-			elif isinstance(f, (self.ClassModifyModel, self.FuncModifyModel)):
+			elif isinstance(f, self.ClassModifyModel | self.FuncModifyModel):
 
 				if isinstance(f, self.ClassModifyModel):
 					unit = AuxUnitRegister.new_unit(

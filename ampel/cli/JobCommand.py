@@ -467,8 +467,7 @@ class JobCommand(AbsCoreCommand):
 				cmd.append('-debug')
 
 			print(
-				'%s\n%s command: %s' %
-				('-' * 40, 'Executing' if args.get('show_plots') else 'Plot', " ".join(cmd))
+				f"{'-'*40}\n{'Executing' if args.get('show_plots') else 'Plot'} command: {' '.join(cmd)}"
 			)
 
 			if args.get('show_plots'):

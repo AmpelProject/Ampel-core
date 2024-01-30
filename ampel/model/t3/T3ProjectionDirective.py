@@ -29,6 +29,6 @@ class T3ProjectionDirective(AmpelBaseModel):
 	execute: Sequence[UnitModel]
 
 	def __init__(self, **kwargs):
-		if isinstance(v := kwargs.get("execute"), (dict, UnitModel)):
+		if isinstance(v := kwargs.get("execute"), dict | UnitModel):
 			kwargs["execute"] = [v]
 		super().__init__(**kwargs)

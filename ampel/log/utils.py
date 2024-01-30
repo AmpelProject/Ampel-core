@@ -161,7 +161,7 @@ def report_error(
 		'_id': ObjectId(),
 		'datetime': datetime.now(tz=timezone.utc).strftime('%d/%m/%Y %H:%M:%S'),
 		'tier': get_tier_from_logger(logger),
-		'location': '%s:%s' % (filename, line_number),
+		'location': f'{filename}:{line_number}',
 	}
 
 	if msg:

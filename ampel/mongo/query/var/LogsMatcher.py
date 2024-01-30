@@ -98,7 +98,7 @@ class LogsMatcher:
 
 		if isinstance(channel, get_args(ChannelId)):
 			v: Any = channel
-		elif isinstance(channel, (dict, AllOf, AnyOf, OneOf)):
+		elif isinstance(channel, dict | AllOf | AnyOf | OneOf):
 			v = apply_schema(self.mcrit, 'channel', channel)
 		elif isinstance(channel, collections.abc.Sequence):
 			v = {'$in': channel}

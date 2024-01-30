@@ -136,7 +136,7 @@ class AbsStockCommand(AbsCoreCommand, abstract=True):
 
 		if (stock := args.get('stock')):
 			conf['custom'] = { # Hmmm, unsure about the necessity of 'custom' there, check later
-				'stock': stock if isinstance(stock, (int, bytes, str))
+				'stock': stock if isinstance(stock, int | bytes | str)
 					else maybe_match_array(stock)
 			}
 

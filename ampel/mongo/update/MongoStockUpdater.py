@@ -133,7 +133,7 @@ class MongoStockUpdater:
 		if tag or name:
 
 			upd['$addToSet'] = (
-				({'tag': tag if isinstance(tag, (str, int)) else maybe_use_each(tag)} if tag else {}) |
+				({'tag': tag if isinstance(tag, str | int) else maybe_use_each(tag)} if tag else {}) |
 				({'name': name if isinstance(name, str) else maybe_use_each(name)} if name else {})
 			)
 
@@ -156,7 +156,7 @@ class MongoStockUpdater:
 			# - case: UpdateMany + UpdateMany: do nothing or put differently: submit the two ops as is
 			# - case: UpdateOne + UpdateMany: update op UpdateOne and no longer match target stock in UpdateMany
 			# - case: UpdateOne + UpdateOne: merge updates
-			if not isinstance(stock, (int, str)):
+			if not isinstance(stock, int | str):
 				self._add_many_update(list(stock), upd)
 			else:
 				self._add_one_update(stock, upd)
@@ -178,7 +178,7 @@ class MongoStockUpdater:
 
 		upd = {'$addToSet': {'tag': tag if isinstance(tag, tag_type) else {'$each': tag}}}
 
-		if isinstance(stock, (int, bytes, str)): # StockId
+		if isinstance(stock, int | bytes | str): # StockId
 			self._add_one_update(stock, upd)
 		else: # Sequence[StockId]
 			self._add_many_update(stock if isinstance(stock, list) else list(stock), upd)

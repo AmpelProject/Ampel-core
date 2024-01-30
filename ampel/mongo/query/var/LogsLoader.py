@@ -193,7 +193,7 @@ class LogsLoader(AmpelFlexModel):
 
 		if self.simplify:
 			for el in log_entries:
-				print("%r %s" % (el["_id"], el['m']))
+				print(f'{el["_id"]!r} {el["m"]}')
 			return []
 
 		# if hexify:

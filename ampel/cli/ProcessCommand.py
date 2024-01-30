@@ -15,7 +15,7 @@ from argparse import ArgumentParser
 from collections.abc import Generator, Sequence
 from contextlib import contextmanager
 from time import time
-from typing import Any, Optional, Union
+from typing import Any
 
 import yaml
 
@@ -54,8 +54,8 @@ class ProcessCommand(AbsCoreCommand):
 
     # Mandatory implementation
     def get_parser(
-        self, sub_op: Optional[str] = None
-    ) -> Union[ArgumentParser, AmpelArgumentParser]:
+        self, sub_op: None | str = None
+    ) -> ArgumentParser | AmpelArgumentParser:
 
         if self.parser:
             return self.parser
@@ -168,7 +168,7 @@ class ProcessCommand(AbsCoreCommand):
         self,
         args: dict[str, Any],
         unknown_args: Sequence[str],
-        sub_op: Optional[str] = None,
+        sub_op: None | str = None,
     ) -> None:
 
         if args["debug"]:
@@ -230,7 +230,6 @@ class ProcessCommand(AbsCoreCommand):
 
         dm = divmod(time() - start_time, 60)
         logger.info(
-            "Task processing done. Time required: %s minutes %s seconds\n"
-            % (round(dm[0]), round(dm[1]))
+            f"Task processing done. Time required: {round(dm[0])} minutes {round(dm[1])} seconds\n"
         )
         logger.flush()

@@ -118,8 +118,7 @@ class T3DefaultBufferSupplier(AbsT3Supplier[Generator[AmpelBuffer, None, None]])
 					for appender in self.complementers:
 						appender.complement(tran_data, t3s)
 
-				for ampel_buffer in tran_data:
-					yield ampel_buffer
+				yield from tran_data
 
 			except Exception as e:
 				self.event_hdlr.handle_error(e, self.logger)

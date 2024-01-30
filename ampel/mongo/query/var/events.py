@@ -110,7 +110,7 @@ def build_t0_stats_query(
 
 
 def _get_datetime(t: int | float | dict) -> datetime:
-	if isinstance(t, (int, float)):
+	if isinstance(t, int | float):
 		return datetime.fromtimestamp(t, tz=timezone.utc)
 	elif isinstance(t, dict):
 		return datetime.now(tz=timezone.utc) + timedelta(**t)

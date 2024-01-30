@@ -11,7 +11,7 @@ from collections.abc import Callable, Generator, Iterable, Iterator, Mapping
 from contextlib import contextmanager
 from multiprocessing.pool import ThreadPool
 from time import time
-from typing import Any, Literal, Union
+from typing import Any, Literal
 
 from pymongo import InsertOne, UpdateMany, UpdateOne
 from pymongo.collection import Collection
@@ -23,7 +23,7 @@ from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.utils import convert_dollars, report_error, report_exception
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 
-DBOp = Union[UpdateOne, UpdateMany, InsertOne]
+DBOp = UpdateOne | UpdateMany | InsertOne
 AmpelMainCol = Literal['stock', 't0', 't1', 't2', 't3']
 
 # Monitoring counters

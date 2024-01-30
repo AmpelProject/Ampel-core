@@ -1,4 +1,3 @@
-from typing import Optional
 
 import pytest
 
@@ -244,7 +243,7 @@ def test_compiler_options_validation(mock_context: DevAmpelContext):
     """AuxAliasableUnit can be intialized from a string"""
 
     class Dummy(LogicalUnit):
-        compiler_options: Optional[CompilerOptions]
+        compiler_options: None | CompilerOptions
 
     mock_context.register_unit(Dummy)
 

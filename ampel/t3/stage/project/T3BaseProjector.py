@@ -160,7 +160,7 @@ class T3BaseProjector(AbsT3Projector):
 
 					if self.logger.verbose:
 
-						if isinstance(abuf[k], (list, tuple)):
+						if isinstance(abuf[k], list | tuple):
 							self.logger.log(VERBOSE, None,
 								extra={'projection': k, 'in': len(abuf[k]), 'out': len(new_buf[k])} # type: ignore
 							)

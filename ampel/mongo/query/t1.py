@@ -169,7 +169,7 @@ def latest_general_query(
 
 	# Robustness
 	if isinstance(single_stock, collections.abc.Sequence) or \
-		not isinstance(single_stock, (int, Int64, str)):
+		not isinstance(single_stock, int | Int64 | str):
 		raise ValueError(
 			"Type of single_stock must be a string or an int (multi single_stock queries not supported)"
 		)

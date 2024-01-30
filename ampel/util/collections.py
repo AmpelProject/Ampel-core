@@ -22,7 +22,7 @@ def ampel_iter(arg: Any) -> Any:
 	-> suppresses python3 treatment of str as iterable (a questionable choice)
 	-> Makes None iterable
 	"""
-	return [arg] if isinstance(arg, (type(None), str, int, bytes, bytearray)) else arg
+	return [arg] if isinstance(arg, type(None) | str | int | bytes | bytearray) else arg
 
 
 def get_chunks(seq: Iterable[T], n: int) -> Generator[list[T], None, None]:
@@ -104,7 +104,7 @@ def to_list(arg: int | str | bytes | bytearray | list | Iterable) -> list:
 	"""
 	raises ValueError is arg is not int, str, bytes, bytearray, list, or Iterable
 	"""
-	if isinstance(arg, (int, str, bytes, bytearray)):
+	if isinstance(arg, int | str | bytes | bytearray):
 		return [arg]
 	if isinstance(arg, list):
 		return arg

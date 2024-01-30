@@ -88,7 +88,7 @@ class T3ChannelProjector(T3BaseProjector):
 
 		for el in dicts:
 			if elchan := el.get('channel'):
-				if isinstance(elchan, (str, int)):
+				if isinstance(elchan, str | int):
 					if elchan in channel_set:
 						ret.append(el)
 				else:

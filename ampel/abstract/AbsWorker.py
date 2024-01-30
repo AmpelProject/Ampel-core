@@ -388,7 +388,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 		if tag:
 			upd['$addToSet'] = {
-				'tag': tag if isinstance(tag, (int, str)) else maybe_use_each(tag)
+				'tag': tag if isinstance(tag, int | str) else maybe_use_each(tag)
 			}
 
 		if body is not None:

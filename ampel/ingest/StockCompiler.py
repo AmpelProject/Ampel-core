@@ -69,7 +69,7 @@ class StockCompiler(AbsCompiler):
 		if tag:
 			if 'tag' not in d:
 				d['tag'] = set()
-			if isinstance(tag, (str, int)):
+			if isinstance(tag, str | int):
 				d['tag'].add(tag)
 			else:
 				d['tag'].update(tag)

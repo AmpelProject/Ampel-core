@@ -398,13 +398,13 @@ class ChainedIngestionHandler:
 
 		# State T2s (are defined along with t1 directives usually)
 		# We allow the definition of multiple combiners t2 ingesters
-		if isinstance(t1_combine, (T1Combine, T1CombineComputeNow)):
+		if isinstance(t1_combine, T1Combine | T1CombineComputeNow):
 			if t1_combine.state_t2:
 				t1b.state_t2 = [self._gen_t2_block(el) for el in t1_combine.state_t2]
 			if t1_combine.point_t2:
 				t1b.point_t2 = [self._gen_t2_block(el) for el in t1_combine.point_t2]
 
-		if isinstance(t1_combine, (T1CombineCompute, T1CombineComputeNow)):
+		if isinstance(t1_combine, T1CombineCompute | T1CombineComputeNow):
 
 			t1b.compute = T1ComputeBlock()
 			t1b.compute.unit_name = t1_combine.compute.unit

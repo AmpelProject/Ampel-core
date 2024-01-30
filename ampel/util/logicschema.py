@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from collections.abc import Sequence
-from typing import Any, Literal, Union
+from typing import Any, Literal
 
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
@@ -37,7 +37,7 @@ def to_logical_dict(v, field_name: int | str | dict[str, Any]) -> dict[str, Any]
 			"conditional_expr_converter(..) docstring for more info"
 		)
 
-	if isinstance(v, (str, int)):
+	if isinstance(v, str | int):
 		return {'any_of': [v]}
 
 	if isinstance(v, dict):
@@ -110,17 +110,16 @@ def to_logical_dict(v, field_name: int | str | dict[str, Any]) -> dict[str, Any]
 				not check_seq_inner_type(v['all_of'], (int, str))
 			):
 				raise ValueError(
-					"stock->select->%s:all_of config error\n" % field_name +
-					"Invalid type for value %s\n(must be a sequence, is: %s)\n" %
-					(v['all_of'], type(v['all_of'])) +
+					f"stock->select->{field_name}:all_of config error\n"
+					f"Invalid type for value {v['all_of']}\n(must be a sequence, is: {type(v['all_of'])})\n"
 					"Note: no nesting is allowed below 'all_of'"
 				)
 
 			if len(set(v['all_of'])) < 2:
 				raise ValueError(
-					"stock->select->%s:all_of config error\n" % field_name +
-					"Please do not use all_of with just one element\n" +
-					"Offending value: %s" % v
+					f"stock->select->{field_name}:all_of config error\n"
+					"Please do not use all_of with just one element\n"
+					f"Offending value: {v}"
 				)
 
 		elif 'one_of' in v:
@@ -131,9 +130,8 @@ def to_logical_dict(v, field_name: int | str | dict[str, Any]) -> dict[str, Any]
 				not check_seq_inner_type(v['one_of'], (int, str))
 			):
 				raise ValueError(
-					"stock->select->%s:one_of config error\n" % field_name +
-					"Invalid type for value %s\n(must be a sequence, is: %s)\n" %
-					(v['one_of'], type(v['one_of'])) +
+					f"stock->select->{field_name}:one_of config error\n"
+					f"Invalid type for value {v['one_of']}\n(must be a sequence, is: {type(v['one_of'])})\n"
 					"Note: no nesting is allowed below 'one_of'"
 				)
 
@@ -147,13 +145,13 @@ def to_logical_dict(v, field_name: int | str | dict[str, Any]) -> dict[str, Any]
 
 
 def reduce_to_set(
-	arg: Union[
-		T,
+	arg: (
+		T |
 		# unsure if mypy understands unions of dicts with different key literals actually
-		dict[Union[Literal['all_of', 'one_of']], Sequence[T]],
-		dict[Literal['any_of'], Union[Sequence[T], dict[Literal['all_of'], Sequence[T]]]],
-		AllOf[T], AnyOf[T], OneOf[T]
-	],
+		dict[Literal['all_of', 'one_of'], Sequence[T]] |
+		dict[Literal['any_of'], Sequence[T] | dict[Literal['all_of'], Sequence[T]]] |
+		AllOf[T] | AnyOf[T] | OneOf[T]
+	),
 	in_type: tuple[type, ...] = (str, int)
 ) -> set[T]:
 	"""
@@ -177,7 +175,7 @@ def reduce_to_set(
 	if isinstance(arg, in_type):
 		return {arg} # type: ignore
 
-	elif isinstance(arg, (AllOf, AnyOf, OneOf)):
+	elif isinstance(arg, AllOf | AnyOf | OneOf):
 		v: Any = arg.dict()
 
 	elif isinstance(arg, dict):

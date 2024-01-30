@@ -179,7 +179,7 @@ class AmpelLogger:
 
 	def break_aggregation(self) -> None:
 		for el in self.handlers:
-			if isinstance(el, (AggregatingLoggingHandlerProtocol, AmpelStreamHandler)):
+			if isinstance(el, AggregatingLoggingHandlerProtocol | AmpelStreamHandler):
 				el.break_aggregation()
 
 

@@ -98,7 +98,7 @@ def test_multi_channel(stock_doc, logger, logic_op):
     for jentry in after["stock"]["journal"]:
         if (channel := jentry.get("channel")) is None:
             continue
-        if isinstance(channel, (int, str)):
+        if isinstance(channel, int | str):
             assert channel in target
         else:
             assert len(channel) > 1
@@ -112,7 +112,7 @@ def test_multi_channel(stock_doc, logger, logic_op):
                 stripped
             ), "entry with channel in target was preserved"
         except ValueError:
-            if (isinstance(channel, (int, str)) and channel in target) or set(
+            if (isinstance(channel, int | str) and channel in target) or set(
                 channel
             ).issubset(target):
                 raise

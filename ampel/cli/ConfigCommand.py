@@ -259,8 +259,7 @@ class ConfigCommand(AbsCoreCommand):
 
 			dm = divmod(time() - start_time, 60)
 			logger.info(
-				'Total time required: %s minutes %s seconds\n' %
-				(round(dm[0]), round(dm[1]))
+				f'Total time required: {round(dm[0])} minutes {round(dm[1])} seconds\n' 
 			)
 
 			logger.flush()

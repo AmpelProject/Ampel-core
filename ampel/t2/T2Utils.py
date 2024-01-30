@@ -100,9 +100,9 @@ class T2Utils:
 		match = build_general_query(stock=stock, channel=channel, tag=tag)
 
 		if unit:
-			if isinstance(unit, (int, str)):
+			if isinstance(unit, int | str):
 				match['unit'] = unit
-			elif isinstance(unit, (tuple, list)):
+			elif isinstance(unit, tuple | list):
 				match['unit'] = unit[0] if len(unit) == 1 else {'$in': unit}
 			else:
 				raise ValueError(f"Unrecognized 'unit' argument type: {type(unit)}")
@@ -113,7 +113,7 @@ class T2Utils:
 			else:
 				if isinstance(config, int):
 					match['config'] = config
-				elif isinstance(config, (list, tuple)):
+				elif isinstance(config, list | tuple):
 					match['config'] = {'$in': [el for el in config if config != "null"]}
 					if "null" in config:
 						match['config']['$in'].append(None)

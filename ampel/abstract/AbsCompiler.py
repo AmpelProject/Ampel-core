@@ -42,7 +42,7 @@ class AbsCompiler(AmpelUnit, AmpelABC, abstract=True):
 
 		if self.tag:
 			self._ingest_tag_activity = {'action': MetaActionCode.ADD_INGEST_TAG}
-			if isinstance(self.tag, (str, int)):
+			if isinstance(self.tag, str | int):
 				self._tag = [self.tag]
 				self._ingest_tag_activity['tag'] = self.tag
 			else:
@@ -99,12 +99,12 @@ class AbsCompiler(AmpelUnit, AmpelABC, abstract=True):
 
 						else:
 							# Add current channel to previously registered activity
-							if isinstance(el['channel'], (int, str)):
+							if isinstance(el['channel'], int | str):
 								g.add(el['channel'])
 							else:
 								g.update(el['channel'])
 					else:
-						ar[x] = {el['channel']} if isinstance(el['channel'], (int, str)) else set(el['channel'])
+						ar[x] = {el['channel']} if isinstance(el['channel'], int | str) else set(el['channel'])
 
 				# Channel-less activity
 				else:
@@ -170,7 +170,7 @@ class AbsCompiler(AmpelUnit, AmpelABC, abstract=True):
 					if el['action'] & MetaActionCode.ADD_CHANNEL:
 						add_chan_registered = True
 					ar[self._metactivity_key(el, {'channel'})] = (
-						{el['channel']} if isinstance(el['channel'], (int, str))
+						{el['channel']} if isinstance(el['channel'], int | str)
 						else set(el['channel'])
 					)
 				else: # Channel-less activity

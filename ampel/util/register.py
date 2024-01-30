@@ -360,8 +360,7 @@ def reg_iter(
 	r = ifh.read
 
 	while b := r(buf_len):
-		for el in iter_unpack(struct, b):
-			yield el
+		yield from iter_unpack(struct, b)
 
 	ifh.close()
 	if isinstance(f, str) and not ofh.closed:

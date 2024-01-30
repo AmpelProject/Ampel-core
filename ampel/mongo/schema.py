@@ -81,9 +81,9 @@ def apply_schema(
 	"""
 
 	# Validations already performed by models
-	if isinstance(arg, (AllOf, AnyOf, OneOf)):
+	if isinstance(arg, AllOf | AnyOf | OneOf):
 		arg_dict = arg.dict()
-	elif isinstance(arg, (int, str)):
+	elif isinstance(arg, int | str):
 		query[field_name] = arg
 		return query
 	else:
@@ -164,7 +164,7 @@ def apply_schema(
 							'$in': [
 								item
 								for el in optimize_potentially
-								if isinstance((item := el[field_name]), (int, str))
+								if isinstance((item := el[field_name]), int | str)
 							]
 						}
 					}
@@ -208,7 +208,7 @@ def apply_excl_schema(
 	"""
 
 	# Checks were already performed by validators
-	if isinstance(arg, (AllOf, AnyOf, OneOf)):
+	if isinstance(arg, AllOf | AnyOf | OneOf):
 		arg = arg.dict()
 	else:
 		_arg_check(arg)
@@ -364,7 +364,7 @@ def _arg_check(arg) -> bool:
 	if arg is None:
 		raise ValueError('"arg" is None')
 
-	if isinstance(arg, (int, str, tuple)):
+	if isinstance(arg, int | str | tuple):
 		return True
 
 	# Dict must be provided

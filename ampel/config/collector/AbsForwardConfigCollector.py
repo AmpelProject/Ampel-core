@@ -51,7 +51,7 @@ class AbsForwardConfigCollector(dict, AmpelABC, abstract=True):
 	) -> None:
 
 
-		for el in [arg] if isinstance(arg, (dict, str)) else arg:
+		for el in [arg] if isinstance(arg, dict | str) else arg:
 
 			path_elements = self.get_path(el, dist_name, version, register_file)
 			if not path_elements:

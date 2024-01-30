@@ -1,7 +1,7 @@
 import sys
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import pytest
 import yaml
@@ -97,7 +97,7 @@ def test_secrets(testing_config, vault: Path, schema: Path, mock_new_context_uni
         is None
     )
     assert mock_new_context_unit.call_count == 1
-    loader_vault: Optional[AmpelVault] = mock_new_context_unit.call_args.kwargs[
+    loader_vault: None | AmpelVault = mock_new_context_unit.call_args.kwargs[
         "context"
     ].loader.vault
     assert loader_vault is not None

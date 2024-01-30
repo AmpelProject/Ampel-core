@@ -20,7 +20,7 @@ def reset_metric(metric: MetricWrapperBase) -> None:
         for child in metric._metrics.values():
             reset_metric(child)
     else:
-        if isinstance(metric, (Counter, Gauge)):
+        if isinstance(metric, Counter | Gauge):
             metric._value.set(0)
         elif isinstance(metric, Summary):
             metric._sum.set(0)

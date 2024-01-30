@@ -177,8 +177,7 @@ class T3ProjectingStager(T3ThreadedStager):
 
 					buffers = run_block.projector.project(buffers)
 
-				for el in buffers:
-					yield el
+				yield from buffers
 
 		except RuntimeError as e:
 			if "StopIteration" in str(e):
