@@ -42,7 +42,7 @@ class LogsDumper(AmpelFlexModel):
 
 	def process(self, log_entries: Sequence[dict]):
 
-		fd = open(self.out, "w") if self.out else sys.stdout
+		fd = open(self.out, "w") if self.out else sys.stdout # noqa: SIM115
 
 		if self.to_json or self.to_pretty_json:
 			self.write_json(fd, log_entries)

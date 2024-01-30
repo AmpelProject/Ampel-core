@@ -147,7 +147,7 @@ class T3BaseProjector(AbsT3Projector):
 					new_buf[k] = abuf[k] # type: ignore[misc]
 
 			# Loop through field projectors defined in config
-			for k in projectors.keys():
+			for k in projectors:
 
 				# Last condition handles the 'null projector'
 				if k in abuf and abuf[k] and projectors[k]:

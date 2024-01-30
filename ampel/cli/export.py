@@ -126,12 +126,12 @@ def get_fd(
 
 	if binary:
 		if isinstance(fd, str):
-			return open(fd, "wb"), True
+			return open(fd, "wb"), True # noqa: SIM115
 		return fd, close_fd # type: ignore
 	if fd is None:
 		return sys.stdout, False
 	if isinstance(fd, str):
-		return open(fd, 'w'), close_fd
+		return open(fd, 'w'), close_fd # noqa: SIM115
 	return fd, close_fd # type: ignore
 
 

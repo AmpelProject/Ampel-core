@@ -283,7 +283,7 @@ def convert_dollars(arg: JDict | list[JDict]) -> JDict | list[JDict]:
 
 	if isinstance(arg, dict):
 
-		pblm_keys = [key for key in arg.keys() if "$" in key or "." in key]
+		pblm_keys = [key for key in arg if "$" in key or "." in key]
 		if pblm_keys:
 			arg = arg.copy() # shallow copy
 			for key in pblm_keys:
@@ -299,7 +299,7 @@ def convert_dollars(arg: JDict | list[JDict]) -> JDict | list[JDict]:
 		if not pblm_keys:
 			arg = arg.copy()
 
-		for key in arg.keys():
+		for key in arg:
 			arg[key] = convert_dollars(arg[key])
 
 	elif isinstance(arg, list):

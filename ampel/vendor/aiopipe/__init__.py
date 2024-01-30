@@ -97,7 +97,7 @@ from asyncio import (
     sleep,
 )
 from collections.abc import AsyncIterator, Iterator
-from contextlib import asynccontextmanager, contextmanager
+from contextlib import asynccontextmanager, contextmanager, suppress
 from typing import Any
 
 __pdoc__ = {} # type: ignore
@@ -189,10 +189,8 @@ class AioPipeStream:
             self._fd = None
 
     def __del__(self):
-        try:
+        with suppress(OSError):
             self.close()
-        except OSError:
-            pass
 
 class AioPipeReader(AioPipeStream):
     """

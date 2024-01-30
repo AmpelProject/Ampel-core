@@ -154,8 +154,5 @@ class DBCommand(AbsCoreCommand):
 				else:
 					raise e
 
-		elif sub_op == 'export':
-			raise NotImplementedError()
-
-		elif sub_op == 'import':
+		elif sub_op == 'export' or sub_op == 'import':
 			raise NotImplementedError()

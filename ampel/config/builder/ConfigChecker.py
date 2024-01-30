@@ -76,7 +76,7 @@ class ConfigChecker(BaseConfigChecker):
 		try:
 			# block potential "Offending value..." print from AmpelBaseModel
 			# since we pretty print the input values in case of errors
-			sys.stdout = open(os.devnull, 'w')
+			sys.stdout = open(os.devnull, 'w') # noqa: SIM115
 			load_callable(**(model_args | load_args))
 	
 		except Exception as e:
@@ -231,12 +231,14 @@ class ConfigChecker(BaseConfigChecker):
 		model = um['model']
 		unit = model['unit']
 
-		if unit in self.config["unit"]["aux"]:
-			if "AbsT3Projector" in self.config["unit"]["aux"][unit]["base"]:
-				model = json.loads(json.dumps(model))
-				if "config" not in model or model["config"] is None:
-					model["config"] = {}
-				model["config"]["logger"] = self.logger
+		if (
+			unit in self.config["unit"]["aux"] and
+			"AbsT3Projector" in self.config["unit"]["aux"][unit]["base"]
+		):
+			model = json.loads(json.dumps(model))
+			if "config" not in model or model["config"] is None:
+				model["config"] = {}
+			model["config"]["logger"] = self.logger
 
 		return model
 

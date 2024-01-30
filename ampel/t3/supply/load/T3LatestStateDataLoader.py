@@ -52,13 +52,19 @@ class T3LatestStateDataLoader(AbsT3Loader):
 
 		for directive in self.directives:
 
-			if directive.col == "t1":
-				if directive.query_complement and '_id' in directive.query_complement:
-					raise ValueError("query complement parameter '_id' cannot be used on t1 collection")
+			if (
+				directive.col == "t1" and
+				directive.query_complement and
+				'_id' in directive.query_complement
+			):
+				raise ValueError("query complement parameter '_id' cannot be used on t1 collection")
 
-			if directive.col == "t2":
-				if directive.query_complement and 'link' in directive.query_complement:
-					raise ValueError("query complement parameter 'link' cannot be used on t2 collection")
+			if (
+				directive.col == "t2" and
+				directive.query_complement and
+				'link' in directive.query_complement
+			):
+				raise ValueError("query complement parameter 'link' cannot be used on t2 collection")
 
 
 	def load(self,

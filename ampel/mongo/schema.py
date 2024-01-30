@@ -214,11 +214,10 @@ def apply_excl_schema(
 		_arg_check(arg)
 
 	# Check if field_name criteria were set previously
-	if field_name in query:
-		if isinstance(query[field_name], VALID_TYPES):
-			# If a previous scalar tag matching criteria was set
-			# then we need rename it since query[field_name] will become a dict
-			query[field_name] = {'$eq': query[field_name]}
+	if field_name in query and isinstance(query[field_name], VALID_TYPES):
+		# If a previous scalar tag matching criteria was set
+		# then we need rename it since query[field_name] will become a dict
+		query[field_name] = {'$eq': query[field_name]}
 
 	if isinstance(arg, VALID_TYPES):
 		if field_name not in query:

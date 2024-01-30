@@ -109,7 +109,7 @@ class DistConfigBuilder(ConfigBuilder):
 						self.load_conf_using_func(distrib, f, self.first_pass_config[key].add)
 
 			# ("channel", "mongo", "resource")
-			for key in self.first_pass_config.conf_keys.keys():
+			for key in self.first_pass_config.conf_keys:
 				if key == "alias":
 					continue
 				if section_conf_file := self.get_conf_file(all_conf_files, f"{key}.{ext}"):

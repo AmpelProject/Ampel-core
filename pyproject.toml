@@ -144,7 +144,7 @@ select = [
     "PT",
     "RET",
     # "SLF",
-    # "SIM",
+    "SIM",
     # # "ARG", # sometimes your arguments have to conform to an interface
     # # "ERA", # seems to prohibit all comments, that's bad
     # "PL",

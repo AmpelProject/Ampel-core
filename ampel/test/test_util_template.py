@@ -50,7 +50,7 @@ def test_misconfigured_dependency(first_pass_config: dict[str, Any]):
 
 @pytest.fixture()
 def all_units(first_pass_config: dict[str, Any]) -> list[UnitModel]:
-    return [UnitModel(unit=name) for name in first_pass_config["unit"].keys()]
+    return [UnitModel(unit=name) for name in first_pass_config["unit"]]
 
 def test_filter_units(all_units: list[UnitModel], first_pass_config: dict[str, Any]):
     assert len(filter_units(all_units, "LogicalUnit", first_pass_config)) == 10

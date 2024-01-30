@@ -100,7 +100,7 @@ class BufferCommand(AbsStockCommand, AbsLoadCommand):
 
 		conf = {
 			'fd': open(args['out'], 'wb' if args.get('binary') else 'w') \
-				if sub_op == 'save' else sys.stdout,
+				if sub_op == 'save' else sys.stdout, # noqa: SIM115
 			'id_mapper': args['id_mapper'],
 			'verbose': sub_op == 'save',
 			'binary': args.get('binary') or False

@@ -19,7 +19,7 @@ def stock_doc() -> StockDocument:
         channel: {
             "tied": doc["created"][channel],
             "upd": doc["modified"][channel],
-        } for channel in doc["created"].keys() if channel != "any"
+        } for channel in doc["created"] if channel != "any"
     }
     del doc["created"]
     doc["updated"] = doc.pop("modified")["any"]

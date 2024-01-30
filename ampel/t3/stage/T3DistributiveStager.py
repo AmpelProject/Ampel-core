@@ -78,14 +78,16 @@ class T3DistributiveStager(T3ThreadedStager):
 				for i, (async_res, generator, t3_unit) in enumerate(zip(async_results, generators, self.t3_units, strict=False)):
 
 					# potential T3Record to be included in the T3Document
-					if (t3_unit_result := async_res.get()):
-						if (d := self.handle_t3_result(
+					if (
+						(t3_unit_result := async_res.get()) and
+						(d := self.handle_t3_result(
 							t3_unit, t3_unit_result, t3s, generator.stocks, ts,
 							log_extra={'thread': i} if self.log_extra else None
-						)):
-							if self.save_stock_ids:
-								d['stock'] = generator.stocks
-							yield d
+						))
+					):
+						if self.save_stock_ids:
+							d['stock'] = generator.stocks
+						yield d
 
 				if self.stock_updr.update_journal:
 					self.stock_updr.flush()

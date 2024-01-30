@@ -153,7 +153,7 @@ class ConfigCommand(AbsCoreCommand):
 			assert '__nonstring_keys' not in obj
 			doc = {str(k): cls._to_strict_json(v) for k, v in obj.items()}
 			nonstring_keys = {
-				str(k): cls._to_strict_json(k) for k in obj.keys() if not isinstance(k, str)
+				str(k): cls._to_strict_json(k) for k in obj if not isinstance(k, str)
 			}
 			if nonstring_keys:
 				doc['__nonstring_keys'] = nonstring_keys

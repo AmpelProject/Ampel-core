@@ -18,6 +18,7 @@ import sys
 import tempfile
 from argparse import ArgumentParser
 from collections.abc import Sequence
+from contextlib import suppress
 from multiprocessing import Process, Queue
 from time import sleep, time
 from typing import Any
@@ -165,9 +166,11 @@ class JobCommand(AbsCoreCommand):
 			"""
 			import multiprocessing
 			multiprocessing.__dict__['Pool'] = MockPool
-			if not args['no_agg']:
-				if yes_no('Set -no-agg option too (required for matplotlib interactions)'):
-					args['no_agg'] = True
+			if (
+				not args['no_agg'] and
+				yes_no('Set -no-agg option too (required for matplotlib interactions)')
+			):
+				args['no_agg'] = True
 
 		if not args['no_agg']:
 			try:
@@ -325,12 +328,15 @@ class JobCommand(AbsCoreCommand):
 				logger.info(f'Please install {try_reduce(missing)} to run this job\n')
 				return # raise ValueError ?
 
-		if not args['config'] and not os.path.exists(get_user_data_config_path()):
-			if yes_no('Config seems to be missing, build and install'):
-				from ampel.cli.ConfigCommand import ConfigCommand
-				cc = ConfigCommand()
-				a, ua = cc.get_parser('install').parse_known_args()
-				cc.run(vars(a), ua, sub_op = 'install')
+		if (
+			not args['config'] and
+			not os.path.exists(get_user_data_config_path()) and
+			yes_no('Config seems to be missing, build and install')
+		):
+			from ampel.cli.ConfigCommand import ConfigCommand
+			cc = ConfigCommand()
+			a, ua = cc.get_parser('install').parse_known_args()
+			cc.run(vars(a), ua, sub_op = 'install')
 
 		s = f'Running job {job.name or schema_descr}'
 		logger.info(s, extra={'pid': os.getpid()})
@@ -420,10 +426,8 @@ class JobCommand(AbsCoreCommand):
 
 		if args.get('edit') and not args.get('keep_edits'):
 			for el in tmp_files:
-				try:
+				with suppress(BaseException):
 					os.unlink(el)
-				except BaseException:
-					pass
 
 		if (wpid := args['wait_pid']) and psutil.pid_exists(wpid):
 			logger.info(f'Waiting until process with PID {wpid} completes')

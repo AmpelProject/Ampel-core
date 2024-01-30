@@ -181,20 +181,18 @@ class AmpelController:
 
 				# Process name inclusion filter
 				if match and not any(rm.match(p["name"]) for rm in rmatch):
-					if logger:
-						if verbose > 1:
-							logger.debug(
-								f'Ignoring process {p["name"]} unmatched by {rmatch}'
-							)
+					if logger and verbose > 1:
+						logger.debug(
+							f'Ignoring process {p["name"]} unmatched by {rmatch}'
+						)
 					continue
 
 				# Process name exclusion filter
 				if exclude and any(rx.match(p["name"]) for rx in rexcl):
-					if logger:
-						if verbose > 1:
-							logger.info(
-								f'Excluding process {p["name"]} matched by {rmatch}'
-							)
+					if logger and verbose > 1:
+						logger.info(
+							f'Excluding process {p["name"]} matched by {rmatch}'
+						)
 					continue
 
 				if not p.get("active", True):

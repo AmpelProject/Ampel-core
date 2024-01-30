@@ -7,7 +7,7 @@ import enum
 import logging
 import operator
 import os
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from datetime import datetime, timedelta, timezone
 from functools import reduce
 from typing import (
@@ -468,10 +468,8 @@ async def kill_process(process: str):
     except KeyError:
         raise HTTPException(status_code=404, detail=f"{process} is not running")
     task.cancel()
-    try:
+    with suppress(asyncio.CancelledError):
         await task
-    except asyncio.CancelledError:
-        ...
 
 
 @app.post("/process/{process}/scale")

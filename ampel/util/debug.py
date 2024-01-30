@@ -66,7 +66,7 @@ class ForkedPdb(pdb.Pdb):
 	def interaction(self, *args, **kwargs):
 		_stdin = sys.stdin
 		try:
-			sys.stdin = open('/dev/stdin')
+			sys.stdin = open('/dev/stdin') # noqa: SIM115
 			print(f"ForkedPdb started (pid: {os.getpid()})")
 			pdb.Pdb.interaction(self, *args, **kwargs)
 		finally:

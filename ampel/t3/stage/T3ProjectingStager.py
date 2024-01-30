@@ -252,9 +252,11 @@ class T3ProjectingStager(T3ThreadedStager):
 					for async_res, generator, t3_unit in zip(async_results, generators, all_units, strict=False):
 
 						# potential T3Record to be included in the T3Document
-						if (t3_unit_result := async_res.get()):
-							if (z := self.handle_t3_result(t3_unit, t3_unit_result, t3s, generator.stocks, ts)):
-								yield z
+						if (
+							(t3_unit_result := async_res.get()) and
+							(z := self.handle_t3_result(t3_unit, t3_unit_result, t3s, generator.stocks, ts))
+						):
+							yield z
 
 				if self.stock_updr.update_journal:
 					self.stock_updr.flush()

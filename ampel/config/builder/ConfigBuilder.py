@@ -176,23 +176,25 @@ class ConfigBuilder:
 		:raises: ValueError if self.error is True - this behavior can be disabled using the parameter stop_on_errors
 		"""
 
-		if self.first_pass_config.has_nested_error():
-			if stop_on_errors > 1:
-				raise ValueError(
-					'\n-------------------------------------------------------------------------\n' +
-					'Error were reported while gathering configurations (first pass config),\n' +
-					'Option stop_on_errors = 1 (or 0) can be used to bypass this warning and\n' +
-					'thereby force the assembly of a possibly non-working config.\n' +
-					'CLI: ampel config install -stop-on-errors 1 (or 0)\n' +
-					'-------------------------------------------------------------------------\n'
-				)
+		if (
+			self.first_pass_config.has_nested_error() and
+			stop_on_errors > 1
+		):
+			raise ValueError(
+				'\n-------------------------------------------------------------------------\n' +
+				'Error were reported while gathering configurations (first pass config),\n' +
+				'Option stop_on_errors = 1 (or 0) can be used to bypass this warning and\n' +
+				'thereby force the assembly of a possibly non-working config.\n' +
+				'CLI: ampel config install -stop-on-errors 1 (or 0)\n' +
+				'-------------------------------------------------------------------------\n'
+			)
 
 		if ext_resource and not os.path.exists(ext_resource):
 			raise ValueError(f"External resource file not found: '{ext_resource}'")
 
 		out = {
 			k: self.first_pass_config[k]
-			for k in FirstPassConfig.conf_keys.keys()
+			for k in FirstPassConfig.conf_keys
 		}
 
 		out['process'] = {}
@@ -472,7 +474,7 @@ class ConfigBuilder:
 		# Convert int keys to str (ensures JSON compatibility)
 		if json_serializable:
 
-			for k in [el for el in out['channel'].keys() if isinstance(el, str) and el.isdigit()]:
+			for k in [el for el in out['channel'] if isinstance(el, str) and el.isdigit()]:
 				out['channel'][str(k)] = out['channel'].pop(k)
 			for k in list(out['confid'].keys()):
 				out['confid'][str(k)] = out['confid'].pop(k)

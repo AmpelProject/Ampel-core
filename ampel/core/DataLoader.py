@@ -111,7 +111,7 @@ class DataLoader:
 			cursor = col.find(
 				filter = query,
 				projection = {
-					k: 1 for k in directive.model.__annotations__.keys()
+					k: 1 for k in directive.model.__annotations__
 				} if auto_project else None
 			)
 

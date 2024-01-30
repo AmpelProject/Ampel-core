@@ -124,14 +124,14 @@ class DBUpdatesBuffer(Schedulable):
 
 		self._cols: dict[AmpelMainCol, Collection] = {
 			col_name: ampel_db.get_collection(col_name)
-			for col_name in self.db_ops.keys()
+			for col_name in self.db_ops
 		}
 
 		self.stats: dict[AmpelMainCol, int] = {
 			'stock': 0, 't0': 0, 't1': 0, 't2': 0,
 		}
 
-		self._err_db_ops: dict[str, Any] = {k: [] for k in self.db_ops.keys()}
+		self._err_db_ops: dict[str, Any] = {k: [] for k in self.db_ops}
 		self._ampel_db = ampel_db
 		self.run_id = run_id
 		self.logger = logger
@@ -283,7 +283,7 @@ class DBUpdatesBuffer(Schedulable):
 		messages = self._messages_to_ack
 		self._new_buffer()
 
-		for col_name in db_ops.keys():
+		for col_name in db_ops:
 			if db_ops[col_name]:
 				if self.thread_pool:
 					self.thread_pool.starmap(

@@ -532,7 +532,7 @@ class ChainedIngestionHandler:
 				if jm_extra:
 					jentry = jm_extra | jentry
 
-				if i > 0: # Known stock (for the current channel)
+				if i > 0: # Known stock (for the current channel) # noqa: SIM108
 					ib = ibs[i][0]
 				else: # New stock
 					ib = ibs[-i][1]

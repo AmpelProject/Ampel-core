@@ -79,7 +79,7 @@ class RunCommand(AbsCoreCommand):
 			print("\nAvailable processes:")
 			for k in ("t0", "t1", "t2", "t3"):
 				print(f"\n====== T{k[1]} ======")
-				for kk in ctx.config.get(f'process.{k}', dict[str, Any], raise_exc=True).keys():
+				for kk in ctx.config.get(f'process.{k}', dict[str, Any], raise_exc=True):
 					print(" " + kk)
 			print("")
 			return

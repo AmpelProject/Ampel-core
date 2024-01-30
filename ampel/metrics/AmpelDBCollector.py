@@ -9,6 +9,7 @@
 
 
 from collections.abc import Sequence
+from contextlib import suppress
 from dataclasses import dataclass
 
 from prometheus_client.metrics_core import GaugeMetricFamily, Metric  # type: ignore
@@ -29,7 +30,7 @@ class AmpelDBCollector:
     def collect(self) -> Sequence[Metric]:
 
         metrics = []
-        try:
+        with suppress(Exception):
             metrics.append(
                 GaugeMetricFamily(
                     "ampel_t2_docs_queued",
@@ -39,6 +40,4 @@ class AmpelDBCollector:
                     ),
                 )
             )
-        except Exception:
-            ...
         return metrics

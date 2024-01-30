@@ -182,11 +182,13 @@ class T3AggregatingStager(T3SequentialStager):
 		for i, t3_unit in enumerate(self.units):
 			ts = time()
 			self.logger.info(f"Processing run block {i}", extra={'unit': t3_unit.__class__.__name__})
-			if (t3_ret := t3_unit.process(self.empty_gen(), t3s)):
-				if (x := self.handle_t3_result(t3_unit, t3_ret, t3s, None, ts)):
-					if self.propagate:
-						t3s.add_view(T3DocView.of(x, self.context.config))
-					yield x
+			if (
+				(t3_ret := t3_unit.process(self.empty_gen(), t3s)) and
+				(x := self.handle_t3_result(t3_unit, t3_ret, t3s, None, ts))
+			):
+				if self.propagate:
+					t3s.add_view(T3DocView.of(x, self.context.config))
+				yield x
 
 		return None
 
@@ -206,7 +208,7 @@ class T3AggregatingStager(T3SequentialStager):
 			{k: {s: v} for k, v in d.items()} if self.split_tiers else d,
 			t3s,
 			time(),
-			[int(el) for el in d.keys()]
+			[int(el) for el in d]
 		)
 
 

@@ -82,8 +82,8 @@ def get_outer_file_handle(
 
 	if logger:
 		logger.log(VERBOSE, f"Opening {file_path} with mode {mode}")
-
-	f: BinaryIO = open(file_path, mode) # type: ignore[assignment]
+	
+	f: BinaryIO = open(file_path, mode) # type: ignore[assignment] # noqa: SIM115
 	if file_exists:
 		return read_header(f, logger), f
 

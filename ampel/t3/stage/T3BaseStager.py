@@ -140,9 +140,11 @@ class T3BaseStager(AbsT3Stager, DocBuilder, abstract=True):
 		try:
 			self.logger.info("Running T3 unit", extra={'unit': t3_unit.__class__.__name__})
 			ts = time()
-			if (ret := t3_unit.process(view_generator, t3s)) or self.save_stock_ids:
-				if x := self.handle_t3_result(t3_unit, ret, t3s, view_generator.get_stock_ids(), ts):
-					yield x
+			if (
+				((ret := t3_unit.process(view_generator, t3s)) or self.save_stock_ids) and
+				(x := self.handle_t3_result(t3_unit, ret, t3s, view_generator.get_stock_ids(), ts))
+			):
+				yield x
 		except Exception as e:
 			self.event_hdlr.handle_error(e, self.logger)
 		finally:

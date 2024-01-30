@@ -91,9 +91,11 @@ class T3ThreadedStager(T3BaseStager, abstract=True):
 					for async_res, generator, t3_unit in zip(async_results, generators, t3_units, strict=False):
 
 						# potential T3Document to be included in the T3Document
-						if (t3_unit_result := async_res.get()):
-							if (x := self.handle_t3_result(t3_unit, t3_unit_result, t3s, generator.stocks, ts)):
-								yield x
+						if (
+							(t3_unit_result := async_res.get()) and
+							(x := self.handle_t3_result(t3_unit, t3_unit_result, t3s, generator.stocks, ts))
+						):
+							yield x
 
 				except RuntimeError as e:
 					if "StopIteration" in str(e):

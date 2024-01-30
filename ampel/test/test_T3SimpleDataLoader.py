@@ -15,7 +15,7 @@ def test_instantiate(core_config, ampel_logger):
         directives := T3SimpleDataLoader(
             context=ctx,
             logger=ampel_logger,
-            directives=[k[1:] for k in aliases.keys()]
+            directives=[k[1:] for k in aliases]
         ).directives
     ) == len(aliases)
     for d, value in zip(directives, aliases.values(), strict=False):

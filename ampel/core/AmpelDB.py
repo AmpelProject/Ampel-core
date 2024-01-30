@@ -9,6 +9,7 @@
 
 import collections.abc
 from collections.abc import Sequence
+from contextlib import suppress
 from functools import cached_property
 from typing import Any, Literal
 
@@ -469,10 +470,8 @@ class AmpelDB(AmpelUnit):
 		self.mongo_clients.clear()
 		# deleting the attribute resets cached_property
 		for attr in ("col_trace_ids", "col_conf_ids", "trace_ids", "conf_ids"):
-			try:
+			with suppress(AttributeError):
 				delattr(self, attr)
-			except AttributeError:
-				pass
 
 
 	def add_trace_id(self, trace_id: int, arg: dict[str, Any]) -> None:
@@ -480,11 +479,9 @@ class AmpelDB(AmpelUnit):
 		# Save trace id to external collection
 		if trace_id not in self.trace_ids:
 
-			# Using try insert except on purpose because update_one/upsert does not maintain dict key order
-			try:
+			# Suppress duplicate key error on purpose because update_one/upsert does not maintain dict key order
+			with suppress(DuplicateKeyError):
 				self.col_trace_ids.insert_one({'_id': trace_id} | arg)
-			except DuplicateKeyError:
-				pass
 
 		self.trace_ids.add(trace_id)
 
@@ -494,10 +491,8 @@ class AmpelDB(AmpelUnit):
 		# Save conf id to external collection
 		if conf_id not in self.conf_ids:
 
-			# Using try insert except on purpose because update_one/upsert does not maintain dict key order
-			try:
+			# Suppress duplicate key error on purpose because update_one/upsert does not maintain dict key order
+			with suppress(DuplicateKeyError):
 				self.col_conf_ids.insert_one({'_id': conf_id} | arg)
-			except DuplicateKeyError:
-				pass
 
 		self.conf_ids.add(conf_id)
