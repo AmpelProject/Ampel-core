@@ -91,7 +91,7 @@ async def test_db_metrics(test_client, dev_context):
 
 
 @pytest.mark.parametrize(
-    ("section","proc"),
+    ("section", "proc"),
     [
         (
             "t2",
@@ -192,37 +192,7 @@ async def test_processes_start(test_client):
 
 
 @pytest.mark.parametrize(
-    ("patches","should_raise"),
-    [
-        (None, False),
-        ({"processor.config": {"nonexistant_param": True}}, True),
-        ({"active": False, "processor.config": {"nonexistant_param": True}}, False),
-    ],
-)
-@pytest.fixture()
-def _config_in_env(monkeypatch, tmp_path, dev_context, patches, should_raise):
-    config = recursive_unfreeze(dev_context.config.get())
-    config["process"]["t3"]["sleepy"] = {
-        "name": "sleepy",
-        "schedule": "every(30).seconds",
-        "tier": 3,
-        "isolate": True,
-        "controller": {
-            "unit": "DefaultProcessController",
-            "config": {"mp_join": 2},
-        },
-        "processor": {"unit": "Sleepy"},
-    }
-    if patches:
-        for k, v in patches.items():
-            set_by_path(config["process"]["t3"]["sleepy"], k, v)
-    with open(tmp_path / "config.yaml", "w") as f:
-        yaml.dump(config, f)
-    monkeypatch.setenv("AMPEL_CONFIG", str(tmp_path / "config.yaml"))
-
-
-@pytest.mark.parametrize(
-    ("patches","should_raise"),
+    ("patches", "should_raise"),
     [
         ({}, False),
         ({"processor.config": {"nonexistant_param": True}}, True),
@@ -233,7 +203,6 @@ def _config_in_env(monkeypatch, tmp_path, dev_context, patches, should_raise):
 async def test_config_reload(
     test_client, monkeypatch, tmp_path, dev_context, patches, should_raise, mocker
 ):
-
     config = recursive_unfreeze(dev_context.config.get())
     config["process"]["t3"]["sleepy"] = {
         "name": "sleepy",
@@ -309,7 +278,7 @@ async def test_event_query(test_client, mocker):
     m = mocker.patch("ampel.run.server.context.db")
     find = m.get_collection().find
     await test_client.get(
-        "/events", params={"after": 'PT2H', "process": "InfantSNSummary"}
+        "/events", params={"after": "PT2H", "process": "InfantSNSummary"}
     )
     assert isinstance(query := find.call_args.args[0], dict)
     assert isinstance(andlist := query["$and"], list)
