@@ -94,6 +94,7 @@ filterwarnings = [
     "error",
     "default:Pydantic serializer warnings:UserWarning",
     "default:There is no current event loop:DeprecationWarning",
+    "default:unclosed:ResourceWarning",
     # warning deep in fastapi
     "ignore:.*general_plain_validator_function.*:DeprecationWarning",
     "ignore:pkg_resources is deprecated:DeprecationWarning",
