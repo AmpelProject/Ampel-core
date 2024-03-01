@@ -139,7 +139,7 @@ class LogsDumper(AmpelFlexModel):
 		for el in log_entries:
 
 			record = LightLogRecord(name=0, levelno=el['f'], msg=el.get('m'))
-			record.extra = el.get('e', {})
+			record.extra = el.get('e') or {}
 			record.extra['run'] = el['r']
 
 			if 'c' in el:

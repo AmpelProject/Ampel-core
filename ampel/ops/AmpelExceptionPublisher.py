@@ -69,7 +69,7 @@ class AmpelExceptionPublisher(AbsOpsUnit):
                 {"title": "unit", "value": doc.get("unit"), "short": True}
             )
             t2Doc = doc.get("t2Doc")
-            if hasattr(t2Doc, "binary"):
+            if t2Doc and hasattr(t2Doc, "binary"):
                 fields.append(
                     {"title": "t2Doc", "value": t2Doc.binary.hex(), "short": True}
                 )
