@@ -15,7 +15,7 @@ from io import StringIO
 import pytest
 import pytest_asyncio
 import yaml
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 from prometheus_client.parser import text_fd_to_metric_families
 
 from ampel.core.AmpelContext import AmpelContext
