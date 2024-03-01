@@ -158,6 +158,7 @@ ignore = [
     "PLR09", # too many (arguments|branches)
     "PLR2004", # Magic value used in comparison
     "RUF012", # mutable class properties (are harmless everywhere BaseModel is used)
+    "RUF018", # assignment expressions in asserts are fine
 ]
 
 [tool.ruff.lint.per-file-ignores]
