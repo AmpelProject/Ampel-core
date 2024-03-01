@@ -15,7 +15,7 @@ from io import StringIO
 import pytest
 import pytest_asyncio
 import yaml
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport
 from prometheus_client.parser import text_fd_to_metric_families
 
 from ampel.core.AmpelContext import AmpelContext
@@ -37,7 +37,7 @@ async def test_client(dev_context, monkeypatch):
     ):
         monkeypatch.setattr(f"ampel.run.server.task_manager.{attr}", {})
 
-    async with AsyncClient(app=server.app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=server.app), base_url="http://test") as client:
         yield client
 
 
