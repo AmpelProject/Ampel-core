@@ -7,6 +7,8 @@
 # Last Modified Date:  02.08.2020
 # Last Modified By	: Jakob van Santen <jakob.van.santen@desy.de>
 
+import functools
+import operator
 from collections.abc import Generator
 from itertools import islice
 from typing import Any
@@ -197,5 +199,5 @@ def _all_units(filters: T2FilterModel | AllOf[T2FilterModel] | AnyOf[T2FilterMod
 		return list(set(f.unit for f in filters.all_of))
 	if isinstance(filters, AnyOf):
 		# NB: AnyOf may contain AllOf
-		return list(set(sum((_all_units(f) for f in filters.any_of), [])))
+		return list(set(functools.reduce(operator.iadd, (_all_units(f) for f in filters.any_of), [])))
 	raise TypeError()
