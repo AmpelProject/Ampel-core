@@ -170,7 +170,7 @@ class T2Command(AbsCoreCommand):
 		if sub_op == 'show':
 
 			m = t2_utils.match_t2s(**args)
-			limit = args.get('limit', None)
+			limit = args.get('limit')
 			if args.get('dry_run'):
 				count = col.count_documents(m)
 				if limit:

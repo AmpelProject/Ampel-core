@@ -38,13 +38,13 @@ class AmpelExceptionPublisher(AbsOpsUnit):
         fields = []
         if "job" in doc:
             fields.append(
-                {"title": "Job", "value": doc.get("job", None), "short": True}
+                {"title": "Job", "value": doc.get("job"), "short": True}
             )
         if "task" in doc:
             fields.append(
-                {"title": "Task", "value": doc.get("task", None), "short": True}
+                {"title": "Task", "value": doc.get("task"), "short": True}
             )
-        fields.append({"title": "Run", "value": doc.get("run", None), "short": True})
+        fields.append({"title": "Run", "value": doc.get("run"), "short": True})
         return fields
 
     def format_attachment(self, doc: dict[str, Any]) -> dict[str, Any]:
@@ -58,7 +58,7 @@ class AmpelExceptionPublisher(AbsOpsUnit):
         if doc["tier"] == 0:
             for field in "section", "stock":
                 fields.append(  # noqa: PERF401
-                    {"title": field, "value": doc.get(field, None), "short": True}
+                    {"title": field, "value": doc.get(field), "short": True}
                 )
             if "alert" in doc:
                 fields.append(
@@ -66,9 +66,9 @@ class AmpelExceptionPublisher(AbsOpsUnit):
                 )
         elif doc["tier"] == 2:
             fields.append(
-                {"title": "unit", "value": doc.get("unit", None), "short": True}
+                {"title": "unit", "value": doc.get("unit"), "short": True}
             )
-            t2Doc = doc.get("t2Doc", None)
+            t2Doc = doc.get("t2Doc")
             if hasattr(t2Doc, "binary"):
                 fields.append(
                     {"title": "t2Doc", "value": t2Doc.binary.hex(), "short": True}

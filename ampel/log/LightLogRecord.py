@@ -48,4 +48,4 @@ class LightLogRecord:
 		return self.msg
 
 	def __getattr__(self, k):
-		return self.__dict__[k] if k in self.__dict__ else None
+		return self.__dict__.get(k, None)
