@@ -24,4 +24,4 @@ jobs:
       # renovate: datasource=conda depName=conda-forge/python
       python-version: "3.12.2"
       # renovate: datasource=pypi depName=ruff
-      ruff-version: "0.3.0"
+      ruff-version: "0.3.4"
