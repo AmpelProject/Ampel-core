@@ -22,6 +22,6 @@ jobs:
       mongo: true
       lint: true
       # renovate: datasource=conda depName=conda-forge/python
-      python-version: "3.12.2"
+      python-version: "3.12.3"
       # renovate: datasource=pypi depName=ruff
-      ruff-version: "0.3.4"
+      ruff-version: "0.4.1"
