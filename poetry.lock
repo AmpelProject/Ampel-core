@@ -1550,13 +1550,13 @@ files = [
 
 [[package]]
 name = "yq"
-version = "3.4.1"
+version = "3.4.3"
 description = "Command-line YAML/XML processor - jq wrapper for YAML/XML documents"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.8"
 files = [
-    {file = "yq-3.4.1-py3-none-any.whl", hash = "sha256:0f2b716d2685631cb75dbb72579557c8655623f6bf2dd6f930bb1b55cd50ce0d"},
-    {file = "yq-3.4.1.tar.gz", hash = "sha256:b558dab6f15c03e24a1c448789500b20d6f307ee9ca4c9361387f3658163000d"},
+    {file = "yq-3.4.3-py3-none-any.whl", hash = "sha256:547e34bc3caacce83665fd3429bf7c85f8e8b6b9aaee3f953db1ad716ff3434d"},
+    {file = "yq-3.4.3.tar.gz", hash = "sha256:ba586a1a6f30cf705b2f92206712df2281cd320280210e7b7b80adcb8f256e3b"},
 ]
 
 [package.dependencies]
