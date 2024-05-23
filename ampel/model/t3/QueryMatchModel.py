@@ -95,7 +95,7 @@ class QueryMatchModel(AmpelBaseModel):
 			if len(v) != 1:
 				raise ValueError(
 					"QueryMatchModel error\n" +
-					"Unsupported dict format %s" % v
+					f"Unsupported dict format {v}"
 				)
 
 			if 'anyOf' in v:
@@ -103,7 +103,7 @@ class QueryMatchModel(AmpelBaseModel):
 				if not isinstance(v['anyOf'], strict_iterable):
 					raise ValueError(
 						"QueryMatchModel error\n" +
-						"Invalid dict value type: %s. Must be a sequence" % type(v['anyOf'])
+						"Invalid dict value type: {}. Must be a sequence".format(type(v['anyOf']))
 					)
 
 				# 'anyOf' supports only a list of dicts and str
@@ -134,7 +134,7 @@ class QueryMatchModel(AmpelBaseModel):
 						else:
 							raise ValueError(
 								"QueryMatchModel error\n" +
-								"Unsupported dict: %s" % el
+								f"Unsupported dict: {el}"
 							)
 
 			elif 'allOf' in v:
@@ -142,7 +142,7 @@ class QueryMatchModel(AmpelBaseModel):
 				if not isinstance(v['allOf'], strict_iterable):
 					raise ValueError(
 						"QueryMatchModel error\n" +
-						"Invalid dict value type: %s. Must be a sequence" % type(v['anyOf']))
+						"Invalid dict value type: {}. Must be a sequence".format(type(v['anyOf'])))
 
 				# 'allOf' closes nesting
 				if not check_seq_inner_type(v['allOf'], str):

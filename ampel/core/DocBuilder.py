@@ -157,18 +157,18 @@ class DocBuilder(ContextUnit):
 		if self.human_id:
 			ids = []
 			if 'process' in self.human_id:
-				ids.append("[%s]" % event_hdlr.process_name)
+				ids.append(f"[{event_hdlr.process_name}]")
 			if 'taskindex' in self.human_id:
-				ids.append("[#%s]" % event_hdlr.process_name.split("#")[-1])
+				ids.append("[#{}]".format(event_hdlr.process_name.split("#")[-1]))
 			if 'unit' in self.human_id:
-				ids.append("[%s]" % unit.__class__.__name__)
+				ids.append(f"[{unit.__class__.__name__}]")
 			if 'tag' in self.human_id and d.get('tag'):
 				ids.append("[%s]" % (d['tag'] if isinstance(d['tag'], int | str) \
 					else " ".join(d['tag']))) # type: ignore
 			if 'config' in self.human_id:
-				ids.append("[%s]" % confid)
+				ids.append(f"[{confid}]")
 			if 'run' in self.human_id:
-				ids.append("[%s]" % event_hdlr.get_run_id())
+				ids.append(f"[{event_hdlr.get_run_id()}]")
 			ids.append(datetime.now(tz=timezone.utc).strftime(self.human_timestamp_format))
 			d['_id'] = " ".join(ids)
 

@@ -27,8 +27,8 @@ def to_logical_dict(v, field_name: int | str | dict[str, Any]) -> dict[str, Any]
 
 	if isinstance(v, list):
 		raise ValueError(
-			"stock->select->%s config error\n" % field_name +
-			"'%s' parameter cannot be a list. " % field_name +
+			f"stock->select->{field_name} config error\n" +
+			f"'{field_name}' parameter cannot be a list. " +
 			"Please use the following syntax:\n" +
 			" -> {'any_of': ['Ab', 'Cd']} or\n" +
 			" -> {'all_of': ['Ab', 'Cd']} or\n" +
@@ -44,30 +44,30 @@ def to_logical_dict(v, field_name: int | str | dict[str, Any]) -> dict[str, Any]
 
 		if len(v) != 1:
 			raise ValueError(
-				"stock->select->%s config error\n" % field_name +
-				"Unsupported dict format %s" % v
+				f"stock->select->{field_name} config error\n" +
+				f"Unsupported dict format {v}"
 			)
 
 		if 'any_of' in v:
 
 			if not isinstance(v['any_of'], strict_iterable):
 				raise ValueError(
-					"stock->select->%s:any_of config error\n" % field_name +
-					"Invalid dict value type: %s. Must be a sequence" % type(v['any_of'])
+					f"stock->select->{field_name}:any_of config error\n" +
+					"Invalid dict value type: {}. Must be a sequence".format(type(v['any_of']))
 				)
 
 			# 'any_of' supports only a list of dicts and str/int
 			if not check_seq_inner_type(v['any_of'], (str, int, dict), multi_type=True):
 				raise ValueError(
-					"stock->select->%s:any_of config error\n" % field_name +
+					f"stock->select->{field_name}:any_of config error\n" +
 					"Unsupported nesting (err 2)"
 				)
 
 			if not check_seq_inner_type(v['any_of'], (int, str)) and len(v['any_of']) < 2:
 				raise ValueError(
-					"stock->select->%s:any_of config error\n" % field_name +
+					f"stock->select->{field_name}:any_of config error\n" +
 					"any_of list must contain more than one element when containing all_of\n" +
-					"Offending value: %s" % v
+					f"Offending value: {v}"
 				)
 
 			for el in v['any_of']:
@@ -76,7 +76,7 @@ def to_logical_dict(v, field_name: int | str | dict[str, Any]) -> dict[str, Any]
 
 					if 'any_of' in el:
 						raise ValueError(
-							"stock->select->%s:any_of.any_of config error\n" % field_name +
+							f"stock->select->{field_name}:any_of.any_of config error\n" +
 							"Unsupported nesting (any_of in any_of)"
 						)
 
@@ -85,21 +85,21 @@ def to_logical_dict(v, field_name: int | str | dict[str, Any]) -> dict[str, Any]
 						# 'all_of' closes nesting
 						if not check_seq_inner_type(el['all_of'], (int, str)):
 							raise ValueError(
-								"stock->select->%s:any_of.all_of config error\n" % field_name +
+								f"stock->select->{field_name}:any_of.all_of config error\n" +
 								"Unsupported nesting (all_of list content must be str/int)"
 							)
 
 						if len(set(el['all_of'])) < 2:
 							raise ValueError(
-								"stock->select->%s:all_of config error\n" % field_name +
+								f"stock->select->{field_name}:all_of config error\n" +
 								"Please do not use all_of with just one element\n" +
-								"Offending value: %s" % el
+								f"Offending value: {el}"
 							)
 
 					else:
 						raise ValueError(
-							"stock->select->%s:any_of config error\n" % field_name +
-							"Unsupported nested dict: %s" % el
+							f"stock->select->{field_name}:any_of config error\n" +
+							f"Unsupported nested dict: {el}"
 						)
 
 		elif 'all_of' in v:
@@ -137,7 +137,7 @@ def to_logical_dict(v, field_name: int | str | dict[str, Any]) -> dict[str, Any]
 
 		else:
 			raise ValueError(
-				"stock->select->%s config error\n" % field_name +
+				f"stock->select->{field_name} config error\n" +
 				"Invalid dict key (only 'any_of', 'all_of', 'one_of' are allowed)"
 			)
 
@@ -182,7 +182,7 @@ def reduce_to_set(
 		v = arg
 
 	else:
-		raise ValueError("Unsupported arg type: %s" % type(arg))
+		raise ValueError(f"Unsupported arg type: {type(arg)}")
 
 	if "any_of" in v:
 		s: set[T] = set()
