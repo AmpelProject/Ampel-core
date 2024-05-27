@@ -154,7 +154,7 @@ class ConfigChecker(BaseConfigChecker):
 				try:
 
 					if self.verbose:
-						self.logger.debug("Checking model %s" % um['path'])
+						self.logger.debug(f"Checking model {um['path']}")
 
 					if um['model']['unit'] in AuxUnitRegister._defs:  # noqa: SLF001
 						self.load_model(
@@ -245,7 +245,7 @@ class ConfigChecker(BaseConfigChecker):
 	def _gather_unit_models_callback(self, path, k, d, **kwargs) -> None:
 
 		if self.verbose:
-			self.logger.debug("# path: %s.config" % path)
+			self.logger.debug(f"# path: {path}.config")
 
 		kwargs['unit_models'].append(
 			{'path': path, 'model': d}

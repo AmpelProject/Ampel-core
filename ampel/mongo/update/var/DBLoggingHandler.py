@@ -291,7 +291,7 @@ class DBLoggingHandler(AmpelUnit):
 
 					# if runIds are equal, just print out a feedback
 					if db_rec['run'] == self.run_id:
-						print("Disregardable E11000: %s" % err_dict['op'])  # noqa: T201
+						print("Disregardable E11000: {}".format(err_dict['op']))  # noqa: T201
 
 					# Otherwise print error and create trouble doc
 					else:
@@ -316,7 +316,7 @@ class DBLoggingHandler(AmpelUnit):
 				else:
 
 					raise_exc = True
-					print("writeError dict entry: %s" % err_dict)  # noqa: T201
+					print(f"writeError dict entry: {err_dict}")  # noqa: T201
 
 					self._ampel_db.get_collection('trouble').insert_one(
 						{

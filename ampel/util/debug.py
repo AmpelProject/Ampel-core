@@ -80,7 +80,7 @@ class TracePrints:
 		self.stdout = sys.stdout
 
 	def write(self, s):
-		self.stdout.write("Writing %r\n" % s)
+		self.stdout.write(f"Writing {s!r}\n")
 		traceback.print_stack(file=self.stdout)
 
 

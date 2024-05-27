@@ -190,7 +190,7 @@ def apply_schema(
 	else:
 		raise ValueError(
 			"Invalid 'arg_dict' keys (must contain either 'any_of' or 'all_of'" +
-			"\nOffending value: %s" % arg_dict
+			f"\nOffending value: {arg_dict}"
 		)
 
 	return query

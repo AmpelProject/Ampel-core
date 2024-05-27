@@ -183,7 +183,7 @@ class LogsLoader(AmpelFlexModel):
 			stages.append(proj)
 
 		if self.debug:
-			print("Using aggregation: %s" % stages)  # noqa: T201
+			print(f"Using aggregation: {stages}")  # noqa: T201
 
 		log_entries: list[LogDocument] = list(col.aggregate(stages))
 
