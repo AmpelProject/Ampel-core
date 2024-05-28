@@ -10,7 +10,7 @@
 import collections
 import operator
 from collections.abc import Callable
-from typing import Any
+from typing import Any, TypeAlias
 
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 
@@ -26,10 +26,14 @@ ops: dict[str, Callable[[str, Any], bool]] = {
 	'is not': operator.is_not
 }
 
+# define an alias to distinguish between type (the field name) and type (a type) in
+# the annotation of `type` below
+Type: TypeAlias = type
+
 class FilterCriterion(AmpelBaseModel):
 
 	attribute: None | str = None
-	type: None | type = None
+	type: None | Type = None
 	operator: Callable
 	value: Any
 
