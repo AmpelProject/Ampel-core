@@ -71,7 +71,7 @@ class DevAmpelContext(AmpelContext):
 			self.register_unit(Class)
 
 
-	def register_unit(self, Class: type[AmpelUnit]) -> None:
+	def register_unit(self, Class: type[AmpelUnit]) -> type[AmpelUnit]:
 
 		dict.__setitem__(
 			self.config._config['unit'],  # noqa: SLF001
@@ -95,6 +95,7 @@ class DevAmpelContext(AmpelContext):
 		else:
 			AuxUnitRegister._dyn[Class.__name__] = Class  # noqa: SLF001
 
+		return Class
 
 	def _get_unprotected_conf(self) -> dict[str, Any]:
 		if self.config.is_frozen():

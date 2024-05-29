@@ -40,10 +40,10 @@ def test_resolve_secrets_correct_type(
     key,
     ampel_logger,
 ):
+    @dev_context.register_unit
     class Modelo(LogicalUnit):
         seekrit: NamedSecret[expected_type] = NamedSecret[expected_type](label=key)  # type: ignore[valid-type]
 
-    dev_context.register_unit(Modelo)
     monkeypatch.setattr(dev_context.loader, "vault", AmpelVault(providers=[secrets]))
 
     unit = dev_context.loader.new(
@@ -58,10 +58,9 @@ def test_resolve_secrets_correct_type(
 def test_resolve_secrets_wrong_type(
     secrets, dev_context: DevAmpelContext, monkeypatch, expected_type, key, ampel_logger
 ):
+    @dev_context.register_unit
     class Modelo(LogicalUnit):
         seekrit: NamedSecret[expected_type] = NamedSecret[expected_type](label=key)  # type: ignore[valid-type]
-
-    dev_context.register_unit(Modelo)
     
     vault = AmpelVault(providers=[secrets])
     s = Modelo(logger=ampel_logger).seekrit
@@ -78,9 +77,9 @@ def test_resolve_secrets_wrong_type(
 def test_resolve_secret_in_union(secret_context: DevAmpelContext, ampel_logger):
     """UnitLoader can resolve secret in a union field"""
 
+    @secret_context.register_unit
     class Modelo(LogicalUnit):
         maybe_secret: None | NamedSecret[str] = NamedSecret[str](label="str")
-    secret_context.register_unit(Modelo)
 
     unit = secret_context.loader.new(
         UnitModel(unit="Modelo"), logger=ampel_logger, unit_type=Modelo
@@ -93,9 +92,9 @@ def test_resolve_secret_in_union(secret_context: DevAmpelContext, ampel_logger):
 def test_resolve_secret_untyped_default(secret_context: DevAmpelContext, ampel_logger):
     """UnitLoader can resolve secret where default is missing a type parameter"""
 
+    @secret_context.register_unit
     class Modelo(LogicalUnit):
         maybe_secret: NamedSecret[str] = NamedSecret(label="str")
-    secret_context.register_unit(Modelo)
 
     unit = secret_context.loader.new(
         UnitModel(unit="Modelo"), logger=ampel_logger, unit_type=Modelo
@@ -112,6 +111,7 @@ def test_resolve_secret_from_superclass(
     class Base(ContextUnit):
         seekrit: NamedSecret[dict]
 
+    @dev_context.register_unit
     class Derived(AbsOpsUnit, Base):
         def run(self, beacon):
             ...
@@ -120,7 +120,6 @@ def test_resolve_secret_from_superclass(
         "seekrit" not in Derived.__annotations__
     ), "multiply-inherited AmpelBaseModels are missing annotations"
 
-    dev_context.register_unit(Derived)  # type: ignore[arg-type]
     monkeypatch.setattr(dev_context.loader, "vault", AmpelVault(providers=[secrets]))
     unit = dev_context.loader.new(
         UnitModel(unit="Derived", config={"seekrit": {"label": "dict"}}),
@@ -136,10 +135,10 @@ def test_resolve_secret_from_config(
 ):
     monkeypatch.setattr(dev_context.loader, "vault", AmpelVault(providers=[secrets]))
 
+    @dev_context.register_unit
     class NiceAndConcrete(LogicalUnit):
         seekrit: NamedSecret[dict]
 
-    dev_context.register_unit(NiceAndConcrete)
     # unit with concrete secret field can be instantiated
     dev_context.loader.new(
         UnitModel(unit="NiceAndConcrete", config={"seekrit": {"label": "dict"}}),
@@ -154,10 +153,10 @@ def test_resolve_secret_from_config(
             UnitModel(unit="NiceAndConcrete")
 
     # unit with abstract secret field cannot be instantiated
+    @dev_context.register_unit
     class BadAndAbstract(LogicalUnit):
         seekrit: Secret[dict]
 
-    dev_context.register_unit(BadAndAbstract)
     with pytest.raises(TypeError):
         dev_context.loader.new(
             UnitModel(unit="BadAndAbstract", config={"seekrit": {"label": "dict"}}),
@@ -177,6 +176,7 @@ def test_use_secret_in_init(
     """Secrets are populated before being passed to init"""
     monkeypatch.setattr(dev_context.loader, "vault", AmpelVault(providers=[secrets]))
 
+    @dev_context.register_unit
     class NeedsSecretInInit(LogicalUnit):
         seekrit: NamedSecret[dict] = NamedSecret[dict](label="dict")
 
@@ -189,7 +189,6 @@ def test_use_secret_in_init(
     with pytest.raises(ValueError, match="Secret not yet resolved"):
         NeedsSecretInInit(logger=ampel_logger).seekrit.get()
 
-    dev_context.register_unit(NeedsSecretInInit)
     # secret field is populated
     unit = dev_context.loader.new(
         UnitModel(unit="NeedsSecretInInit", config=config),
@@ -200,10 +199,9 @@ def test_use_secret_in_init(
 
 
 def test_unit_validation(dev_context: DevAmpelContext):
+    @dev_context.register_unit
     class Dummy(LogicalUnit):
         param: int = 42
-
-    dev_context.register_unit(Dummy)
 
     with dev_context.loader.validate_unit_models():
         # simple, one-level validation
@@ -242,10 +240,9 @@ def test_unit_validation(dev_context: DevAmpelContext):
 def test_compiler_options_validation(mock_context: DevAmpelContext):
     """AuxAliasableUnit can be intialized from a string"""
 
+    @mock_context.register_unit
     class Dummy(LogicalUnit):
         compiler_options: None | CompilerOptions
-
-    mock_context.register_unit(Dummy)
 
     with mock_context.loader.validate_unit_models():
         UnitModel(unit="Dummy")
