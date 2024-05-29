@@ -72,9 +72,34 @@ def test_resolve_secret_in_union(secret_context: DevAmpelContext, ampel_logger):
     """UnitLoader can resolve secret in a union field"""
 
     class Modelo(LogicalUnit):
-        maybe_secret: None | NamedSecret[str] = NamedSecret[str](label="str")
+        maybe_secret: None | NamedSecret[str] = NamedSecret[str](label="nonesuch")
     secret_context.register_unit(Modelo)
 
+    unit = secret_context.loader.new(
+        UnitModel(unit="Modelo", config={"maybe_secret": {"label": "str"}}), logger=ampel_logger, unit_type=Modelo
+    )
+    assert unit.maybe_secret is not None
+    assert unit.maybe_secret.get() is not None
+
+    with pytest.raises(ValueError, match="Could not resolve Modelo.maybe_secret as str using default value"):
+        secret_context.loader.new(
+            UnitModel(unit="Modelo"), logger=ampel_logger, unit_type=Modelo
+        )
+
+    unit = secret_context.loader.new(
+        UnitModel(unit="Modelo", config={"maybe_secret": None}), logger=ampel_logger, unit_type=Modelo
+    )
+    assert unit.maybe_secret is None
+
+
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
+def test_resolve_secret_untyped_default(secret_context: DevAmpelContext, ampel_logger):
+    """UnitLoader can resolve secret where default is missing a type parameter"""
+
+    class Modelo(LogicalUnit):
+        maybe_secret: NamedSecret[str] = NamedSecret(label="str")
+    secret_context.register_unit(LogicalUnit)
+    
     unit = secret_context.loader.new(
         UnitModel(unit="Modelo"), logger=ampel_logger, unit_type=Modelo
     )
