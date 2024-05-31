@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ampel-core"
-version = "0.8.9"
+version = "0.8.9.post0"
 description = "Alice in Modular Provenance-Enabled Land"
 authors = ["Valery Brinnel"]
 maintainers = ["Jakob van Santen <jakob.van.santen@desy.de>"]
@@ -48,7 +48,7 @@ ampel-interface = {version = "~0.8.12"}
 python = "^3.10"
 pymongo = "^4.0"
 sjcl = "^0.2.1"
-schedule = "^1.0.0"
+schedule = ">=1,<1.2.2"
 yq = "^3.0.0"
 prometheus-client = ">=0.16,<0.17"
 xxhash = "^3.0.0"
