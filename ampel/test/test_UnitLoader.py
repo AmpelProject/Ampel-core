@@ -98,7 +98,7 @@ def test_resolve_secret_untyped_default(secret_context: DevAmpelContext, ampel_l
 
     class Modelo(LogicalUnit):
         maybe_secret: NamedSecret[str] = NamedSecret(label="str")
-    secret_context.register_unit(LogicalUnit)
+    secret_context.register_unit(Modelo)
     
     unit = secret_context.loader.new(
         UnitModel(unit="Modelo"), logger=ampel_logger, unit_type=Modelo
