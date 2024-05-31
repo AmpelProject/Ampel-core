@@ -172,11 +172,10 @@ class DefaultProcessController(AbsProcessController):
 					every(appointment)
 					.do(self.run_process, pm=pm)
 					.tag(pm.name)
-				)
-				# Pull back the first run if the first wait time is within 10
-				# seconds of the period
-				if now and abs((job.next_run-datetime.datetime.now()-job.period).total_seconds()) < 10: # noqa: DTZ005
-					job.next_run -= job.period
+				)  # type: schedule.Job
+				# schedule a run now if the job has no anchor time
+				if now and job.next_run is not None and job.unit is not None and job.at_time is None:
+					job.next_run -= datetime.timedelta(**{job.unit: job.interval})
 
 
 	def _finalize_task(self, pm: ProcessModel, future: asyncio.Future) -> None:
