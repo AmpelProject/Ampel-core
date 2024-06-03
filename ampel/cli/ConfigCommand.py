@@ -122,7 +122,7 @@ class ConfigCommand(AbsCoreCommand):
 		builder.opt('distributions', 'build|install', nargs="+", default=["pyampel-", "ampel-"])
 		builder.opt('exclude-distributions', 'build|install', nargs="+", default=[])
 		builder.opt('file', 'install|validate|transform', type=FileType('r'))
-		builder.opt('secrets', 'validate', type=FileType('r'))
+		builder.opt('secrets', 'validate|transform', type=FileType('r'))
 		builder.opt('out', 'transform', type=FileType('a'))
 		builder.opt('filter', 'transform')
 		builder.opt('validate', 'transform', action='store_true')
@@ -315,7 +315,7 @@ class ConfigCommand(AbsCoreCommand):
 				yaml.dump(config, output_yaml, sort_keys=False)
 				if args['validate']:
 					output_yaml.seek(0)
-					self._validate(output_yaml)
+					self._validate(output_yaml, args['secrets'])
 				output_yaml.seek(0)
 				# truncate now, in case writing back to the input file
 				try:
