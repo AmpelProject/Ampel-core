@@ -261,6 +261,22 @@ def test_compiler_options_validation(mock_context: DevAmpelContext):
             UnitModel(unit="Dummy", config={"compiler_options": "foo"})
 
 
+def test_secret_validation(secret_context: DevAmpelContext):
+    @secret_context.register_unit
+    class Dummy(LogicalUnit):
+        seekrit: NamedSecret[str] = NamedSecret[str](label="foo")
+
+    with secret_context.loader.validate_unit_models():
+        # secret does not exist
+        with pytest.raises(TypeError):
+            UnitModel(unit="Dummy")
+        # exists, but wrong type
+        with pytest.raises(TypeError):
+            UnitModel(unit="Dummy", config={"seekrit": {"label": "dict"}})
+        # exists with correct type
+        UnitModel(unit="Dummy", config={"seekrit": {"label": "str"}})
+
+
 def test_result_adapter_trace(mock_context: DevAmpelContext):
     from ampel.test.dummy import DummyUnitResultAdapter
 

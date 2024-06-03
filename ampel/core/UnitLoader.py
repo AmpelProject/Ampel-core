@@ -372,9 +372,9 @@ class UnitLoader:
 				if args:
 					assert ValueType is not object
 				if not self.vault:
-					raise ValueError("No vault configured")
+					raise TypeError("No vault configured")
 				if not self.vault.resolve_secret(v, ValueType):
-					raise ValueError(
+					raise TypeError(
 						f"Could not resolve {unit_type.__name__}.{k} as {getattr(ValueType, '__name__', '<untyped>')}"
 						f" using {'default' if default else 'configured'} value {v!r}"
 					)
@@ -416,7 +416,11 @@ class UnitLoader:
 		def validate_unit(value: UnitModel) -> UnitModel:
 			Unit = self.get_class_by_name(value.unit)
 			if issubclass(Unit, AmpelUnit) and not issubclass(Unit, AbsProcessController):
-				Unit.validate(self.get_init_config(value.config, value.override))
+				init_config = self.resolve_secrets(
+					Unit,
+					self.get_init_config(value.config, value.override)
+				)
+				Unit.validate(init_config)
 			return value
 
 		UnitModel.post_validate_hook = validate_unit
