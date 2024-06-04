@@ -179,7 +179,7 @@ def indentitems(items, indent, level):
 # Notebook goodies
 def set_bold(s: str, match: str):
 
-	from IPython.display import HTML # type: ignore[import]
+	from IPython.display import HTML
 	out = []
 
 	for el in s.split("\n"):
