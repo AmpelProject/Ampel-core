@@ -57,7 +57,7 @@ class FirstPassConfig(dict):
 
 		# Allow process to be defined in root key
 		d['process'] = ForwardProcessConfigCollector(
-			root_config=self, conf_section="process", # type: ignore
+			root_config=self, conf_section="process",
 			target_collector_type=ProcessConfigCollector,
 			logger=logger, options=options
 		)

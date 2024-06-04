@@ -23,7 +23,7 @@ from ampel.model.UnitModel import UnitModel
 from ampel.struct.AmpelBuffer import AmpelBuffer, BufferKey
 from ampel.types import ChannelId
 
-channel_id = get_args(ChannelId) # type: ignore[misc]
+channel_id = get_args(ChannelId)
 
 
 class FilterBlock(AmpelBaseModel):
@@ -90,7 +90,7 @@ class T3AmpelBufferFilter(AbsT3Filter):
 					if 'stock' not in ab or not ab['stock']:
 						continue
 					for chan in self.channel.any_of:
-						if ab['stock']['channel'] == chan or chan in ab['stock']['channel']: # type: ignore
+						if ab['stock']['channel'] == chan or chan in ab['stock']['channel']:
 							ret.append(ab)
 							break
 
@@ -99,7 +99,7 @@ class T3AmpelBufferFilter(AbsT3Filter):
 				for ab in it:
 					if 'stock' not in ab or not ab['stock']:
 						continue
-					if all([chan in ab['stock']['channel'] for chan in self.channel.all_of]): # type: ignore
+					if all([chan in ab['stock']['channel'] for chan in self.channel.all_of]):
 						ret.append(ab)
 
 			elif isinstance(self.channel, OneOf):
@@ -107,9 +107,9 @@ class T3AmpelBufferFilter(AbsT3Filter):
 				for ab in it:
 					if 'stock' not in ab or not ab['stock']:
 						continue
-					if len(ab['stock']['channel']) == 1: # type: ignore
+					if len(ab['stock']['channel']) == 1:
 						for chan in self.channel.one_of:
-							if ab['stock']['channel'][0] == chan: # type: ignore
+							if ab['stock']['channel'][0] == chan:
 								ret.append(ab)
 								break
 			else:

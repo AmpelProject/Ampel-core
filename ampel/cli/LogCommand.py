@@ -198,7 +198,7 @@ class LogCommand(AbsCoreCommand):
 		matcher = LogsMatcher.new(**args)
 		loader = LogsLoader(
 			**(
-				args | # type: ignore[arg-type]
+				args |
 				{'datetime_ouput': 'date' if args['date_format'] else 'string'}
 			)
 		)

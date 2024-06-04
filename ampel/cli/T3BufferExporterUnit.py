@@ -62,4 +62,4 @@ class T3BufferExporterUnit(AbsT3Unit[SnapView]):
 			if isinstance(sv, SnapView):
 				yield sv.serialize() # type: ignore
 			else:
-				yield sv # type: ignore
+				yield sv

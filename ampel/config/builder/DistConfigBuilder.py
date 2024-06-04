@@ -99,7 +99,7 @@ class DistConfigBuilder(ConfigBuilder):
 			if ampel_conf := self.get_conf_file(all_conf_files, f"ampel.{ext}"):
 				self.load_conf_using_func(
 					distrib, ampel_conf, self.load_ampel_conf, raise_exc=raise_exc
-				) # type: ignore
+				)
 
 			# Channel, mongo (and template) can be defined by multiple files
 			# in a directory named after the corresponding config section name

@@ -65,7 +65,7 @@ def test_error_reporting(integration_context: DevAmpelContext, config):
         ],
         "body": []
     }
-    integration_context.db.get_collection("t2").insert_one(doc) # type: ignore[arg-type]
+    integration_context.db.get_collection("t2").insert_one(doc)
     t2 = T2Worker(context=integration_context, raise_exc=False, process_name="t2", run_dependent_t2s=True)
     assert t2.run() == 1
     assert (doc := integration_context.db.get_collection("t2").find_one({})) # type: ignore[assignment]

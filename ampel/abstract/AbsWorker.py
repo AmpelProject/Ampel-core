@@ -374,7 +374,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 		if self.mtag:
 
-			tag = merge_tags(self.mtag, tag) if tag else self.mtag # type: ignore
+			tag = merge_tags(self.mtag, tag) if tag else self.mtag
 			activities = meta['activity']
 
 			# T2 unit added a tag, make the distinction clear by adding a dedicated activity

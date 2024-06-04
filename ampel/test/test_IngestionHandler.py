@@ -48,7 +48,7 @@ def _dummy_units(dev_context: DevAmpelContext):
         DummyMuxer,
         DummyHistoryMuxer,
     ):
-        dev_context.register_unit(unit)  # type: ignore
+        dev_context.register_unit(unit)
 
 
 @pytest.fixture(params=["T1SimpleCombiner", "T1SimpleRetroCombiner"])
@@ -59,12 +59,12 @@ def single_source_directive(
         channel="TEST_CHANNEL",
         ingest=IngestBody(
             # https://github.com/python/mypy/issues/13421
-            stock_t2=[T2Compute(unit="DummyStockT2Unit")],  # type: ignore[arg-type]
-            point_t2=[T2Compute(unit="DummyPointT2Unit")],  # type: ignore[arg-type]
+            stock_t2=[T2Compute(unit="DummyStockT2Unit")],
+            point_t2=[T2Compute(unit="DummyPointT2Unit")],
             combine=[
                 T1Combine(
                     unit=request.param,
-                    state_t2=[T2Compute(unit="DummyStateT2Unit")],  # type: ignore[arg-type]
+                    state_t2=[T2Compute(unit="DummyStateT2Unit")],
                 )
             ],
         ),
@@ -78,14 +78,14 @@ def multiplex_directive(
     return IngestDirective(
         channel="TEST_CHANNEL",
         ingest=IngestBody(
-            stock_t2=[T2Compute(unit="DummyStockT2Unit")],  # type: ignore[arg-type]
+            stock_t2=[T2Compute(unit="DummyStockT2Unit")],
             mux=MuxModel(
-                unit="DummyMuxer",  # type: ignore[arg-type]
-                insert={"point_t2": [T2Compute(unit="DummyPointT2Unit")]},  # type: ignore[arg-type]
+                unit="DummyMuxer",
+                insert={"point_t2": [T2Compute(unit="DummyPointT2Unit")]},
                 combine=[
                     T1Combine(
                         unit=request.param,
-                        state_t2=[T2Compute(unit="DummyStateT2Unit")],  # type: ignore[arg-type]
+                        state_t2=[T2Compute(unit="DummyStateT2Unit")],
                     )
                 ],
             ),

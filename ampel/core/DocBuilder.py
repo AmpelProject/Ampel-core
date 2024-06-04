@@ -125,7 +125,7 @@ class DocBuilder(ContextUnit):
 
 			if res.tag:
 				if self.tag:
-					d['tag'] = merge_tags(self.tag, res.tag) # type: ignore
+					d['tag'] = merge_tags(self.tag, res.tag)
 				else:
 					d['tag'] = res.tag
 			elif self.tag:

@@ -2,7 +2,7 @@ from contextlib import suppress
 from dataclasses import dataclass
 
 import psutil
-from prometheus_client.metrics_core import (  # type: ignore
+from prometheus_client.metrics_core import (
     CounterMetricFamily,
     GaugeMetricFamily,
     Metric,

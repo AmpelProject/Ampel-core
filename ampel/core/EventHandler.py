@@ -82,7 +82,7 @@ class EventHandler:
 		if self.dry_run:
 			self.ins_id = ObjectId()
 		else:
-			self.ins_id = self.col.insert_one(doc).inserted_id # type: ignore[arg-type]
+			self.ins_id = self.col.insert_one(doc).inserted_id
 
 
 	def set_run_id(self, val: int) -> None:
@@ -158,7 +158,7 @@ class EventHandler:
 		if not upd or self.dry_run:
 			return
 
-		res = self.col.update_one( # type: ignore[union-attr]
+		res = self.col.update_one(
 			{'_id': self.ins_id},
 			{'$set': upd}
 		)

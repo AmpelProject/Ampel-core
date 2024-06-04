@@ -24,8 +24,8 @@ from ampel.mongo.utils import maybe_use_each
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.types import ChannelId, StockId, Tag
 
-tag_type = get_args(Tag) # type: ignore[misc]
-chan_type = get_args(ChannelId) # type: ignore[misc]
+tag_type = get_args(Tag)
+chan_type = get_args(ChannelId)
 
 
 class MongoStockUpdater:
@@ -330,13 +330,13 @@ class MongoStockUpdater:
 				if isinstance(tag, tag_type):
 					# journal record contains single tag (not a sequence of tags)
 					if isinstance(jrec['tag'], tag_type):
-						jrec['tag'] = [jrec['tag'], tag] # type: ignore[list-item]
+						jrec['tag'] = [jrec['tag'], tag]
 					else:
 						jrec['tag'].append(tag) # type: ignore[union-attr]
 
 				# multi-tag tweak request
 				elif isinstance(jrec['tag'], tag_type): # journal record contains single tag (not a sequence of tags)
-					jrec['tag'] = [*jrec['tag'], tag] # type: ignore[list-item, misc]
+					jrec['tag'] = [*jrec['tag'], tag] # type: ignore[list-item]
 				else:
 					jrec['tag'] = jrec['tag'] + tag # type: ignore[operator]
 

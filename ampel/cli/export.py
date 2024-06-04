@@ -60,7 +60,7 @@ def txt_export(
 				if human_times:
 					convert_timestamps(el)
 				if logger:
-					logger.info(f"Writing content (id: {el['id']})") # type: ignore
+					logger.info(f"Writing content (id: {el['id']})")
 				fd.write(func(el)) # type: ignore
 				first = False
 
@@ -78,7 +78,7 @@ def txt_export(
 				if human_times:
 					convert_timestamps(el)
 				if logger:
-					logger.info(f"Writing content (id: {el['id']})") # type: ignore
+					logger.info(f"Writing content (id: {el['id']})")
 				fd.write(func(el)) # type: ignore
 
 				if getch and fgetch():
@@ -132,7 +132,7 @@ def get_fd(
 		return sys.stdout, False
 	if isinstance(fd, str):
 		return open(fd, 'w'), close_fd # noqa: SIM115
-	return fd, close_fd # type: ignore
+	return fd, close_fd
 
 
 
@@ -156,8 +156,8 @@ def convert_timestamps(ab: AmpelBuffer) -> None:
 				if isinstance(t1doc['_id'], str) and "oid:" in t1doc['_id']: # type: ignore[typeddict-item]
 					gt = ObjectId(t1doc['_id'][4:]).generation_time # type: ignore[typeddict-item]
 				else:
-					gt = t1doc['_id'].generation_time # type: ignore[typeddict-item, union-attr]
-				dsi(t1doc, 'added', gt.isoformat()) # type: ignore[arg-type, typeddict-item]
+					gt = t1doc['_id'].generation_time # type: ignore[typeddict-item]
+				dsi(t1doc, 'added', gt.isoformat()) # type: ignore[arg-type]
 				for t1meta in t1doc['meta']:
 					dsi(t1meta, 'ts', ufts(t1meta['ts']).isoformat()) # type: ignore[arg-type]
 

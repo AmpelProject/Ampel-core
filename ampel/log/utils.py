@@ -304,8 +304,8 @@ def convert_dollars(arg: JDict | list[JDict]) -> JDict | list[JDict]:
 
 	elif isinstance(arg, list):
 		if has_nested_type(arg, dict):
-			arg = arg.copy() # type: ignore[attr-defined]
-			return [convert_dollars(el) for el in arg] # type: ignore[arg-type]
+			arg = arg.copy()
+			return [convert_dollars(el) for el in arg]
 
 	return arg
 

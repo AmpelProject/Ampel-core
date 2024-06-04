@@ -144,7 +144,7 @@ class T3BaseProjector(AbsT3Projector):
 
 			for k in pass_through_keys:
 				if k in abuf:
-					new_buf[k] = abuf[k] # type: ignore[misc]
+					new_buf[k] = abuf[k]
 
 			# Loop through field projectors defined in config
 			for k in projectors:
@@ -175,8 +175,8 @@ class T3BaseProjector(AbsT3Projector):
 
 						#for d in [abuf[k]] if k=='stock' else abuf:
 						if self.logger.verbose > 1:
-							self.logger.debug(None, extra={'projection': k, 'input': abuf[k]}) # type: ignore[str-bytes-safe]
-							self.logger.debug(None, extra={'projection': k, 'output': new_buf[k]}) # type: ignore[str-bytes-safe]
+							self.logger.debug(None, extra={'projection': k, 'input': abuf[k]})
+							self.logger.debug(None, extra={'projection': k, 'output': new_buf[k]})
 
 			# If the previous stage did not filter properly (or at all), projections can yield empty buffers like this:
 			# By default, we remove those

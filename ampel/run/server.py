@@ -478,7 +478,7 @@ async def scale_process(
     except KeyError:
         raise HTTPException(status_code=404, detail=f"{process} is not running")
     if hasattr(controller, "scale"):
-        controller.scale(multiplier=multiplier)  # type: ignore
+        controller.scale(multiplier=multiplier)
     else:
         raise HTTPException(
             status_code=405, detail=f"{type(controller).__name__} does not scale"
@@ -706,7 +706,7 @@ def get_troubles(base_query: dict = Depends(query_event)):
 
 
 if __name__ == "__main__":
-    import uvicorn  # type: ignore
+    import uvicorn
 
     # NB: libuv does not play nice with OS pipes, so concurrent.process will
     # not work with uvloop: https://github.com/MagicStack/uvloop/issues/317

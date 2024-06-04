@@ -110,7 +110,7 @@ class T3Processor(AbsEventUnit):
 					t3d['meta']['traceid'] = {'t3processor': self._trace_id}
 					if event_hdlr.job_sig:
 						t3d['meta']['jobid'] = event_hdlr.job_sig
-					self.context.db.get_collection('t3').insert_one(t3d) # type: ignore[arg-type]
+					self.context.db.get_collection('t3').insert_one(t3d)
 
 			"""
 			if t3s.resources:

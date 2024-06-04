@@ -23,13 +23,13 @@ import signal
 import sys
 import traceback
 from functools import partial, wraps
-from multiprocessing import reduction, spawn  # type: ignore
+from multiprocessing import reduction, spawn
 from multiprocessing.context import set_spawning_popen
-from subprocess import _args_from_interpreter_flags  # type: ignore
+from subprocess import _args_from_interpreter_flags  # type: ignore[attr-defined]
 from typing import Any
 
 from ampel.metrics.prometheus import prometheus_cleanup_worker, prometheus_setup_worker
-from ampel.vendor import aiopipe  # type: ignore
+from ampel.vendor import aiopipe
 
 
 def process(function=None, **kwargs):

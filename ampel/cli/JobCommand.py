@@ -626,7 +626,7 @@ class JobCommand(AbsCoreCommand):
 	def print_chapter(msg: str, logger: AmpelLogger) -> None:
 		logger.info(' ')
 		logger.info('=' * (space := (len(msg) + 4)))
-		logger.info('‖ ' + msg + ' ‖') # type: ignore
+		logger.info('‖ ' + msg + ' ‖')
 		logger.info('=' * space)
 		logger.info(' ')
 

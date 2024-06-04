@@ -108,6 +108,7 @@ filterwarnings = [
 [tool.mypy]
 namespace_packages = true
 show_error_codes = true
+warn_unused_ignores = true
 plugins = [
     "pydantic.mypy"
 ]

@@ -38,6 +38,6 @@ class HashT2Config(AbsConfigUpdater):
 				dict.__setitem__(ac["confid"], conf_id, conf)
 
 		if logger.verbose:
-			logger.info("DB updated with new conf ids", extra={'confids': s}) # type: ignore
+			logger.info("DB updated with new conf ids", extra={'confids': s})
 
 		return content

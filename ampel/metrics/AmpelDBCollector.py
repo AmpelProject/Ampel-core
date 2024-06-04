@@ -12,7 +12,7 @@ from collections.abc import Sequence
 from contextlib import suppress
 from dataclasses import dataclass
 
-from prometheus_client.metrics_core import GaugeMetricFamily, Metric  # type: ignore
+from prometheus_client.metrics_core import GaugeMetricFamily, Metric
 
 from ampel.core.AmpelDB import AmpelDB
 from ampel.enum.DocumentCode import DocumentCode

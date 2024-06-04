@@ -89,7 +89,7 @@ class AmpelController:
 		):
 			if logger and verbose:
 				logger.log(
-					VERBOSE,  # type: ignore[union-attr]
+					VERBOSE,
 					f"Spawing new {processes[0].controller.unit} with processes: {list(p.name for p in processes)}",
 				)
 			controller_kwargs = {

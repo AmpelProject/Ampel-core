@@ -52,7 +52,7 @@ class PurgeContentModel(AmpelBaseModel):
 	compress: bool = True
 
 	def __init__(self, **kwargs) -> None:
-		super().__init__(**kwargs) # type: ignore[call-arg]
+		super().__init__(**kwargs)
 		if self.format == 'bson' and self.unify:
 			raise ValueError(
 				"Parameter 'unify' can only by used in combination with " +

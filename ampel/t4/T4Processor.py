@@ -91,7 +91,7 @@ class T4Processor(AbsEventUnit, DocBuilder):
 					if event_hdlr.job_sig:
 						t4d['meta']['jobid'] = event_hdlr.job_sig
 
-					self.context.db.get_collection('t4').insert_one(t4d) # type: ignore[arg-type]
+					self.context.db.get_collection('t4').insert_one(t4d)
 
 		except Exception as e:
 			event_hdlr.handle_error(e, logger)

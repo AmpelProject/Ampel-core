@@ -45,13 +45,13 @@ class EnclosedChanRecordBufHandler(RecordBufferingHandler):
 				else:
 					rec.msg = self._empty_msg
 
-				rec.stock = stock # type: ignore
+				rec.stock = stock
 
 				if extra:
 					if 'extra' in rec.__dict__:
-						rec.extra = {**rec.extra, **extra} # type: ignore
+						rec.extra = {**rec.extra, **extra} # type: ignore[union-attr,dict-item]
 					else:
-						rec.extra = extra # type: ignore
+						rec.extra = extra
 
 				if self._unit:
 					rec.unit = self._unit

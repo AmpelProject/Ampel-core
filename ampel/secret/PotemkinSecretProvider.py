@@ -20,6 +20,6 @@ class PotemkinSecretProvider(AbsSecretProvider):
         if get_origin(value_type) is tuple:
             value = tuple(t() for t in get_args(value_type))
         else:
-            value = value_type() # type: ignore[assignment]
+            value = value_type()
         arg.set(value)
         return True

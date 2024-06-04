@@ -211,7 +211,7 @@ class T2Command(AbsCoreCommand):
 
 				f.write(
 					"[\n" + jsondump(
-						self.morph_ret( # type: ignore[operator]
+						self.morph_ret(
 							ctx, cc[0], resolve_config, human_times, id_mapper # type: ignore[index]
 						)
 					)
