@@ -80,6 +80,7 @@ types-requests = "^2.28.11.15"
 types-ujson = "^5.10.0.20240515"
 matplotlib = "^3.9.0"
 ipython = "^8.25.0"
+types-psutil = "^5.9.5.20240516"
 
 [tool.isort]
 profile = "black"
