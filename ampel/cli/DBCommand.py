@@ -9,7 +9,7 @@
 
 from typing import Any
 from collections.abc import Sequence
-from argparse import ArgumentParser # type: ignore[import]
+from argparse import ArgumentParser
 from ampel.core.AmpelDB import AmpelDB
 from ampel.core.AmpelContext import AmpelContext
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
