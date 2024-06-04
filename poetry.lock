@@ -1471,6 +1471,17 @@ files = [
 types-docutils = "*"
 
 [[package]]
+name = "types-ujson"
+version = "5.10.0.20240515"
+description = "Typing stubs for ujson"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "types-ujson-5.10.0.20240515.tar.gz", hash = "sha256:ceae7127f0dafe4af5dd0ecf98ee13e9d75951ef963b5c5a9b7ea92e0d71f0d7"},
+    {file = "types_ujson-5.10.0.20240515-py3-none-any.whl", hash = "sha256:02bafc36b3a93d2511757a64ff88bd505e0a57fba08183a9150fbcfcb2015310"},
+]
+
+[[package]]
 name = "typing-extensions"
 version = "4.11.0"
 description = "Backported and Experimental Type Hints for Python 3.8+"
@@ -1965,4 +1976,4 @@ slack = ["slack-sdk"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "59be97a1242142fac3057d3cb2980e0c48d369c12dffd38b4e9a3fba43dedbec"
+content-hash = "98c9e76f175bd5922a51a2b9a096aa10fbd13e14ce9d10f63f19799033c2381b"
