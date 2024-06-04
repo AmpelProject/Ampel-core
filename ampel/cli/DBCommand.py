@@ -7,7 +7,7 @@
 # Last Modified Date:  20.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from argparse import ArgumentParser  # type: ignore[import]
+from argparse import ArgumentParser
 from collections.abc import Sequence
 from typing import Any
 
