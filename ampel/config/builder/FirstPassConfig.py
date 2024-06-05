@@ -86,7 +86,7 @@ class FirstPassConfig(dict):
 		for v in d.values() if d is not None else self.values():
 			if isinstance(v, dict):
 				if getattr(v, 'has_error', False):
-					v.has_error = False # type: ignore
+					v.has_error = False # type: ignore[attr-defined]
 				self.unset_errors(v)
 
 

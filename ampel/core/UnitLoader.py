@@ -246,7 +246,7 @@ class UnitLoader:
 
 		try:
 			return blake2b(
-				Path(sys.modules[Klass.__module__].__file__).read_bytes() # type: ignore
+				Path(sys.modules[Klass.__module__].__file__).read_bytes() # type: ignore[arg-type]
 			).hexdigest()[:7]
 		except Exception:
 			return "unspecified"

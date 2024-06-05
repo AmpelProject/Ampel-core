@@ -28,4 +28,4 @@ class NoViewGenerator(BaseViewGenerator[T]):
 		self.View = unit._View  # noqa: SLF001
 
 	def __iter__(self) -> Generator[T, T3Send, None]:
-		yield from self.buffers # type: ignore
+		yield from self.buffers # type: ignore[misc]

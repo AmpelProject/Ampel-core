@@ -76,7 +76,7 @@ class T3BaseStager(AbsT3Stager, DocBuilder, abstract=True):
 			unit_model,
 			unit_type = AbsT3Unit,
 			logger = self.logger,
-			_chan = self.channel or chan # type: ignore # to be improved when time allows
+			_chan = self.channel or chan # type: ignore[arg-type] # to be improved when time allows
 		)
 
 

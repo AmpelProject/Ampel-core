@@ -204,7 +204,7 @@ class T3AggregatingStager(T3SequentialStager):
 
 	def _craft(self, d: dict[str, Any], s: str, t3s: T3Store) -> T3Document:
 		return self.craft_t3_doc(
-			self, # type: ignore
+			self, 
 			{k: {s: v} for k, v in d.items()} if self.split_tiers else d,
 			t3s,
 			time(),

@@ -132,8 +132,8 @@ class DBLoggingHandler(AmpelUnit):
 					if isinstance(record, LightLogRecord):
 						new_rec = LightLogRecord(name=0, msg=None, levelno=0)
 					else:
-						new_rec = LogRecord(name=None, pathname=None, level=None, # type: ignore
-							lineno=None, exc_info=None, msg=None, args=None) # type: ignore
+						new_rec = LogRecord(name=None, pathname=None, level=None, # type: ignore[arg-type, assignment]
+							lineno=None, exc_info=None, msg=None, args=None) # type: ignore[arg-type]
 					for k, v in record.__dict__.items():
 						new_rec.__dict__[k] = v
 					new_rec.levelno = LogFlag.INFO

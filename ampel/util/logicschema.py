@@ -173,7 +173,7 @@ def reduce_to_set(
 	"""
 
 	if isinstance(arg, in_type):
-		return {arg} # type: ignore
+		return {arg} # type: ignore[arg-type]
 
 	if isinstance(arg, AllOf | AnyOf | OneOf):
 		v: Any = arg.dict()

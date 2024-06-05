@@ -77,7 +77,7 @@ class T3BaseProjector(AbsT3Projector):
 			elif isinstance(fp, self.FilterOutModel):
 				self.projectors[fp.discard] = None
 
-		self.pass_through_keys: set[BufferKey] = {"stock", "t0", "t1", "t2", "logs", "extra"} - self.projectors.keys()# type: ignore
+		self.pass_through_keys: set[BufferKey] = {"stock", "t0", "t1", "t2", "logs", "extra"} - self.projectors.keys() # type: ignore[assignment]
 
 
 	def add_class_projector(self, cm: ClassModel, first: bool = False) -> None:
@@ -162,7 +162,7 @@ class T3BaseProjector(AbsT3Projector):
 
 						if isinstance(abuf[k], list | tuple):
 							self.logger.log(VERBOSE, None,
-								extra={'projection': k, 'in': len(abuf[k]), 'out': len(new_buf[k])} # type: ignore
+								extra={'projection': k, 'in': len(abuf[k]), 'out': len(new_buf[k])} # type: ignore[arg-type]
 							)
 						elif k == 'stock':
 							self.logger.log(VERBOSE, None,
@@ -183,7 +183,7 @@ class T3BaseProjector(AbsT3Projector):
 			# Note that it actually requires 'stock' documents to be requested/loaded which should be almost always the case
 			if self.remove_empty and 'stock' in new_buf and not new_buf['stock']['channel']: # type: ignore[index]
 				if self.logger.verbose > 1:
-					self.logger.debug(f"Removing {new_buf['id']} emptied by projection") # type: ignore
+					self.logger.debug(f"Removing {new_buf['id']!r} emptied by projection")
 				continue
 
 			ret.append(new_buf)

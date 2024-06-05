@@ -91,7 +91,7 @@ class T0Compiler(AbsCompiler):
 
 			if self._tag or dp.get('tag'):
 				dp['tag'] = [*(self._tag or []), *(dp.get('tag') or [])]
-				meta['activity'].append(self._ingest_tag_activity) # type: ignore
+				meta['activity'].append(self._ingest_tag_activity) # type: ignore[attr-defined]
 
 			if self.origin and 'origin' not in dp:
 				dp['origin'] = self.origin

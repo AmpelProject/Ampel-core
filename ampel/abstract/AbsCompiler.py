@@ -164,7 +164,7 @@ class AbsCompiler(AmpelUnit, AmpelABC, abstract=True):
 		if activity:
 			for el in [activity] if isinstance(activity, dict) else activity:
 				if 'tag' in el and isinstance(el['tag'], list):
-					el['tag'] = frozenset(el['tag']) # type: ignore
+					el['tag'] = frozenset(el['tag']) # type: ignore[typeddict-item]
 				if 'channel' in el: # Channel-bound activity
 					if el['action'] & MetaActionCode.ADD_CHANNEL:
 						add_chan_registered = True

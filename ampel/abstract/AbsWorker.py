@@ -468,7 +468,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 				UnitModel(unit=doc['unit'], config=doc['config']),
 				unit_type = LogicalUnit, # maybe restrict more in the future
 				logger = logger,
-				_chan = doc.get('channel') # type: ignore # probably not good to
+				_chan = doc.get('channel') # type: ignore[arg-type] # probably not good to
 			)
 
 		return self._instances[k]

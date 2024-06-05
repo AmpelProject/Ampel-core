@@ -580,8 +580,8 @@ class ConfigBuilder:
 			)
 
 			# Collect distribution name
-			if p.get('distrib'):
-				dist_names.add(p.get('distrib')) # type: ignore
+			if distrib := p.get('distrib'):
+				dist_names.add(distrib)
 
 		if out_proc is None:
 			return None

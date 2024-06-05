@@ -446,13 +446,13 @@ class DBUpdatesBuffer(Schedulable):
 		if self.log_doc_ids and ret['col'] in self.log_doc_ids:
 			try:
 				if ret['col'] != 2:
-					ret['docs'] = [op._filter['_id'] for op in ops] # type: ignore  # noqa: SLF001
+					ret['docs'] = [op._filter['_id'] for op in ops] # type: ignore[union-attr]  # noqa: SLF001
 				else:
 					ret['docs'] = [
 						{
-							'unit': op._filter['unit'], # type: ignore  # noqa: SLF001
-							'config': op._filter['config'], # type: ignore  # noqa: SLF001
-							'link': op._filter['link'] # type: ignore  # noqa: SLF001
+							'unit': op._filter['unit'], # type: ignore[union-attr]  # noqa: SLF001
+							'config': op._filter['config'], # type: ignore[union-attr]  # noqa: SLF001
+							'link': op._filter['link'] # type: ignore[union-attr]  # noqa: SLF001
 						}
 						for op in ops
 					]

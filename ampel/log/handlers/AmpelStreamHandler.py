@@ -160,7 +160,7 @@ class AmpelStreamHandler:
 			suffix = []
 
 		if record.stock:
-			suffix.append(f's={record.stock}') # type: ignore
+			suffix.append(f's={record.stock}') # type: ignore[str-bytes-safe]
 
 		if record.channel:
 			suffix.append(f'c={try_reduce(record.channel)}')

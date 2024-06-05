@@ -75,7 +75,7 @@ def try_reduce(arg: Any) -> Any:
 	if isinstance(arg, sized) and len(arg) == 1:
 		if isinstance(arg, sequence):
 			return arg[0]
-		return next(iter(arg)) # type: ignore
+		return next(iter(arg)) # type: ignore[call-overload]
 
 	return arg
 

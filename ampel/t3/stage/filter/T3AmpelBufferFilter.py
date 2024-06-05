@@ -79,8 +79,8 @@ class T3AmpelBufferFilter(AbsT3Filter):
 			if isinstance(self.channel, channel_id):
 				ret = [
 					ab for ab in it
-					if ab['stock']['channel'] == self.channel or # type: ignore
-					self.channel in ab['stock']['channel'] # type: ignore
+					if ab['stock']['channel'] == self.channel or # type: ignore[index]
+					self.channel in ab['stock']['channel'] # type: ignore[index]
 				]
 
 
@@ -133,9 +133,9 @@ class T3AmpelBufferFilter(AbsT3Filter):
 				if jfilter:
 					if 'stock' not in abuf:
 						raise ValueError("A StockDocument is required to filter journal entries")
-					in_arr = abuf['stock']['journal'] # type: ignore
+					in_arr = abuf['stock']['journal'] # type: ignore[index]
 				else:
-					in_arr = abuf[fb.data] # type: ignore
+					in_arr = abuf[fb.data] # type: ignore[typeddict-item]
 
 				fres = fb.filter.apply(in_arr)
 

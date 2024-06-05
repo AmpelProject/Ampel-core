@@ -180,7 +180,7 @@ class DistConfigBuilder(ConfigBuilder):
 			if file_rel_path.endswith("json"):
 				load = json.loads
 			elif file_rel_path.endswith("yml") or file_rel_path.endswith("yaml"):
-				load = yaml.safe_load # type: ignore
+				load = yaml.safe_load # type: ignore[assignment]
 			
 			if os.path.isabs(file_rel_path):
 				with open(file_rel_path) as f:
@@ -239,7 +239,7 @@ class DistConfigBuilder(ConfigBuilder):
 			if file_rel_path.endswith("json"):
 				load = json.loads
 			elif file_rel_path.endswith("yml") or file_rel_path.endswith("yaml"):
-				load = yaml.safe_load # type: ignore
+				load = yaml.safe_load # type: ignore[assignment]
 
 			d = load(
 				distrib.get_resource_string(__name__, file_rel_path)

@@ -100,7 +100,7 @@ from collections.abc import AsyncIterator, Iterator
 from contextlib import asynccontextmanager, contextmanager, suppress
 from typing import Any
 
-__pdoc__ = {} # type: ignore
+__pdoc__ = {} # type: dict[str,None|str]
 
 def aiopipe() -> tuple["AioPipeReader", "AioPipeWriter"]:
     """
@@ -222,7 +222,7 @@ class AioPipeWriter(AioPipeStream):
     The write end of a pipe.
     """
 
-    __pdoc__["AioPipeWriter.__init__"] = None # type: ignore
+    __pdoc__["AioPipeWriter.__init__"] = None
     __pdoc__["AioPipeWriter.open"] = """
         Open the transmit end on the current event loop.
 
@@ -248,7 +248,7 @@ class AioDuplex:
     Represents one end of a duplex pipe.
     """
 
-    __pdoc__["AioDuplex.__init__"] = None # type: ignore
+    __pdoc__["AioDuplex.__init__"] = None
 
     def __init__(self, rx: AioPipeReader, tx: AioPipeWriter):
         self._rx = rx

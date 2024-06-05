@@ -485,7 +485,7 @@ class AmpelRegister(AmpelUnit):
 					self.logger.debug("Closing inner file")
 				self._inner_fh.close()
 
-			self._inner_fh = None # type: ignore
+			self._inner_fh = None # type: ignore[assignment]
 
 		if not self._outer_fh or self._outer_fh.closed:
 			self.logger.info("File handle already closed")

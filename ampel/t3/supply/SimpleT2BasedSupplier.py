@@ -39,7 +39,7 @@ class SimpleT2BasedSupplier(AbsT3Supplier):
 		d: dict[int, AmpelBuffer] = {}
 		for el in col.find(self.query):
 			if el['stock'] in d:
-				d[el['stock']]['t2'].append(el) # type: ignore
+				d[el['stock']]['t2'].append(el) # type: ignore[union-attr]
 			else:
 				d[el['stock']] = AmpelBuffer(
 					id = el['stock'],

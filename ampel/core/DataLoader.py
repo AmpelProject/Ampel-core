@@ -181,7 +181,7 @@ class DataLoader:
 			s = f"Unique ids: {len(register)}"
 			for col_name in (col_set - set(["stock"])):
 				s += f", {col_name}: "
-				s += str(sum([1 for k in register for el in register[k][col_name]])) # type: ignore
+				s += str(sum([1 for k in register for el in register[k][col_name]])) # type: ignore[misc, union-attr]
 			logger.info(s)
 
 		return register.values()

@@ -53,15 +53,15 @@ def txt_export(
 
 			if first and len(data) > 0:
 
-				data = iter(data) # type: ignore
-				el = next(data) # type: ignore
+				data = iter(data) # type: ignore[assignment]
+				el = next(data) # type: ignore[call-overload]
 				if id_mapper:
 					el['id'] = id_mapper.to_ext_id(el['id'])
 				if human_times:
 					convert_timestamps(el)
 				if logger:
 					logger.info(f"Writing content (id: {el['id']})")
-				fd.write(func(el)) # type: ignore
+				fd.write(func(el)) # type: ignore[operator]
 				first = False
 
 			if getch and fgetch():
@@ -79,7 +79,7 @@ def txt_export(
 					convert_timestamps(el)
 				if logger:
 					logger.info(f"Writing content (id: {el['id']})")
-				fd.write(func(el)) # type: ignore
+				fd.write(func(el)) # type: ignore[operator]
 
 				if getch and fgetch():
 					fd.write('\n]\n')
@@ -127,7 +127,7 @@ def get_fd(
 	if binary:
 		if isinstance(fd, str):
 			return open(fd, "wb"), True # noqa: SIM115
-		return fd, close_fd # type: ignore
+		return fd, close_fd # type: ignore[return-value]
 	if fd is None:
 		return sys.stdout, False
 	if isinstance(fd, str):

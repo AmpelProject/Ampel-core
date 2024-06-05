@@ -95,8 +95,8 @@ class T3Processor(AbsEventUnit):
 				logger = logger,
 				event_hdlr = event_hdlr,
 				channel = (
-					self.stage.config['channel'] # type: ignore
-					if self.stage.config and self.stage.config.get('channel') # type: ignore[union-attr]
+					config['channel']
+					if isinstance((config := self.stage.config), dict) and 'channel' in config
 					else self.channel
 				)
 			)

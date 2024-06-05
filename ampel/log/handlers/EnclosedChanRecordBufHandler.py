@@ -56,7 +56,7 @@ class EnclosedChanRecordBufHandler(RecordBufferingHandler):
 				if self._unit:
 					rec.unit = self._unit
 
-				target.handle(rec) # type: ignore
+				target.handle(rec) # type: ignore[arg-type]
 
 		if clear:
 			self.buffer.clear()

@@ -102,9 +102,6 @@ class DBCommand(AbsCoreCommand):
 	# Mandatory implementation
 	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: None | str = None) -> None:
 
-		if sub_op == 'delete':  # cosmetic mainly
-			AmpelDB.create_collection = (lambda x: None) # type: ignore
-
 		ctx: AmpelContext = self.get_context(args, unknown_args, one_db=args['one_db'], require_existing_db=sub_op != 'index')
 		db = ctx.db
 

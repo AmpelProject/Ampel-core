@@ -165,7 +165,7 @@ class T2Command(AbsCoreCommand):
 
 		# args['id_mapper'] is used for matching whereas id_mapper is potentially discarded for printing
 		id_mapper = None if args.get('no_resolve_stock') else args['id_mapper']
-		jsondump: Any = prettyjson if args.get('pretty_json') else lambda x: dumps(walk_and_encode(x)) # type: ignore
+		jsondump: Any = prettyjson if args.get('pretty_json') else lambda x: dumps(walk_and_encode(x)) # type: ignore[misc]
 
 		if sub_op == 'show':
 

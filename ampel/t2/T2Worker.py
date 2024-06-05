@@ -176,7 +176,7 @@ class T2Worker(AbsWorker[T2Document]):
 			jrec = stock_updr.add_journal_record(
 				stock = doc['stock'],
 				channel = doc['channel'],
-				doc_id = doc['_id'], # type: ignore
+				doc_id = doc['_id'], # type: ignore[typeddict-item]
 				trace_id = trace_id or None,
 				unit = doc['unit']
 			)
@@ -678,7 +678,7 @@ class T2Worker(AbsWorker[T2Document]):
 			# Record any uncaught exceptions in troubles collection.
 			report_exception(
 				self._ampel_db, logger, exc=e, info={
-					'_id': t2_doc['_id'], # type: ignore
+					'_id': t2_doc['_id'], # type: ignore[typeddict-item]
 					'unit': t2_doc['unit'],
 					'config': t2_doc['config'],
 					'stock': t2_doc['stock'],

@@ -252,7 +252,7 @@ class AmpelLogger:
 		if exc_info:
 
 			if exc_info == 1:
-				exc_info = sys.exc_info() # type: ignore
+				exc_info = sys.exc_info() # type: ignore[assignment]
 				lines = traceback.format_exception(*sys.exc_info())
 			elif isinstance(exc_info, tuple):
 				lines = traceback.format_exception(*sys.exc_info())

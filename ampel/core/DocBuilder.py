@@ -164,7 +164,7 @@ class DocBuilder(ContextUnit):
 				ids.append(f"[{unit.__class__.__name__}]")
 			if 'tag' in self.human_id and d.get('tag'):
 				ids.append("[%s]" % (d['tag'] if isinstance(d['tag'], int | str) \
-					else " ".join(d['tag']))) # type: ignore
+					else " ".join(d['tag']))) # type: ignore[arg-type]
 			if 'config' in self.human_id:
 				ids.append(f"[{confid}]")
 			if 'run' in self.human_id:

@@ -202,6 +202,6 @@ class LogsLoader(AmpelFlexModel):
 		#			el['e']['comp'] = el['e']['comp'].hex()
 
 		if self.read_only:
-			return tuple(ReadOnlyDict(el) for el in log_entries) # type: ignore
+			return tuple(ReadOnlyDict(el) for el in log_entries) # type: ignore[misc]
 
 		return log_entries

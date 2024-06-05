@@ -95,7 +95,7 @@ class T2Utils:
 		"""
 
 		if id_mapper and (isinstance(stock, str) or check_seq_inner_type(stock, str)):
-			stock = id_mapper.to_ampel_id(stock) # type: ignore
+			stock = id_mapper.to_ampel_id(stock) # type: ignore[arg-type]
 
 		match = build_general_query(stock=stock, channel=channel, tag=tag)
 

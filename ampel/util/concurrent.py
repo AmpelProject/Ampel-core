@@ -213,7 +213,7 @@ class _Process:
                         raise RuntimeError(f"Process {self._name} (pid {proc.pid}) died on {signame}")
                     if isinstance(payload, BaseException):
                         raise payload
-                    ret = reduction.pickle.loads(payload) # type: ignore
+                    ret = reduction.pickle.loads(payload) # type: ignore[attr-defined]
                     if isinstance(ret, BaseException):
                         raise ret
                     return ret
