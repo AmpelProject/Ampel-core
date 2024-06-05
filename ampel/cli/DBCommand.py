@@ -15,7 +15,6 @@ from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.ArgParserBuilder import ArgParserBuilder
 from ampel.cli.main import AmpelArgumentParser
 from ampel.core.AmpelContext import AmpelContext
-from ampel.core.AmpelDB import AmpelDB
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogFlag import LogFlag
 

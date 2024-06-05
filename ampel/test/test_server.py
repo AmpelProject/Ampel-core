@@ -23,7 +23,6 @@ from ampel.enum.DocumentCode import DocumentCode
 from ampel.metrics.AmpelDBCollector import AmpelDBCollector
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 from ampel.run import server
-from ampel.secret.DictSecretProvider import DictSecretProvider
 from ampel.util.freeze import recursive_unfreeze
 from ampel.util.mappings import set_by_path
 
