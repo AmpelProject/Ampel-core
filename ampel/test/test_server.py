@@ -139,7 +139,10 @@ async def test_reload(
     config["process"][section][proc["name"]] = proc
     with open(tmp_path / "config.yml", "w") as f:
         yaml.dump(config, f)
+    with open(tmp_path / "secrets.yml", "w") as f:
+        yaml.dump({"slack/operator": "nonesuch"}, f)
     monkeypatch.setenv("AMPEL_CONFIG", str(tmp_path / "config.yml"))
+    monkeypatch.setenv("AMPEL_SECRETS", str(tmp_path / "secrets.yml"))
     add_processes = mocker.patch("ampel.run.server.task_manager.add_processes")
     assert server.context is dev_context
     response = await test_client.post("/config/reload")

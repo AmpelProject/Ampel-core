@@ -69,7 +69,7 @@ def test_resolve_secrets_wrong_type(
     assert vault.resolve_secret(s, expected_type) is False
     
     monkeypatch.setattr(dev_context.loader, "vault", vault)
-    with pytest.raises(ValueError, match=f"Could not resolve Modelo.seekrit as {expected_type.__name__:s}"):
+    with pytest.raises(TypeError, match=f"Could not resolve Modelo.seekrit as {expected_type.__name__:s}"):
         dev_context.loader.new(
             UnitModel(unit="Modelo"), logger=ampel_logger, unit_type=Modelo
         )
@@ -87,7 +87,7 @@ def test_resolve_secret_in_union(secret_context: DevAmpelContext, ampel_logger):
     assert unit.maybe_secret is not None
     assert unit.maybe_secret.get() is not None
 
-    with pytest.raises(ValueError, match="Could not resolve Modelo.maybe_secret as str using default value"):
+    with pytest.raises(TypeError, match="Could not resolve Modelo.maybe_secret as str using default value"):
         secret_context.loader.new(
             UnitModel(unit="Modelo"), logger=ampel_logger, unit_type=Modelo
         )
