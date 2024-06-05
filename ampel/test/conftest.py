@@ -196,19 +196,19 @@ def ingest_tied_t2(integration_context: DevAmpelContext, ampel_logger, request):
     if "stock" in dependency.lower():
         body = IngestBody(
             stock_t2=[T2Compute(unit=dependency)],
-            combine=[T1Combine(unit="T1SimpleCombiner", state_t2 = [T2Compute(unit="DummyTiedStateT2Unit", config=tied_config_id)])], # type: ignore[arg-type]
+            combine=[T1Combine(unit="T1SimpleCombiner", state_t2 = [T2Compute(unit="DummyTiedStateT2Unit", config=tied_config_id)])],
         )
     elif "point" in dependency.lower():
         body = IngestBody(
             point_t2=[T2Compute(unit=dependency)],
             combine=[
-                T1Combine(unit="T1SimpleCombiner", state_t2=[T2Compute(unit="DummyTiedStateT2Unit", config=tied_config_id)])  # type: ignore[arg-type]
+                T1Combine(unit="T1SimpleCombiner", state_t2=[T2Compute(unit="DummyTiedStateT2Unit", config=tied_config_id)])
             ],
         )
     else:
         body = IngestBody(
             combine=[
-                T1Combine(unit="T1SimpleCombiner", state_t2=[T2Compute(unit=dependency), T2Compute(unit="DummyTiedStateT2Unit", config=tied_config_id)])  # type: ignore[arg-type]
+                T1Combine(unit="T1SimpleCombiner", state_t2=[T2Compute(unit=dependency), T2Compute(unit="DummyTiedStateT2Unit", config=tied_config_id)])
             ]
         )
 

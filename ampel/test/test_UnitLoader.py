@@ -42,7 +42,7 @@ def test_resolve_secrets_correct_type(
 ):
     @dev_context.register_unit
     class Modelo(LogicalUnit):
-        seekrit: NamedSecret[expected_type] = NamedSecret[expected_type](label=key)  # type: ignore[valid-type]
+        seekrit: NamedSecret[expected_type] = NamedSecret[expected_type](label=key)
 
     monkeypatch.setattr(dev_context.loader, "vault", AmpelVault(providers=[secrets]))
 
@@ -60,7 +60,7 @@ def test_resolve_secrets_wrong_type(
 ):
     @dev_context.register_unit
     class Modelo(LogicalUnit):
-        seekrit: NamedSecret[expected_type] = NamedSecret[expected_type](label=key)  # type: ignore[valid-type]
+        seekrit: NamedSecret[expected_type] = NamedSecret[expected_type](label=key)
     
     vault = AmpelVault(providers=[secrets])
     s = Modelo(logger=ampel_logger).seekrit
@@ -242,7 +242,7 @@ def test_unit_validation(dev_context: DevAmpelContext):
         # recursive validation
         UnitModel(unit="T3Processor", config=t3_config)
 
-        t3_config["supply"]["config"]["select"]["unit"] = "NotActuallyAUnit" # type: ignore
+        t3_config["supply"]["config"]["select"]["unit"] = "NotActuallyAUnit" # type: ignore[index]
         with pytest.raises(TypeError, match=".*Ampel unit not found: NotActuallyAUnit.*"):
             UnitModel(unit="T3Processor", config=t3_config)
 

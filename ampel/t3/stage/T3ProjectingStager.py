@@ -16,6 +16,7 @@ from time import time
 from ampel.abstract.AbsT3Filter import AbsT3Filter
 from ampel.abstract.AbsT3Projector import AbsT3Projector
 from ampel.abstract.AbsT3Unit import AbsT3Unit
+from ampel.base.AmpelUnit import AmpelUnit
 from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.content.T3Document import T3Document
 from ampel.log import VERBOSE
@@ -268,7 +269,7 @@ class T3ProjectingStager(T3ThreadedStager):
 
 
 	def craft_t3_doc(self,
-		t3_unit: AbsT3Unit,
+		t3_unit: AmpelUnit,
 		res: None | UBson | UnitResult,
 		t3s: T3Store,
 		ts: float,

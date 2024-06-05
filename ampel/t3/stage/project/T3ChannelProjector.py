@@ -63,7 +63,7 @@ class T3ChannelProjector(T3BaseProjector):
 		self.add_func_projector("stock", journal_modifier.apply, first=True)
 
 		for key in ("t1", "t2"):
-			self.add_func_projector(key, self.channel_projection, first=True) # type: ignore
+			self.add_func_projector(key, self.channel_projection, first=True) # type: ignore[arg-type]
 
 
 	def overwrite_root_channel(self, v: Sequence[ChannelId]) -> None | Sequence[ChannelId]:

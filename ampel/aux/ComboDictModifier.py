@@ -159,7 +159,7 @@ class ComboDictModifier(AbsApplicable):
 					)
 					func = unit.apply
 				else:
-					func = f.func # type: ignore
+					func = f.func # type: ignore[assignment]
 
 				# Non-nested key
 				if "." not in f.key:
@@ -222,7 +222,7 @@ class ComboDictModifier(AbsApplicable):
 		if different_ops == 1:
 			for k, v in ops.items():
 				if v:
-					self.apply = getattr(self, k) # type: ignore
+					self.apply = getattr(self, k) # type: ignore[method-assign]
 					break
 
 

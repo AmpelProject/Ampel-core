@@ -95,8 +95,8 @@ class T3Processor(AbsEventUnit):
 				logger = logger,
 				event_hdlr = event_hdlr,
 				channel = (
-					self.stage.config['channel'] # type: ignore
-					if self.stage.config and self.stage.config.get('channel') # type: ignore[union-attr]
+					config['channel']
+					if isinstance((config := self.stage.config), dict) and 'channel' in config
 					else self.channel
 				)
 			)
@@ -110,7 +110,7 @@ class T3Processor(AbsEventUnit):
 					t3d['meta']['traceid'] = {'t3processor': self._trace_id}
 					if event_hdlr.job_sig:
 						t3d['meta']['jobid'] = event_hdlr.job_sig
-					self.context.db.get_collection('t3').insert_one(t3d) # type: ignore[arg-type]
+					self.context.db.get_collection('t3').insert_one(t3d)
 
 			"""
 			if t3s.resources:

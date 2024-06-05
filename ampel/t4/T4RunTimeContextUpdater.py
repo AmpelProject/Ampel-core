@@ -36,7 +36,7 @@ class T4RunTimeContextUpdater(AbsT4ControlUnit, DocBuilder):
 		for um in self.execute:
 			t4_unit = self.context.loader.new_safe_logical_unit(
 				um=um, unit_type=AbsT4Unit, logger=self.logger,
-				_chan=self.channel # type: ignore
+				_chan=self.channel # type: ignore[arg-type]
 			)
 			if ret := t4_unit.do():
 				if not isinstance(ret, dict):

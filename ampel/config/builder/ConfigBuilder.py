@@ -414,7 +414,7 @@ class ConfigBuilder:
 			self.logger.break_aggregation()
 			self.logger.info('Erroneous process definitions (morphing failed):')
 			for el in morph_errors:
-				self.logger.info(el) # type: ignore[arg-type]
+				self.logger.info(el)
 		
 		d = {
 			'build': {
@@ -490,7 +490,7 @@ class ConfigBuilder:
 
 		if save:
 
-			import pathlib  # type: ignore
+			import pathlib
 			path = pathlib.Path(save if isinstance(save, str) else 'ampel_conf.yaml')
 			with open(path, 'w') as file:
 				yaml.dump(d, file, sort_keys=False)
@@ -580,8 +580,8 @@ class ConfigBuilder:
 			)
 
 			# Collect distribution name
-			if p.get('distrib'):
-				dist_names.add(p.get('distrib')) # type: ignore
+			if distrib := p.get('distrib'):
+				dist_names.add(distrib)
 
 		if out_proc is None:
 			return None

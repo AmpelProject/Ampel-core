@@ -60,6 +60,6 @@ class T3BufferExporterUnit(AbsT3Unit[SnapView]):
 	) -> Generator[AmpelBuffer, None, None]:
 		for sv in gen:
 			if isinstance(sv, SnapView):
-				yield sv.serialize() # type: ignore
+				yield sv.serialize() # type: ignore[misc]
 			else:
-				yield sv # type: ignore
+				yield sv

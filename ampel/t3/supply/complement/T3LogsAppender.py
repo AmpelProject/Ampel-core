@@ -62,4 +62,4 @@ class T3LogsAppender(AbsBufferComplement):
 				ab['logs'] = []
 			for l in logs:
 				if ab['id'] == l['s']:
-					ab['logs'].append(l) # type: ignore
+					ab['logs'].append(l) # type: ignore[union-attr]

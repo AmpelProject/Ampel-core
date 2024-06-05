@@ -104,7 +104,7 @@ class DummyStateT2Unit(AbsStateT2Unit):
 
 
 class DummyTiedStateT2Unit(AbsTiedStateT2Unit):
-    t2_dependency = [StateT2Dependency(unit="DummyStateT2Unit")]  # type: ignore
+    t2_dependency = [StateT2Dependency(unit="DummyStateT2Unit", link_override=None)]
 
     def process(
         self,

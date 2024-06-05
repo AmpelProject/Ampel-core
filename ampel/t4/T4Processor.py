@@ -19,11 +19,13 @@ from ampel.core.DocBuilder import DocBuilder
 from ampel.core.EventHandler import EventHandler
 from ampel.log import SHOUT, AmpelLogger, LogFlag
 from ampel.model.UnitModel import UnitModel
+from ampel.types import ChannelId
 
 
 class T4Processor(AbsEventUnit, DocBuilder):
 
 	execute: Annotated[Sequence[UnitModel], AbsT4Unit | AbsT4ControlUnit]
+	channel: None | ChannelId = None
 
 	def __init__(self, **kwargs) -> None:
 		if isinstance(kwargs.get('execute', []), dict):
@@ -48,7 +50,7 @@ class T4Processor(AbsEventUnit, DocBuilder):
 				if 'AbsT4Unit' in t4_unit_info['base']:
 					t4_unit: AbsT4Unit | AbsT4ControlUnit = self.context.loader.new_safe_logical_unit(
 						um=um, unit_type=AbsT4Unit, logger=logger,
-						_chan=self.channel # type: ignore # unclear if multiple chans are supported
+						_chan=self.channel # unclear if multiple chans are supported
 					)
 
 				else:
@@ -91,7 +93,7 @@ class T4Processor(AbsEventUnit, DocBuilder):
 					if event_hdlr.job_sig:
 						t4d['meta']['jobid'] = event_hdlr.job_sig
 
-					self.context.db.get_collection('t4').insert_one(t4d) # type: ignore[arg-type]
+					self.context.db.get_collection('t4').insert_one(t4d)
 
 		except Exception as e:
 			event_hdlr.handle_error(e, logger)

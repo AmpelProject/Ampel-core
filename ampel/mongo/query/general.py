@@ -39,7 +39,7 @@ def build_general_query(
 
 	if stock:
 		query['stock'] = stock if isinstance(stock, type_stock_id) \
-			else maybe_match_array(stock) # type: ignore[arg-type]
+			else maybe_match_array(stock)
 
 	if channel:
 		apply_schema(query, 'channel', channel)

@@ -125,7 +125,7 @@ class AmpelDB(AmpelUnit):
 		if 'ingest' in kwargs:
 			kwargs.pop('ingest')
 
-		super().__init__(**kwargs) # type: ignore[call-arg]
+		super().__init__(**kwargs)
 
 		self.col_config: dict[str, AmpelColModel] = {
 			col.name: col

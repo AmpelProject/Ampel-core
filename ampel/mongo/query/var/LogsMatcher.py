@@ -124,7 +124,7 @@ class LogsMatcher:
 			)
 		):
 			self.mcrit['s'] = self.id_mapper.to_ampel_id(stock_id) \
-				if isinstance(stock_id, str) else {'$in': self.id_mapper.to_ampel_id(stock_id)} # type: ignore
+				if isinstance(stock_id, str) else {'$in': self.id_mapper.to_ampel_id(stock_id)} # type: ignore[call-overload]
 		else:
 			self.mcrit['s'] = stock_id if isinstance(stock_id, get_args(StockId)) else {'$in': stock_id}
 		return self

@@ -85,7 +85,7 @@ def maybe_load_idmapper(args: dict[str, Any]) -> None:
 			args['stock'] = args['id_mapper'].to_ampel_id(args['stock'])
 
 	elif check_seq_inner_type(args['stock'], str):
-		args['stock'] = args['id_mapper'].to_ampel_id(args['stock']) # type: ignore
+		args['stock'] = args['id_mapper'].to_ampel_id(args['stock'])
 
 
 @overload

@@ -95,7 +95,7 @@ def get_inner_file_handle(
 	""" override if needed """
 
 	if isinstance(fh, str):
-		_, fh = get_outer_file_handle(fh, write, logger) # type: ignore
+		_, fh = get_outer_file_handle(fh, write, logger)
 
 	if write:
 		mode = 'ab'
@@ -244,7 +244,7 @@ def write_header(
 	if hlen > hsize:
 		if logger:
 			logger.warn(f"Header too long ({hlen} > {hsize}), trying to compress it")
-		header = compress(header) # type: ignore[arg-type]
+		header = compress(header)
 		hlen = len(header)
 		if hlen > hsize:
 			raise ValueError(f"Header too long ({hlen} > {hsize})")
@@ -261,7 +261,7 @@ def write_header(
 	file_handle.write(int.to_bytes(hlen, 3, 'little'))
 
 	# Write bson encoded header
-	i = file_handle.write(header) # type: ignore[arg-type]
+	i = file_handle.write(header)
 
 	if i != hsize:
 		# Padding (offsets file cursor)

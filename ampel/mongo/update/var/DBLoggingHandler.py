@@ -128,12 +128,12 @@ class DBLoggingHandler(AmpelUnit):
 					self.flush()
 
 				# Treat SHOUT msg as INFO msg (and try again to concatenate)
-				if record.levelno == LogFlag.SHOUT: # type: ignore
+				if record.levelno == LogFlag.SHOUT:
 					if isinstance(record, LightLogRecord):
 						new_rec = LightLogRecord(name=0, msg=None, levelno=0)
 					else:
-						new_rec = LogRecord(name=None, pathname=None, level=None, # type: ignore
-							lineno=None, exc_info=None, msg=None, args=None) # type: ignore
+						new_rec = LogRecord(name=None, pathname=None, level=None, # type: ignore[arg-type, assignment]
+							lineno=None, exc_info=None, msg=None, args=None) # type: ignore[arg-type]
 					for k, v in record.__dict__.items():
 						new_rec.__dict__[k] = v
 					new_rec.levelno = LogFlag.INFO
@@ -181,7 +181,7 @@ class DBLoggingHandler(AmpelUnit):
 					ldict['p'] = [record.filename.replace('.py', ''), record.lineno]
 
 				if hasattr(record, 'unit'):
-					ldict['u'] = record.unit # type: ignore[union-attr]
+					ldict['u'] = record.unit
 
 				if record.msg:
 					ldict['m'] = record.msg

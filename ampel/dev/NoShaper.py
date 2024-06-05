@@ -12,15 +12,11 @@ from typing import Any
 
 from ampel.abstract.AbsT0Unit import AbsT0Unit
 from ampel.content.DataPoint import DataPoint
-from ampel.log.AmpelLogger import AmpelLogger
 from ampel.types import StockId
 
 
 class NoShaper(AbsT0Unit):
 
-	# override
-	logger: None | AmpelLogger # type: ignore[assignment]
-
 	# Mandatory implementation
 	def process(self, arg: Iterable[dict[str, Any]], stock: StockId) -> list[DataPoint]: # type: ignore[override]
-		return arg # type: ignore
+		return arg # type: ignore[return-value]

@@ -18,32 +18,32 @@ def first_pass_config(testing_config):
     "dependency", ["DummyPointT2Unit", "DummyStockT2Unit", "DummyStateT2Unit"]
 )
 def test_dependency_present(first_pass_config: dict[str, Any], dependency: str):
-    units = [ # type: ignore[var-annotated]
+    units = [
         T2Compute(
             # https://github.com/python/mypy/issues/13421
-            unit="DummyTiedStateT2Unit", # type: ignore [arg-type]
+            unit="DummyTiedStateT2Unit",
             config={"t2_dependency": [{"unit": dependency}]},
         ),
-        T2Compute(unit=dependency), # type: ignore [arg-type]
+        T2Compute(unit=dependency),
     ]
     check_tied_units(units, first_pass_config)
 
 
 def test_missing_dependency(first_pass_config: dict[str, Any]):
-    units = [T2Compute(unit="DummyTiedStateT2Unit")] # type: ignore[var-annotated, arg-type]
+    units = [T2Compute(unit="DummyTiedStateT2Unit")]
     with pytest.raises(ValueError, match=r"^Unit DummyTiedStateT2Unit depends on unit.*Possible matches are: \[\]$"):
         check_tied_units(units, first_pass_config)
 
 
 def test_misconfigured_dependency(first_pass_config: dict[str, Any]):
-    units = [ # type: ignore[var-annotated]
+    units = [
         T2Compute(
-            unit="DummyTiedStateT2Unit", # type: ignore [arg-type]
+            unit="DummyTiedStateT2Unit",
             config={
                 "t2_dependency": [{"unit": "DummyStateT2Unit", "config": {"foo": 37}}]
             },
         ),
-        T2Compute(unit="DummyStateT2Unit", config={"foo": 42}) # type: ignore [arg-type]
+        T2Compute(unit="DummyStateT2Unit", config={"foo": 42})
     ]
     with pytest.raises(ValueError, match=r"^Unit DummyTiedStateT2Unit depends on unit.*Possible matches are: (?!\[\])"):
         check_tied_units(units, first_pass_config)

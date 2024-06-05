@@ -147,7 +147,7 @@ def write_metrics(metrics: Collection[Metric], histogram_file: str, counter_file
                 )
                 # prometheus_client 0.18.0 adds timestamps, but only for MultiProcessValues
                 try:
-                    sink.write_value(key, sample.value, sample.timestamp or 0.0) # type: ignore[call-arg]
+                    sink.write_value(key, sample.value, sample.timestamp or 0.0)
                 except TypeError:
                     sink.write_value(key, sample.value) # type: ignore[call-arg]
     finally:

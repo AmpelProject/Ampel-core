@@ -307,7 +307,7 @@ def apply_excl_schema(
 				and_list.append(
 					{
 						field_name: {
-							'$nin': [el[field_name]['$ne'] for el in optimize_potentially] # type: ignore
+							'$nin': [el[field_name]['$ne'] for el in optimize_potentially] # type: ignore[dict-item,index]
 						}
 					}
 				)

@@ -13,6 +13,7 @@ from typing import Any
 
 from ampel.abstract.AbsT3Stager import AbsT3Stager
 from ampel.abstract.AbsT3Unit import AbsT3Unit, T
+from ampel.base.AmpelUnit import AmpelUnit
 from ampel.content.T3Document import T3Document
 from ampel.core.DocBuilder import DocBuilder
 from ampel.core.EventHandler import EventHandler
@@ -76,7 +77,7 @@ class T3BaseStager(AbsT3Stager, DocBuilder, abstract=True):
 			unit_model,
 			unit_type = AbsT3Unit,
 			logger = self.logger,
-			_chan = self.channel or chan # type: ignore # to be improved when time allows
+			_chan = self.channel or chan # type: ignore[arg-type] # to be improved when time allows
 		)
 
 
@@ -110,7 +111,7 @@ class T3BaseStager(AbsT3Stager, DocBuilder, abstract=True):
 
 
 	def craft_t3_doc(self,
-		t3_unit: AbsT3Unit,
+		t3_unit: AmpelUnit,
 		res: None | UBson | UnitResult,
 		t3s: T3Store,
 		ts: float,

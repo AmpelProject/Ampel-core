@@ -165,7 +165,7 @@ class T2Command(AbsCoreCommand):
 
 		# args['id_mapper'] is used for matching whereas id_mapper is potentially discarded for printing
 		id_mapper = None if args.get('no_resolve_stock') else args['id_mapper']
-		jsondump: Any = prettyjson if args.get('pretty_json') else lambda x: dumps(walk_and_encode(x)) # type: ignore
+		jsondump: Any = prettyjson if args.get('pretty_json') else lambda x: dumps(walk_and_encode(x)) # type: ignore[misc]
 
 		if sub_op == 'show':
 
@@ -211,7 +211,7 @@ class T2Command(AbsCoreCommand):
 
 				f.write(
 					"[\n" + jsondump(
-						self.morph_ret( # type: ignore[operator]
+						self.morph_ret(
 							ctx, cc[0], resolve_config, human_times, id_mapper # type: ignore[index]
 						)
 					)

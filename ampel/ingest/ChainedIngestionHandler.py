@@ -466,7 +466,7 @@ class ChainedIngestionHandler:
 				ingest_opts.update(im.ingest.dict())
 
 		ib = T2Block()
-		ib.unit = im.unit # type: ignore[assignment]
+		ib.unit = im.unit
 		ib.config = im.config # type: ignore[assignment]
 
 		# Save confid to external collection for posterity

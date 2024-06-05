@@ -51,21 +51,21 @@ class DefaultRecordBufferingHandler(RecordBufferingHandler):
 				rec.stock = stock
 
 			if extra:
-				if hasattr(rec, 'extra') and rec.extra: # type: ignore[union-attr]
-					rec.extra |= extra # type: ignore[union-attr]
+				if hasattr(rec, 'extra') and rec.extra:
+					rec.extra |= extra
 				else:
-					rec.extra = extra # type: ignore
+					rec.extra = extra
 
 			if self._extra:
-				if hasattr(rec, 'extra') and rec.extra: # type: ignore[union-attr]
-					rec.extra |= self._extra # type: ignore[union-attr]
+				if hasattr(rec, 'extra') and rec.extra:
+					rec.extra |= self._extra
 				else:
-					rec.extra = self._extra # type: ignore[union-attr]
+					rec.extra = self._extra
 
 			if self._unit:
 				rec.unit = self._unit
 
-			target.handle(rec) # type: ignore
+			target.handle(rec)
 
 		if clear:
 			self.buffer.clear()

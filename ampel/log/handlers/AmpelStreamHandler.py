@@ -87,9 +87,9 @@ class AmpelStreamHandler:
 		elif density == "compacter":
 			self.log_sep = ''
 			self.fields_check = ['extra', 'stock', 'channel']
-			self.handle = self.handle_compacter # type: ignore[assignment]
+			self.handle = self.handle_compacter # type: ignore[method-assign]
 		elif density == "headerless":
-			self.handle = self.handle_headerless # type: ignore[assignment]
+			self.handle = self.handle_headerless # type: ignore[method-assign]
 
 
 	def handle(self, rec: LightLogRecord) -> None:
@@ -99,7 +99,7 @@ class AmpelStreamHandler:
 		# Same flag, date (+- 1 sec), tran_id and chans
 		if (
 			rec.msg and rec.created - prev_rec.created < self.aggregate_interval and
-			compare_dict_values(rec.__dict__, prev_rec.__dict__, self.fields_check) # type: ignore[arg-type]
+			compare_dict_values(rec.__dict__, prev_rec.__dict__, self.fields_check)
 		):
 			self.stream.write(f' {rec.msg}{self.nl}')
 		else:
@@ -114,7 +114,7 @@ class AmpelStreamHandler:
 		# Same flag, date (+- 1 sec), tran_id and chans
 		if (
 			rec.msg and rec.created - prev_rec.created < self.aggregate_interval and
-			compare_dict_values(rec.__dict__, prev_rec.__dict__, self.fields_check) # type: ignore[arg-type]
+			compare_dict_values(rec.__dict__, prev_rec.__dict__, self.fields_check)
 		):
 			self.stream.write(f" {rec.msg}{self.nl}")
 		else:
@@ -160,7 +160,7 @@ class AmpelStreamHandler:
 			suffix = []
 
 		if record.stock:
-			suffix.append(f's={record.stock}') # type: ignore
+			suffix.append(f's={record.stock}') # type: ignore[str-bytes-safe]
 
 		if record.channel:
 			suffix.append(f'c={try_reduce(record.channel)}')
@@ -172,7 +172,7 @@ class AmpelStreamHandler:
 			out += f' [{", ".join(suffix)}]'
 
 		if isinstance(record.msg, str):
-			return out + "\n " + record.msg.replace("\n", "\n ") # type: ignore[union-attr]
+			return out + "\n " + record.msg.replace("\n", "\n ")
 
 		return out
 

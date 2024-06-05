@@ -198,7 +198,7 @@ class LogCommand(AbsCoreCommand):
 		matcher = LogsMatcher.new(**args)
 		loader = LogsLoader(
 			**(
-				args | # type: ignore[arg-type]
+				args |
 				{'datetime_ouput': 'date' if args['date_format'] else 'string'}
 			)
 		)
@@ -223,11 +223,11 @@ class LogCommand(AbsCoreCommand):
 				log_entries = loader.fetch_logs(col, mcrit)
 				if log_entries:
 					next_match = log_entries[-1]['_id']
-					ld.process(log_entries) # type: ignore
+					ld.process(log_entries) # type: ignore[arg-type]
 					mcrit['_id'] = {'$gt': next_match}
 				else:
 					time.sleep(args['refresh_rate'])
 
 		print(mcrit)
 		log_entries = loader.fetch_logs(col, mcrit)
-		ld.process(log_entries) # type: ignore
+		ld.process(log_entries) # type: ignore[arg-type]

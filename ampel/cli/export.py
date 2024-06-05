@@ -53,15 +53,15 @@ def txt_export(
 
 			if first and len(data) > 0:
 
-				data = iter(data) # type: ignore
-				el = next(data) # type: ignore
+				data = iter(data) # type: ignore[assignment]
+				el = next(data) # type: ignore[call-overload]
 				if id_mapper:
 					el['id'] = id_mapper.to_ext_id(el['id'])
 				if human_times:
 					convert_timestamps(el)
 				if logger:
-					logger.info(f"Writing content (id: {el['id']})") # type: ignore
-				fd.write(func(el)) # type: ignore
+					logger.info(f"Writing content (id: {el['id']})")
+				fd.write(func(el)) # type: ignore[operator]
 				first = False
 
 			if getch and fgetch():
@@ -78,8 +78,8 @@ def txt_export(
 				if human_times:
 					convert_timestamps(el)
 				if logger:
-					logger.info(f"Writing content (id: {el['id']})") # type: ignore
-				fd.write(func(el)) # type: ignore
+					logger.info(f"Writing content (id: {el['id']})")
+				fd.write(func(el)) # type: ignore[operator]
 
 				if getch and fgetch():
 					fd.write('\n]\n')
@@ -127,12 +127,12 @@ def get_fd(
 	if binary:
 		if isinstance(fd, str):
 			return open(fd, "wb"), True # noqa: SIM115
-		return fd, close_fd # type: ignore
+		return fd, close_fd # type: ignore[return-value]
 	if fd is None:
 		return sys.stdout, False
 	if isinstance(fd, str):
 		return open(fd, 'w'), close_fd # noqa: SIM115
-	return fd, close_fd # type: ignore
+	return fd, close_fd
 
 
 
@@ -156,8 +156,8 @@ def convert_timestamps(ab: AmpelBuffer) -> None:
 				if isinstance(t1doc['_id'], str) and "oid:" in t1doc['_id']: # type: ignore[typeddict-item]
 					gt = ObjectId(t1doc['_id'][4:]).generation_time # type: ignore[typeddict-item]
 				else:
-					gt = t1doc['_id'].generation_time # type: ignore[typeddict-item, union-attr]
-				dsi(t1doc, 'added', gt.isoformat()) # type: ignore[arg-type, typeddict-item]
+					gt = t1doc['_id'].generation_time # type: ignore[typeddict-item]
+				dsi(t1doc, 'added', gt.isoformat()) # type: ignore[arg-type]
 				for t1meta in t1doc['meta']:
 					dsi(t1meta, 'ts', ufts(t1meta['ts']).isoformat()) # type: ignore[arg-type]
 

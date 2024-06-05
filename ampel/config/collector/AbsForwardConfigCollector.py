@@ -72,7 +72,7 @@ class AbsForwardConfigCollector(dict, AmpelABC, abstract=True):
 				)
 				return
 
-			d.add(el, dist_name, version, register_file) # type: ignore
+			d.add(el, dist_name, version, register_file) # type: ignore[attr-defined]
 
 
 	@abstractmethod

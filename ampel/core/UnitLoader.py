@@ -180,7 +180,7 @@ class UnitLoader:
 
 		provenance = kwargs.pop('_provenance', self.provenance)
 
-		Klass = self.get_class_by_name(model.unit, unit_type) # type: ignore
+		Klass = self.get_class_by_name(model.unit, unit_type)
 		if unit_type:
 			check_class(Klass, unit_type)
 
@@ -233,10 +233,10 @@ class UnitLoader:
 					trace_id = 0
 					# raise e
 
-			unit._trace_id = trace_id # type: ignore[union-attr]  # noqa: SLF001
+			unit._trace_id = trace_id  # noqa: SLF001
 
 			if hasattr(unit, "post_init"):
-				unit.post_init() # type: ignore[union-attr]
+				unit.post_init()
 
 		return unit
 
@@ -246,7 +246,7 @@ class UnitLoader:
 
 		try:
 			return blake2b(
-				Path(sys.modules[Klass.__module__].__file__).read_bytes() # type: ignore
+				Path(sys.modules[Klass.__module__].__file__).read_bytes() # type: ignore[arg-type]
 			).hexdigest()[:7]
 		except Exception:
 			return "unspecified"

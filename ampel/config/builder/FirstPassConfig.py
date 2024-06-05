@@ -57,7 +57,7 @@ class FirstPassConfig(dict):
 
 		# Allow process to be defined in root key
 		d['process'] = ForwardProcessConfigCollector(
-			root_config=self, conf_section="process", # type: ignore
+			root_config=self, conf_section="process",
 			target_collector_type=ProcessConfigCollector,
 			logger=logger, options=options
 		)
@@ -86,7 +86,7 @@ class FirstPassConfig(dict):
 		for v in d.values() if d is not None else self.values():
 			if isinstance(v, dict):
 				if getattr(v, 'has_error', False):
-					v.has_error = False # type: ignore
+					v.has_error = False # type: ignore[attr-defined]
 				self.unset_errors(v)
 
 

@@ -17,7 +17,7 @@ from ampel.log import VERBOSE
 
 class ForwardProcessConfigCollector(AbsForwardConfigCollector):
 
-	def get_path(self, # type: ignore
+	def get_path(self, # type: ignore[override]
 		arg: dict[str, Any],
 		dist_name: str,
 		version: str | float | int,
