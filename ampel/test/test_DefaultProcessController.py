@@ -17,7 +17,7 @@ async def run(controller):
         await task
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_process_gauge(dev_context, ampel_logger):
 
     process_count = lambda: AmpelMetricsRegistry.registry().get_sample_value(

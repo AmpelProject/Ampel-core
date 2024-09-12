@@ -104,9 +104,7 @@ def _check_match(
 ) -> bool:
 	if lookup_dir and not arg.startswith(lookup_dir):
 		return False
-	if pattern and not pattern.match(arg):
-		return False
-	return True
+	return not (pattern and not pattern.match(arg))
 
 
 def walk_dir(

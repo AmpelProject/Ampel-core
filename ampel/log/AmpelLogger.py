@@ -150,8 +150,7 @@ class AmpelLogger:
 
 	def addHandler(self, handler: LoggingHandlerProtocol) -> None:
 
-		if handler.level < self.level:
-			self.level = handler.level
+		self.level = min(handler.level, self.level)
 
 		if isinstance(handler, AmpelStreamHandler) and handler.provenance:
 			self.provenance = True
