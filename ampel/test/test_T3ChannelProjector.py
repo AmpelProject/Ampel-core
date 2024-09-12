@@ -9,7 +9,7 @@ from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.t3.stage.project.T3ChannelProjector import T3ChannelProjector
 
 
-@pytest.fixture()
+@pytest.fixture
 def stock_doc() -> StockDocument:
     with open(Path(__file__).parent / "test-data" / "ZTF20abxvcrk.pkl", "rb") as f:
         doc = pickle.load(f)
@@ -26,7 +26,7 @@ def stock_doc() -> StockDocument:
     return doc
 
 
-@pytest.fixture()
+@pytest.fixture
 def logger():
     return AmpelLogger.get_logger(console={"level": DEBUG})
 

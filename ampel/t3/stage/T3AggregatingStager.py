@@ -248,8 +248,7 @@ class T3AggregatingStager(T3SequentialStager):
 			return None
 
 		# A manual/admin $unset: {body: 1} was used to delete bad data
-		if idx > len(body) - 1:
-			idx = len(body) - 1
+		idx = min(idx, len(body) - 1)
 
 		if idx >= 0 and isinstance(body[idx], dict):
 			return body[idx] # type: ignore[return-value] # remove when mypy gets smarter

@@ -39,7 +39,7 @@ def dump(payload, tmpdir, name: str) -> Path:
     return f
 
 
-@pytest.fixture()
+@pytest.fixture
 def secrets():
     return {
         "mongo/writer": {"username": "writer", "password": "writer"},
@@ -47,12 +47,12 @@ def secrets():
     }
 
 
-@pytest.fixture()
+@pytest.fixture
 def vault(tmpdir, secrets):
     return dump(secrets, tmpdir, "secrets.yml")
 
 
-@pytest.fixture()
+@pytest.fixture
 def check_mongo_auth(mocker):
     def checky(*args, **kwargs):
         assert {"username", "password"}.issubset(kwargs.keys())
@@ -61,7 +61,7 @@ def check_mongo_auth(mocker):
     return mocker.patch("ampel.core.AmpelDB.MongoClient", side_effect=checky)
 
 
-@pytest.fixture()
+@pytest.fixture
 def ampel_cli_opts(testing_config, vault):
     return ["--secrets", str(vault), "--config", str(testing_config)]
 

@@ -70,7 +70,7 @@ def mongod(pytestconfig):
         subprocess.check_call(["docker", "stop", container])
 
 
-@pytest.fixture()
+@pytest.fixture
 def _patch_mongo(monkeypatch):
     monkeypatch.setattr("ampel.core.AmpelDB.MongoClient", mongomock.MongoClient)
     # ignore codec_options in DataLoader
@@ -93,12 +93,12 @@ def core_config():
     return cb.build_config(config_validator=None, get_unit_env=False)
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_context(_patch_mongo, testing_config: PosixPath):
     return DevAmpelContext.load(config=str(testing_config), purge_db=True)
 
 
-@pytest.fixture()
+@pytest.fixture
 def integration_context(mongod, testing_config: PosixPath):
     return DevAmpelContext.load(
         config=str(testing_config),
@@ -113,12 +113,12 @@ def dev_context(request):
     return request.getfixturevalue(request.param)
 
 
-@pytest.fixture()
+@pytest.fixture
 def ampel_logger():
     return AmpelLogger.get_logger()
 
 
-@pytest.fixture()
+@pytest.fixture
 def _ingest_stock(integration_context, ampel_logger):
     run_id = 0
     updates_buffer = DBUpdatesBuffer(integration_context.db, run_id=run_id, logger=ampel_logger)
@@ -139,7 +139,7 @@ def _ingest_stock(integration_context, ampel_logger):
     assert integration_context.db.get_collection("stock").count_documents({}) == 1
 
 
-@pytest.fixture()
+@pytest.fixture
 def _ingest_stock_t2(integration_context: DevAmpelContext, ampel_logger):
     run_id = 0
     updates_buffer = DBUpdatesBuffer(integration_context.db, run_id=run_id, logger=ampel_logger)

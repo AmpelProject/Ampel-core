@@ -39,7 +39,7 @@ from ampel.test.dummy import (
 from ampel.util.freeze import recursive_unfreeze
 
 
-@pytest.fixture()
+@pytest.fixture
 def _dummy_units(dev_context: DevAmpelContext):
     for unit in (
         DummyStockT2Unit,
@@ -117,7 +117,7 @@ def test_no_directive(dev_context):
         get_handler(dev_context, [])
 
 
-@pytest.fixture()
+@pytest.fixture
 def datapoints() -> list[DataPoint]:
     return [
         {"id": i, "stock": "stockystock", "body": {"thing": i}}  # type: ignore[typeddict-item]
