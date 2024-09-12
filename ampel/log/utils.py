@@ -106,7 +106,7 @@ def report_exception(
 	from traceback import format_exc
 
 	# Don't create report for executions canceled manually
-	if exc_info()[0] == KeyboardInterrupt:
+	if exc_info()[0] is KeyboardInterrupt:
 		return
 
 	# Feedback
