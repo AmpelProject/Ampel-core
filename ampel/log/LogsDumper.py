@@ -84,7 +84,7 @@ class LogsDumper(AmpelFlexModel):
 
 			fd.write(buf)
 			walk_and_encode(el)
-			buf = func(el) + ",\n" # type: ignore[operator]
+			buf = func(el) + ",\n"
 
 		fd.write(buf[:-2] + "\n]\n")
 

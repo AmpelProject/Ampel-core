@@ -61,7 +61,7 @@ def txt_export(
 					convert_timestamps(el)
 				if logger:
 					logger.info(f"Writing content (id: {el['id']})")
-				fd.write(func(el)) # type: ignore[operator]
+				fd.write(func(el))
 				first = False
 
 			if getch and fgetch():
@@ -79,7 +79,7 @@ def txt_export(
 					convert_timestamps(el)
 				if logger:
 					logger.info(f"Writing content (id: {el['id']})")
-				fd.write(func(el)) # type: ignore[operator]
+				fd.write(func(el))
 
 				if getch and fgetch():
 					fd.write('\n]\n')
@@ -126,12 +126,12 @@ def get_fd(
 
 	if binary:
 		if isinstance(fd, str):
-			return open(fd, "wb"), True # noqa: SIM115
+			return open(fd, "wb"), True
 		return fd, close_fd # type: ignore[return-value]
 	if fd is None:
 		return sys.stdout, False
 	if isinstance(fd, str):
-		return open(fd, 'w'), close_fd # noqa: SIM115
+		return open(fd, 'w'), close_fd
 	return fd, close_fd
 
 

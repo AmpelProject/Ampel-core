@@ -89,7 +89,7 @@ class AbsEventUnit(AmpelABC, ContextUnit, abstract=True):
 	@classmethod
 	def new(cls, templates: str | Sequence[str], **kwargs) -> Self:
 		""" To use with jupyter when templating is wished for """
-		with get_logger(kwargs['context'].config, kwargs.get('log_profile', None)) as logger:
+		with get_logger(kwargs['context'].config, kwargs.get('log_profile')) as logger:
 			return cls(**apply_templates(kwargs['context'], templates, kwargs, logger))
 
 
