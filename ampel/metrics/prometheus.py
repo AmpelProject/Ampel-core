@@ -114,8 +114,8 @@ def prometheus_cleanup_worker(pid: int) -> None:
 
     metrics: Collection[Metric] = collector.merge(collect_paths, accumulate=False)
 
-    tmp_histogram = tempfile.NamedTemporaryFile(delete=False)
-    tmp_counter = tempfile.NamedTemporaryFile(delete=False)
+    tmp_histogram = tempfile.NamedTemporaryFile(delete=False)  # noqa: SIM115
+    tmp_counter = tempfile.NamedTemporaryFile(delete=False)  # noqa: SIM115
     write_metrics(metrics, tmp_histogram.name, tmp_counter.name)
 
     # no lock here, since this is only ever called from the asyncio event loop
