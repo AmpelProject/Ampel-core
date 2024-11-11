@@ -409,7 +409,7 @@ def find(
 		if logger: logger.info("find() cannot continue as header info are missing") # noqa
 		return None
 
-	if match_int:
+	if match_int is not None:
 
 		if not int_bytes_len:
 			# In the future, we might extract automcatically int_bytes_len from 'struct' (header)
@@ -447,18 +447,22 @@ def find(
 				if logger: logger.info("Fast header callback check: no match") # noqa: E701
 				return None
 
-	elif match_bytes:
+	elif match_bytes is not None:
 		pass
 	else:
 		raise ValueError("Please provide either parameter 'match_bytes' or 'match_int' and 'int_bytes_len'")
 
-	if match_int:
+	if match_int is not None:
 		match_bytes = convert_to_bytes(match_int, int_bytes_len) # type: ignore[arg-type]
+	
+	assert match_bytes is not None
 
-	func = find_one if isinstance(match_bytes, bytes) else find_many
 	struct = hinfo['payload']['struct']
 	block_len = calcsize(struct)
-	matches = func(ifh, block_len * read_multiplier, block_len, offset, match_bytes) # type: ignore[operator]
+	if isinstance(match_bytes, bytes):
+		matches = find_one(ifh, block_len * read_multiplier, block_len, offset, match_bytes)
+	else:
+		matches = find_many(ifh, block_len * read_multiplier, block_len, offset, match_bytes)
 
 	ifh.close()
 	if isinstance(f, str) and not ofh.closed:

@@ -61,7 +61,7 @@ def txt_export(
 					convert_timestamps(el)
 				if logger:
 					logger.info(f"Writing content (id: {el['id']})")
-				fd.write(func(el)) # type: ignore[operator]
+				fd.write(func(el))
 				first = False
 
 			if getch and fgetch():
@@ -79,7 +79,7 @@ def txt_export(
 					convert_timestamps(el)
 				if logger:
 					logger.info(f"Writing content (id: {el['id']})")
-				fd.write(func(el)) # type: ignore[operator]
+				fd.write(func(el))
 
 				if getch and fgetch():
 					fd.write('\n]\n')
