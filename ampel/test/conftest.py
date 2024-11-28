@@ -63,7 +63,8 @@ def mongod(pytestconfig):
             "NetworkSettings"
         ]["Ports"]["27017/tcp"][0]["HostPort"]
         # wait for startup
-        list(pymongo.MongoClient(port=int(port)).list_databases())
+        with pymongo.MongoClient(port=int(port)) as client:
+            list(client.list_databases())
         yield f"mongodb://localhost:{port}"
     finally:
         ...
@@ -100,11 +101,13 @@ def mock_context(_patch_mongo, testing_config: PosixPath):
 
 @pytest.fixture
 def integration_context(mongod, testing_config: PosixPath):
-    return DevAmpelContext.load(
+    ctx = DevAmpelContext.load(
         config=str(testing_config),
         purge_db=True,
         custom_conf={"resource.mongo": mongod},
     )
+    yield ctx
+    ctx.db.close()
 
 
 # metafixture as suggested in https://github.com/pytest-dev/pytest/issues/349#issuecomment-189370273

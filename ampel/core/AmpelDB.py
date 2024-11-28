@@ -145,6 +145,15 @@ class AmpelDB(AmpelUnit):
 		):
 			raise UnknownDatabase(f"Database(s) with prefix {self.prefix} do not exist")
 
+	def close(self) -> None:
+		for mc in self.mongo_clients.values():
+			mc.close()
+		self.mongo_collections.clear()
+		self.mongo_clients.clear()
+		# deleting the attribute resets cached_property
+		for attr in ("col_trace_ids", "col_conf_ids", "trace_ids", "conf_ids"):
+			with suppress(AttributeError):
+				delattr(self, attr)
 
 	@cached_property
 	def col_trace_ids(self) -> Collection:
@@ -466,14 +475,7 @@ class AmpelDB(AmpelUnit):
 		for db in self.databases:
 			pym_db = self._get_pymongo_db(db.name, role=db.role.w)
 			pym_db.client.drop_database(pym_db.name)
-		self.mongo_collections.clear()
-		for mc in self.mongo_clients.values():
-			mc.close()
-		self.mongo_clients.clear()
-		# deleting the attribute resets cached_property
-		for attr in ("col_trace_ids", "col_conf_ids", "trace_ids", "conf_ids"):
-			with suppress(AttributeError):
-				delattr(self, attr)
+		self.close()
 
 
 	def add_trace_id(self, trace_id: int, arg: dict[str, Any]) -> None:
