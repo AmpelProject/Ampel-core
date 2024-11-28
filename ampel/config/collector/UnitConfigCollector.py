@@ -88,7 +88,7 @@ class UnitConfigCollector(AbsDictConfigCollector):
 
 				elif isinstance(el, dict):
 					try:
-						d = RemoteUnitDefinition(**el)
+						d = RemoteUnitDefinition.validate(el)
 					except Exception:
 						self.error(
 							'Unsupported unit definition (dict)' +

@@ -12,17 +12,27 @@ from collections.abc import Iterable as iterable
 from collections.abc import Sequence as sequence
 from collections.abc import Sized as sized
 from itertools import islice
-from typing import Any
+from typing import Any, TypeVar, overload
 
 from ampel.types import StrictIterable, T, strict_iterable
 
+_T = TypeVar("_T")
+_NotIterable = TypeVar("_NotIterable", None, str, int, bytes, bytearray)
 
-def ampel_iter(arg: Any) -> Any:
+@overload
+def ampel_iter(arg: _NotIterable) -> list[_NotIterable]:
+	...
+
+@overload
+def ampel_iter(arg: _T) -> _T:
+	...
+
+def ampel_iter(arg: _NotIterable | _T) -> list[_NotIterable] | _T:
 	"""
 	-> suppresses python3 treatment of str as iterable (a questionable choice)
 	-> Makes None iterable
 	"""
-	return [arg] if isinstance(arg, type(None) | str | int | bytes | bytearray) else arg
+	return [arg] if isinstance(arg, None | str | int | bytes | bytearray) else arg  # type: ignore[list-item]
 
 
 def get_chunks(seq: Iterable[T], n: int) -> Generator[list[T], None, None]:
