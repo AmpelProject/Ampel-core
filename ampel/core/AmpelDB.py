@@ -462,11 +462,13 @@ class AmpelDB(AmpelUnit):
 		return "<AmpelDB>"
 
 
-	def drop_all_databases(self):
+	def drop_all_databases(self) -> None:
 		for db in self.databases:
 			pym_db = self._get_pymongo_db(db.name, role=db.role.w)
 			pym_db.client.drop_database(pym_db.name)
 		self.mongo_collections.clear()
+		for mc in self.mongo_clients.values():
+			mc.close()
 		self.mongo_clients.clear()
 		# deleting the attribute resets cached_property
 		for attr in ("col_trace_ids", "col_conf_ids", "trace_ids", "conf_ids"):
