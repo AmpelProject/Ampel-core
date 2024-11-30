@@ -263,13 +263,15 @@ class ConfigCommand(AbsCoreCommand):
 
 		elif sub_op == 'install':
 
-			std_conf = get_user_data_config_path()
+			std_conf = Path(get_user_data_config_path())
+			if not std_conf.parent.exists():
+				std_conf.parent.mkdir(parents=True)
 			if args['file'] and os.path.exists(args['file']):
 				shutil.copy(args['file'], std_conf)
 				logger.info(f'{args["file"]} successfully set as standard config ({std_conf})')
 				return
 
-			args['out'] = std_conf
+			args['out'] = str(std_conf)
 			self.run(args, unknown_args, sub_op = 'build')
 			logger.info(f'New config built and installed ({std_conf})')
 
