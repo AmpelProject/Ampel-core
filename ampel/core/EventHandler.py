@@ -165,8 +165,7 @@ class EventHandler:
 
 		if res.modified_count == 0 and res.upserted_id is None:
 			raise AmpelLoggingError(
-				"Events collection update failed (%s)" % {
-					'mongoUpdateResult': res.raw_result,
-					'process': self.process_name
-				}
+				"Events collection update failed ("
+				f"mongoUpdateResult: {res.raw_result}, "
+				f"process: {self.process_name})"
 			)
