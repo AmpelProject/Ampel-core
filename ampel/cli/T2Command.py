@@ -234,7 +234,7 @@ class T2Command(AbsCoreCommand):
 				.i_know_what_i_am_doing() \
 				.reset_t2s(col=col, cli=True, run_id=run_id, soft = (sub_op == 'soft-reset'), **args)
 
-			print('Number of changed T2 docs: %i' % changed)
+			print(f'Number of changed T2 docs: {changed}')
 
 			if changed > 0:
 				# Add new doc in the 'events' collection
