@@ -160,6 +160,7 @@ ignore = [
     "PLR2004", # Magic value used in comparison
     "RUF012", # mutable class properties (are harmless everywhere BaseModel is used)
     "RUF018", # assignment expressions in asserts are fine
+    "RUF023", # unsorted __slots__ are fine
 ]
 
 [tool.ruff.lint.per-file-ignores]
