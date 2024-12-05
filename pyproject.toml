@@ -81,10 +81,6 @@ types-ujson = "^5.10.0.20240515"
 matplotlib = "^3.9.0"
 ipython = "^8.25.0"
 types-psutil = "^5.9.5.20240516"
-ruff = "^0.8.0"
-
-[tool.isort]
-profile = "black"
 
 [build-system]
 requires = ["poetry-core>=1.0.0", "setuptools>=40.8.0"]
