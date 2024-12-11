@@ -55,7 +55,6 @@ yq = "^3.0.0"
 prometheus-client = ">=0.16"
 xxhash = "^3.0.0"
 psutil = "^6.0.0"
-requests = "^2.0"
 fastapi = {version = ">=0.95", optional = true}
 uvicorn = {version = ">=0.21.1", optional = true, extras = ["standard"]}
 slack-sdk = {version = "^3.18.1", optional = true}
