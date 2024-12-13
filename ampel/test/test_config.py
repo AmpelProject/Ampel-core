@@ -8,11 +8,14 @@ from pathlib import Path
 import pytest
 import yaml
 from pydantic import ValidationError
+from pytest_mock import MockerFixture
 
 from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.base.BadConfig import BadConfig
 from ampel.config.builder.ConfigChecker import ConfigChecker
 from ampel.config.builder.ConfigValidator import ConfigValidator
+from ampel.config.builder.DisplayOptions import DisplayOptions
+from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
 from ampel.core.UnitLoader import UnitLoader
 from ampel.test.test_JobCommand import run
 from ampel.util.mappings import set_by_path
@@ -50,19 +53,16 @@ def test_ConfigChecker(testing_config, monkeypatch):
     checker.validate(raise_exc=True)
 
     # add a processor with side-effects
-    class SideEffect(RuntimeError):
-        ...
+    class SideEffect(RuntimeError): ...
 
     class SideEffectLadenProcessor(AbsEventUnit):
-
-        required: int # type: ignore[annotation-unchecked]
+        required: int  # type: ignore[annotation-unchecked]
 
         def __init__(self, **kwargs) -> None:
             super().__init__(**kwargs)
             raise SideEffect
 
-        def proceed(self, event_hdlr):
-            ...
+        def proceed(self, event_hdlr): ...
 
     config["process"]["t0"]["BadProcess"] = {
         "name": "BadProcess",
@@ -115,7 +115,8 @@ def test_transform_config(doc, tmpdir):
                 "--filter",
                 ".",
             ]
-        ) is None
+        )
+        is None
     )
     with outfile.open() as f:
         transformed_doc = yaml.safe_load(f)
@@ -123,7 +124,8 @@ def test_transform_config(doc, tmpdir):
 
 
 @pytest.mark.parametrize(
-    ("patch","result"), [({}, None), ({"channel.LONG_CHANNEL.purge": {}}, ValidationError)]
+    ("patch", "result"),
+    [({}, None), ({"channel.LONG_CHANNEL.purge": {}}, ValidationError)],
 )
 def test_validate_config(testing_config, tmpdir, patch, result):
     """Validate validates config"""
@@ -146,3 +148,26 @@ def test_validate_config(testing_config, tmpdir, patch, result):
             )
             == result
         )
+
+
+def test_collect_bad_unit(tmp_path: Path, mocker: MockerFixture) -> None:
+    cb = DistConfigBuilder(DisplayOptions(verbose=True, debug=True))
+
+    bad_unit_config = tmp_path / "unit.yaml"
+    with bad_unit_config.open("w") as f:
+        yaml.dump(["flerhherher.Floop"], f)
+
+    mocker.patch(
+        "ampel.config.builder.DistConfigBuilder.get_files",
+        return_value=[str(bad_unit_config)],
+    )
+
+    cb.load_distributions()
+    assert cb.first_pass_config.has_nested_error()
+
+    with pytest.raises(
+        ValueError,
+        match=
+            r".*Error were reported while gathering configurations \(first pass config\).*",
+    ):
+        cb.build_config(stop_on_errors=2)

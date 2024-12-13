@@ -73,6 +73,7 @@ class UnitConfigCollector(AbsDictConfigCollector):
 								)
 						except Exception:
 							self.logger.info(f'Units auto-registration has failed for package {el}')
+							self.has_error = True
 						continue
 
 					# Standart unit definition (ex: ampel.t3.stage.T3AggregatingStager)
@@ -138,6 +139,8 @@ class UnitConfigCollector(AbsDictConfigCollector):
 					exc_info=e
 				)
 
+				self.has_error = True
+
 		if isinstance(self.logger.handlers[0], AggregatingLoggingHandlerProtocol):
 			self.logger.handlers[0].aggregate_interval = agg_int
 
@@ -172,6 +175,7 @@ class UnitConfigCollector(AbsDictConfigCollector):
 		except Exception as e:
 
 			self.err_fqns.append((module_fqn, e))
+			self.has_error = True
 
 			if self.options.hide_module_not_found_errors and isinstance(e, ModuleNotFoundError):
 				return None
