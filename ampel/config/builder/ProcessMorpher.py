@@ -237,7 +237,7 @@ class ProcessMorpher:
 		walk_and_process_dict(
 			arg = target or self.process["processor"]["config"]["directives"],
 			callback = self._gather_t2_config_callback,
-			match = ['point_t2', 'stock_t2', 'state_t2'],
+			match = ['point_t2', 'stock_t2', 'state_t2', 't2_dependency'],
 			conf_dicts = conf_dicts
 		)
 
