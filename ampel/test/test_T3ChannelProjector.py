@@ -49,7 +49,7 @@ def test_single_channel(stock_doc: StockDocument, logger):
     output_stock_doc = after["stock"]
     assert output_stock_doc is not None
     for field in "tag", "name", "channel":
-        assert not isinstance(output_stock_doc[field], str), f"stock.{field} must be a set" # type: ignore[literal-required]
+        assert not isinstance(output_stock_doc[field], str), f"stock.{field} must be a set"
     assert output_stock_doc["channel"] == [target]
     assert output_stock_doc["ts"] == {target: input_stock_doc["ts"][target]}
 

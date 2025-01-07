@@ -7,7 +7,10 @@ from ampel.test.DummyStateT2Unit import DummyStateT2Unit
 
 
 def test_load_old_configids(mock_context: DevAmpelContext, ampel_logger):
-    """ This test unit might no longer be required or might need a rename """
+    """
+    Configuration hashes stored via HashT2Config.alter are loaded from the
+    database when a new DevAmpelContext is instantiated
+    """
     unit_config = {"foo": 37}
     mock_context.register_unit(DummyStateT2Unit)
     pre_register_context = DevAmpelContext(
