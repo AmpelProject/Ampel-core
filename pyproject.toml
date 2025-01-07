@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ampel-core"
-version = "0.10.2"
+version = "0.10.3"
 description = "Alice in Modular Provenance-Enabled Land"
 authors = ["Valery Brinnel"]
 maintainers = ["Jakob van Santen <jakob.van.santen@desy.de>"]
@@ -16,6 +16,9 @@ classifiers = [
     "Typing :: Typed",
 ]
 packages = [{include = "ampel"}]
+exclude = [
+    "ampel/py.typed",
+]
 include = [
     'conf/*/*.json',
     'conf/*/*/*.json',
