@@ -159,7 +159,7 @@ def test_collect_bad_unit(tmp_path: Path, mocker: MockerFixture) -> None:
 
     mocker.patch(
         "ampel.config.builder.DistConfigBuilder.get_files",
-        return_value=[str(bad_unit_config)],
+        return_value=[bad_unit_config],
     )
 
     cb.load_distributions()

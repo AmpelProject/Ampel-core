@@ -64,7 +64,7 @@ class UnitConfigCollector(AbsDictConfigCollector):
 					if el.split('.')[-1][0].islower():
 						package_path = el.replace(".", sep)
 						try:
-							for fpath in get_files(dist_name, lookup_dir=package_path):
+							for fpath in map(str, get_files(dist_name, lookup_dir=package_path)):
 								if sep in fpath.replace(package_path + sep, ""):
 									continue
 								self.add(

@@ -7,23 +7,17 @@
 # Last Modified Date:  18.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import json
-import os
 import re
 from collections.abc import Callable, Sequence
 from functools import partial
+from importlib import metadata
 from typing import Any
 
-import pkg_resources
 import yaml
-from pkg_resources import (  # type: ignore[attr-defined]
-	DistInfoDistribution,
-	EggInfoDistribution,
-)
 
 from ampel.config.builder.ConfigBuilder import ConfigBuilder
 from ampel.log import SHOUT, VERBOSE
-from ampel.util.distrib import get_dist_names, get_files
+from ampel.util.distrib import PathLike, PathList, get_dist_names, get_files
 
 
 class DistConfigBuilder(ConfigBuilder):
@@ -88,13 +82,13 @@ class DistConfigBuilder(ConfigBuilder):
 		"""
 		try:
 
-			distrib = pkg_resources.get_distribution(dist_name)
+			distrib = metadata.distribution(dist_name)
 			all_conf_files = get_files(dist_name, conf_dir, re.compile(rf".*\.{ext}$"))
 
 			if all_conf_files and self.verbose:
 				self.logger.log(VERBOSE, "Following conf files will be parsed:")
 				for el in all_conf_files:
-					self.logger.log(VERBOSE, el)
+					self.logger.log(VERBOSE, el.as_posix())
 
 			if ampel_conf := self.get_conf_file(all_conf_files, f"ampel.{ext}"):
 				self.load_conf_using_func(
@@ -104,7 +98,7 @@ class DistConfigBuilder(ConfigBuilder):
 			# Channel, mongo (and template) can be defined by multiple files
 			# in a directory named after the corresponding config section name
 			for key in ("channel", "mongo", "process"):
-				if specialized_conf_files := self.get_conf_files(all_conf_files, f"/{key}/"):
+				if specialized_conf_files := self.get_conf_files(all_conf_files, f"*/{key}/*"):
 					for f in specialized_conf_files:
 						self.load_conf_using_func(distrib, f, self.first_pass_config[key].add)
 
@@ -123,16 +117,16 @@ class DistConfigBuilder(ConfigBuilder):
 					)
 
 			# Try to load templates from folder template (defined by 'Ampel-ZTF' for ex.)
-			if template_conf_files := self.get_conf_files(all_conf_files, "/template/"):
+			if template_conf_files := self.get_conf_files(all_conf_files, "*/template/*"):
 				for f in template_conf_files:
 					self.load_conf_using_func(distrib, f, self.register_templates)
 
 			# Try to load templates from template.conf
-			if template_conf := self.get_conf_file(all_conf_files, "/template.{ext}"):
+			if template_conf := self.get_conf_file(all_conf_files, "template.{ext}"):
 				self.load_conf_using_func(distrib, template_conf, self.register_templates)
 
 			if all_conf_files:
-				self.logger.info(f"Not all conf files were loaded from distribution '{distrib.project_name}'")
+				self.logger.info(f"Not all conf files were loaded from distribution '{distrib.name}'")
 				self.logger.info(f"Unprocessed conf files: {all_conf_files}")
 
 		except Exception as e:
@@ -163,8 +157,8 @@ class DistConfigBuilder(ConfigBuilder):
 
 
 	def load_conf_using_func(self,
-		distrib: EggInfoDistribution | DistInfoDistribution,
-		file_rel_path: str,
+		distrib: metadata.Distribution,
+		file_rel_path: "PathLike",
 		func: Callable[[dict[str, Any], str, str, str], None],
 		raise_exc: bool = True,
 		**kwargs
@@ -174,25 +168,17 @@ class DistConfigBuilder(ConfigBuilder):
 
 			if self.verbose:
 				self.logger.log(VERBOSE,
-					f"Loading {file_rel_path} from distribution '{distrib.project_name}'"
+					f"Loading {file_rel_path} from distribution '{distrib.name}'"
 				)
 
-			if file_rel_path.endswith("json"):
-				load = json.loads
-			elif file_rel_path.endswith("yml") or file_rel_path.endswith("yaml"):
-				load = yaml.safe_load # type: ignore[assignment]
-			
-			if os.path.isabs(file_rel_path):
-				with open(file_rel_path) as f:
-					payload = f.read()
-			else:
-				payload = distrib.get_resource_string(__name__, file_rel_path)
+			# NB: read both YAML and JSON (which is a subset of YAML)
+			content = yaml.safe_load(file_rel_path.read_text())
 
 			func(
-				load(payload),
-				distrib.project_name,
+				content,
+				distrib.name,
 				distrib.version,
-				file_rel_path,
+				file_rel_path.as_posix(),
 				**kwargs
 			)
 
@@ -201,7 +187,7 @@ class DistConfigBuilder(ConfigBuilder):
 				raise
 			self.error = True
 			self.logger.error(
-				f"File '{file_rel_path}' not found in distribution '{distrib.project_name}'"
+				f"File '{file_rel_path}' not found in distribution '{distrib.name}'"
 			)
 
 		except Exception as e:
@@ -209,88 +195,31 @@ class DistConfigBuilder(ConfigBuilder):
 				raise
 			self.error = True
 			self.logger.error(
-				f"Error occured loading '{file_rel_path}' from distribution '{distrib.project_name}'",
-				exc_info=e
-			)
-
-
-	def load_tier_config_file(self,
-		distrib: EggInfoDistribution | DistInfoDistribution,
-		file_rel_path: str,
-		root_key: str
-	) -> None:
-		"""
-		Files loaded by this method must have the following JSON structure:
-		{
-			"t0": { ... },
-			"t1": { ... },
-			...
-		}
-		whereby the t0, t1, t2 and t3 keys are optional (at least one is required though)
-		"""
-
-		try:
-
-			if self.verbose:
-				self.logger.log(VERBOSE,
-					f"Loading {file_rel_path} from distribution '{distrib.project_name}'"
-				)
-
-			if file_rel_path.endswith("json"):
-				load = json.loads
-			elif file_rel_path.endswith("yml") or file_rel_path.endswith("yaml"):
-				load = yaml.safe_load # type: ignore[assignment]
-
-			d = load(
-				distrib.get_resource_string(__name__, file_rel_path)
-				if not os.path.isabs(file_rel_path)
-				else file_rel_path
-			)
-
-			for k in ("t0", "t1", "t2", "t3", "ops"):
-				if k in d:
-					self.first_pass_config[root_key][k].add(
-						d[k],
-						dist_name = distrib.project_name,
-						version = distrib.version,
-						register_file = file_rel_path,
-					)
-
-		except FileNotFoundError:
-			self.error = True
-			self.logger.error(
-				f"File '{file_rel_path}' not found in distribution '{distrib.project_name}'"
-			)
-
-		except Exception as e:
-			self.error = True
-			self.logger.error(
-				f"Error occured loading '{file_rel_path}' "
-				f"from distribution '{distrib.project_name}')",
+				f"Error occured loading '{file_rel_path}' from distribution '{distrib.name}'",
 				exc_info=e
 			)
 
 
 	@staticmethod
-	def get_conf_file(files: list[str], key: str) -> None | str:
+	def get_conf_file(files: "PathList", key: str) -> "None | PathLike":
 		"""
 		Extract the first entry who matches the provided 'key' from the provided list
 		Note: this method purposely modifies the input list (removes matched element)
 		"""
 		for el in files:
-			if key in el:
+			if el.match(key):
 				files.remove(el)
 				return el
 		return None
 
 
 	@staticmethod
-	def get_conf_files(files: list[str], key: str) -> list[str]:
+	def get_conf_files(files: "PathList", key: str) -> "PathList":
 		"""
 		Extract all entries who matches the provided 'key' from the provided list
 		Note: this method purposely modifies the input list (removes matched elements)
 		"""
-		ret = [el for el in files if key in el]
+		ret = [el for el in files if el.match(key)]
 		for el in ret:
 			files.remove(el)
 		return ret
