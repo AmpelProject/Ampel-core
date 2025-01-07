@@ -16,6 +16,9 @@ classifiers = [
     "Typing :: Typed",
 ]
 packages = [{include = "ampel"}]
+exclude = [
+    "ampel/py.typed",
+]
 include = [
     'conf/*/*.json',
     'conf/*/*/*.json',
