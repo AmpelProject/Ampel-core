@@ -9,6 +9,8 @@
 
 from collections.abc import Generator
 
+from pydantic import TypeAdapter
+
 from ampel.abstract.AbsIdMapper import AbsIdMapper
 from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.cli.export import bin_export, get_fd, txt_export
@@ -59,7 +61,6 @@ class T3BufferExporterUnit(AbsT3Unit[SnapView]):
 		gen: Generator[SnapView, T3Send, None],
 	) -> Generator[AmpelBuffer, None, None]:
 		for sv in gen:
-			if isinstance(sv, SnapView):
-				yield sv.serialize() # type: ignore[misc]
-			else:
-				yield sv
+			yield serialize(sv)
+
+serialize = TypeAdapter(SnapView).dump_python

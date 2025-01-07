@@ -8,6 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import datetime
+from collections.abc import Sequence
 from struct import pack
 from typing import Any, NamedTuple
 
@@ -77,7 +78,7 @@ class T1Compiler(AbsCompiler):
 
 
 	def add(self, # type: ignore[override]
-		dps: list[DataPointId],
+		dps: Sequence[DataPointId],
 		channel: ChannelId,
 		ttl: None | datetime.timedelta,
 		traceid: dict[str, Any],

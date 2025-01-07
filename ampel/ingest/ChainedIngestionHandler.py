@@ -108,7 +108,7 @@ class IngestBlock:
 
 T1CombineCache = dict[
 	tuple[AbsT1CombineUnit | AbsT1RetroCombineUnit, tuple[DataPointId, ...]],
-	tuple[list[list[DataPointId] | T1CombineResult], set[ChannelId]]
+	tuple[Sequence[Sequence[DataPointId] | T1CombineResult], set[ChannelId]]
 ]
 
 T1ComputeCache = dict[
@@ -723,14 +723,13 @@ class ChainedIngestionHandler:
 				comb_res = t1b.unit.combine(iter(dps))
 				if isinstance(comb_res, T1CombineResult): # case T1CombineResult
 					lres = [comb_res]
-				elif isinstance(comb_res, list):
-					if len(comb_res) == 0:
-						lres = []
-					elif isinstance(comb_res[0], DataPointId): # case list[DataPointId]
-						lres = [comb_res] # type: ignore[list-item]
-					else:
-						# case list[list[DataPointId]], list[T1CombineResult]
-						lres = comb_res # type: ignore[assignment]
+				elif len(comb_res) == 0:
+					lres = []
+				elif isinstance(comb_res[0], DataPointId): # case list[DataPointId]
+					lres = [comb_res] # type: ignore[list-item]
+				else:
+					# case list[list[DataPointId]], list[T1CombineResult]
+					lres = comb_res # type: ignore[assignment]
 				t1_comb_cache[(t1b.unit, tdps)] = lres, {t1b.channel}
 
 			# T1 combine(...) can return multiple subsets of the initial datapoints
@@ -751,7 +750,7 @@ class ChainedIngestionHandler:
 				]
 
 				if isinstance(tres, T1CombineResult):
-					t1_dps = tres.dps
+					t1_dps: Sequence[DataPointId] = tres.dps
 					if tres.meta:
 						mx |= tres.meta
 						jentry['action'] |= JournalActionCode.T1_EXTRA_META
