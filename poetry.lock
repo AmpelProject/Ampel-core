@@ -2,13 +2,13 @@
 
 [[package]]
 name = "ampel-interface"
-version = "0.10.4"
+version = "0.10.4.post1"
 description = "Base classes for the Ampel analysis platform"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "ampel_interface-0.10.4-py3-none-any.whl", hash = "sha256:7de3ea34e17f48b84563085a0225551605297e05437ecbc3ea872c1b2b20459e"},
-    {file = "ampel_interface-0.10.4.tar.gz", hash = "sha256:f2c5071ffcba58519933e1368e337dae1a15d5db514f352580f68064b59f028f"},
+    {file = "ampel_interface-0.10.4.post1-py3-none-any.whl", hash = "sha256:2250ba544bea8e9d09e6277d692e45600268157d3f6af88a712190fcc70a1834"},
+    {file = "ampel_interface-0.10.4.post1.tar.gz", hash = "sha256:629f9d56d1a39b646a0d2bccb2631a2d67f81a43d8abe95faed1412c4f2132d5"},
 ]
 
 [package.dependencies]
@@ -1648,6 +1648,7 @@ optional = false
 python-versions = ">=3.7"
 files = [
     {file = "schedule-1.2.2-py3-none-any.whl", hash = "sha256:5bef4a2a0183abf44046ae0d164cadcac21b1db011bdd8102e4a0c1e91e06a7d"},
+    {file = "schedule-1.2.2.tar.gz", hash = "sha256:15fe9c75fe5fd9b9627f3f19cc0ef1420508f9f9a46f45cd0769ef75ede5f0b7"},
 ]
 
 [package.extras]
@@ -2520,4 +2521,4 @@ transform = ["yq"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "cc58c8d2674475eb12f9173a8c58e8706cf954b80e32163934789216e1ab5801"
+content-hash = "3373979a1672eecff8799d88ef8815327eff8d8190abb8bfc4d2db6fc5e2f9b7"
