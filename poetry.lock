@@ -2,13 +2,13 @@
 
 [[package]]
 name = "ampel-interface"
-version = "0.10.4a2"
+version = "0.10.4"
 description = "Base classes for the Ampel analysis platform"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "ampel_interface-0.10.4a2-py3-none-any.whl", hash = "sha256:f722180537742db0f5e31a0a5516e0cf47a4c8c5cb241c3c345660d59b5ba9c8"},
-    {file = "ampel_interface-0.10.4a2.tar.gz", hash = "sha256:83882bd992a29dbeb5f5f4c770d3225d110173ea74c45781336578b3c1d952b0"},
+    {file = "ampel_interface-0.10.4-py3-none-any.whl", hash = "sha256:7de3ea34e17f48b84563085a0225551605297e05437ecbc3ea872c1b2b20459e"},
+    {file = "ampel_interface-0.10.4.tar.gz", hash = "sha256:f2c5071ffcba58519933e1368e337dae1a15d5db514f352580f68064b59f028f"},
 ]
 
 [package.dependencies]
@@ -1488,13 +1488,13 @@ dev = ["argcomplete", "attrs (>=19.2)", "hypothesis (>=3.56)", "mock", "pygments
 
 [[package]]
 name = "pytest-asyncio"
-version = "0.25.1"
+version = "0.25.2"
 description = "Pytest support for asyncio"
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "pytest_asyncio-0.25.1-py3-none-any.whl", hash = "sha256:c84878849ec63ff2ca509423616e071ef9cd8cc93c053aa33b5b8fb70a990671"},
-    {file = "pytest_asyncio-0.25.1.tar.gz", hash = "sha256:79be8a72384b0c917677e00daa711e07db15259f4d23203c59012bcd989d4aee"},
+    {file = "pytest_asyncio-0.25.2-py3-none-any.whl", hash = "sha256:0d0bb693f7b99da304a0634afc0a4b19e49d5e0de2d670f38dc4bfa5727c5075"},
+    {file = "pytest_asyncio-0.25.2.tar.gz", hash = "sha256:3f8ef9a98f45948ea91a0ed3dc4268b5326c0e7bce73892acc654df4262ad45f"},
 ]
 
 [package.dependencies]
@@ -2520,4 +2520,4 @@ transform = ["yq"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "844d4a93e5d7bedc4c4a79f23ef2385bec092bfeb12daeb1261a69a4a7877ab3"
+content-hash = "cc58c8d2674475eb12f9173a8c58e8706cf954b80e32163934789216e1ab5801"
