@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING, Any, Literal
 from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.config.builder.DisplayOptions import DisplayOptions
-from ampel.secret.AESecretProvider import AESecretProvider
 from ampel.secret.AmpelVault import AmpelVault
 
 # Avoid cyclic import issues
@@ -89,15 +88,16 @@ class AmpelContext:
 		if vault is None:
 			vault = AmpelVault([])
 
+		if pwd_file_path and not pwds:
+			with open(pwd_file_path) as f:
+				pwds = [l.strip() for l in f.readlines()]
+
 		if pwds:
+			# AESecretProvider is optional
+			from ampel.secret.AESecretProvider import AESecretProvider
 			vault.providers.append(
 				AESecretProvider(pwds)
 			)
-		elif pwd_file_path:
-			with open(pwd_file_path) as f:
-				vault.providers.append(
-					AESecretProvider([l.strip() for l in f.readlines()])
-				)
 
 		db = AmpelDB.new(alconf, vault, one_db=one_db)
 

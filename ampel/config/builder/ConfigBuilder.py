@@ -33,7 +33,6 @@ from ampel.config.collector.T02ConfigCollector import T02ConfigCollector
 from ampel.log.AmpelLogger import DEBUG, ERROR, VERBOSE, AmpelLogger
 from ampel.log.utils import log_exception
 from ampel.secret.AESecret import AESecret
-from ampel.secret.AESecretProvider import AESecretProvider
 from ampel.template.ChannelWithProcsTemplate import ChannelWithProcsTemplate
 from ampel.util.mappings import dictify, get_by_path, set_by_path
 from ampel.util.recursion import walk_and_process_dict
@@ -381,6 +380,7 @@ class ConfigBuilder:
 
 		# Optionaly decrypt aes encrypted config entries
 		if pwds:
+			from ampel.secret.AESecretProvider import AESecretProvider
 
 			self.logger.info('Resolving AES secrets')
 			sp = AESecretProvider(pwds)
