@@ -8,6 +8,8 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import filecmp
+import importlib
+import importlib.metadata
 import io
 import os
 import platform
@@ -23,7 +25,6 @@ from multiprocessing import Process, Queue
 from time import sleep, time
 from typing import Any
 
-import pkg_resources
 import psutil
 import ujson
 import yaml
@@ -371,7 +372,7 @@ class JobCommand(AbsCoreCommand):
 			for k in config_dict['build']:
 				if 'ampel-' in k:
 					config_v = config_dict['build'][k]
-					current_v = pkg_resources.get_distribution(k).version
+					current_v = importlib.metadata.distribution(k).version
 					if (
 						config_v != current_v and
 						yes_no(

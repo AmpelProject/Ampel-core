@@ -10,6 +10,7 @@
 import datetime
 import getpass
 import importlib
+import importlib.metadata
 import json
 import os
 import re
@@ -19,7 +20,6 @@ from collections.abc import Iterable
 from multiprocessing import Pool
 from typing import Any
 
-import pkg_resources
 import yaml
 
 from ampel.abstract.AbsChannelTemplate import AbsChannelTemplate
@@ -435,7 +435,7 @@ class ConfigBuilder:
 		}
 
 		for k in ('ampel-interface', 'ampel-core'):
-			d['build'][k] = pkg_resources.get_distribution(k).version
+			d['build'][k] = importlib.metadata.distribution(k).version
 
 		dists: set[tuple[str, str | float | int]] = set()
 		for k in ('unit', 'channel'):

@@ -9,23 +9,22 @@
 
 import os
 import re
-from collections.abc import Generator, Sequence
+from collections.abc import Generator, MutableSequence, Sequence
+from importlib import metadata
+from pathlib import Path
+from typing import TypeAlias
 
-from pkg_resources import (  # type: ignore[attr-defined]
-	AvailableDistributions,
-	DistInfoDistribution,
-	EggInfoDistribution,
-	get_distribution,
-)
-
+# NB: PackagePath implements read_text(), but is not a subclass of Path
+PathLike: TypeAlias = Path | metadata.PackagePath
+PathList: TypeAlias = MutableSequence[PathLike]
 
 def get_dist_names(distrib_prefixes: Sequence[str] = ("ampel-", "pyampel-")) -> list[str]:
 	""" Get all installed distributions whose names start with the provided prefix """
 	# ensure that at least interface and core are found
 	prefixes = {"ampel-interface", "ampel-core"}.union(distrib_prefixes)
 	ret = [
-		dist_name for dist_name in AvailableDistributions()
-		if any(prefix in dist_name for prefix in prefixes)
+		dist.name for dist in metadata.distributions()
+		if any(prefix in dist.name for prefix in prefixes)
 	]
 
 	if ret:
@@ -39,62 +38,39 @@ def get_files(
 	dist_name: str,
 	lookup_dir: None | str = None,
 	pattern: None | re.Pattern = None
-) -> list[str]:
+) -> PathList:
 	""" Loads all known conf files of the provided distribution (name) """
 
 	if lookup_dir and not lookup_dir.endswith("/"):
 		lookup_dir += "/"
 
-	distrib = get_distribution(dist_name)
+	files: PathList = []
 
-	# DistInfoDistribution: look for metadata RECORD (in <dist_name>.dist-info)
-	if isinstance(distrib, DistInfoDistribution):
-
-		# "pip3 install" in editable mode with pyproject.toml present
-		# 1) grab the pth file
-		if pth := next(
-			(
-				pth for el in distrib.get_metadata_lines('RECORD')
-				if (pth := el.split(",")[0]).endswith(".pth")
-			),
-			None
-		):
-
-			fname = pth if os.path.isfile(pth) else distrib.get_resource_filename(__name__, pth)
-			# 2) Manually look for files in referenced folder
-			with open(fname) as f:
-				return list(
-					walk_dir(
-						f.read().strip(),
+	for p in metadata.files(dist_name) or []:
+		# Path config file from editable install: look for files in the
+		# referenced path(s)
+		if p.suffix == ".pth":
+			for path in p.read_text().splitlines():
+				if os.path.isdir(path):
+					files.extend(walk_dir(
+						path,
 						lookup_dir,
 						pattern
+					))
+				else:
+					# setuptools editable installs work by installing a path
+					# hook. There's no way to get at the actual path to the
+					# project without depending deeply on assumptions about how
+					# setuptools currently works, so just bail.
+					raise ValueError(
+						f"Invalid path '{path}' in {p}. If {dist_name} was "
+						"installed with setuptools, it must be installed "
+						"normally (not in editable mode)."
 					)
-				)
-
-		# <pip3 install .> in non-editable mode with pyproject.toml present
-		# Example of the ouput of distrib.get_metadata_lines('RECORD'):
-		# 'conf/ampel-ztf.conf,sha256=FZkChNKKpcMPTO4pwyKq4WS8FAbznuR7oL9rtNYS7U0,322',
-		# 'ampel/model/ZTFLegacyChannelTemplate.py,sha256=zVtv4Iry3FloofSazIFc4h8l6hhV-wpIFbX3fOW2njA,2182',
-		# 'ampel/model/__pycache__/ZTFLegacyChannelTemplate.cpython-38.pyc,,',
-		else:
-			return [
-				fname for el in distrib.get_metadata_lines('RECORD')
-				if _check_match((fname := el.split(",")[0]), lookup_dir, pattern)
-			]
-
-	# "pip3 install" in editable mode without pyproject.toml present
-	elif isinstance(distrib, EggInfoDistribution):
-		# Example of the ouput of distrib.get_metadata_lines('SOURCES.txt'):
-		# 'setup.py',
-		# 'conf/ampel-ztf.json',
-		# 'ampel/model/ZTFLegacyChannelTemplate.py',
-		return [
-			el for el in distrib.get_metadata_lines('SOURCES.txt')
-			if _check_match(el, lookup_dir, pattern)
-		]
-
-	else:
-		raise ValueError(f"Unsupported distribution type: '{type(distrib)}'")
+		# Wheel installs have the files directly in the distribution
+		elif _check_match(p.as_posix(), lookup_dir, pattern):
+			files.append(p)
+	return files
 
 
 def _check_match(
@@ -111,9 +87,9 @@ def walk_dir(
 	path: str,
 	lookup_dir: None | str = None,
 	pattern: None | re.Pattern = None
-) -> Generator[str, None, None]:
+) -> Generator[Path, None, None]:
 	for root, _, files in os.walk(f"{path}/{lookup_dir}" if lookup_dir else f"{path}"):
 		for fname in files:
 			if pattern and not pattern.match(fname):
 				continue
-			yield os.path.join(root, fname)
+			yield Path(root, fname)
