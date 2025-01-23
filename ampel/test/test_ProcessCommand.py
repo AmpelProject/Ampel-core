@@ -81,7 +81,6 @@ def test_resource_passing(
     vault: Path,
     tmpdir,
 ):
-
     key = "dana"
     value = "zuul"
 
@@ -135,3 +134,101 @@ def test_resource_passing(
 
     run_task(writer, first=True)
     run_task(reader)
+
+
+def test_templates(
+    testing_config,
+    mock_db: MagicMock,
+    vault: Path,
+    tmpdir,
+):
+    """ProcessCommand resolves templates"""
+    task = dump(
+        {
+            "template": "hash_t2_config",
+            "unit": "DummyIngestUnit",
+            "config": dict(
+                directives=[
+                    dict(
+                        channel="TEST",
+                        ingest=dict(
+                            combine=[
+                                dict(
+                                    unit="T1SimpleCombiner",
+                                    state_t2=[
+                                        dict(
+                                            unit="DummyTiedStateT2Unit",
+                                            config={
+                                                "t2_dependency": [
+                                                    {
+                                                        "unit": "DummyStateT2Unit",
+                                                        "config": {"foo": 37},
+                                                    }
+                                                ]
+                                            },
+                                        )
+                                    ],
+                                )
+                            ]
+                        ),
+                    )
+                ]
+            ),
+        },
+        tmpdir,
+        "task.yml",
+    )
+
+    def run_task(task_path: Path):
+        assert (
+            run(
+                [
+                    "ampel",
+                    "process",
+                    "--config",
+                    str(testing_config),
+                    "--secrets",
+                    str(vault),
+                    "--db",
+                    "whatevs",
+                    "--log-profile",
+                    "console_debug",
+                    "--schema",
+                    str(task_path),
+                    "--name",
+                    "task_1",
+                ]
+            )
+            is None
+        )
+
+    run_task(task)
+
+    conf = mock_db("conf")
+    # get the last config inserted
+    doc = next(
+        d.args[0]
+        for d in reversed(conf.insert_one.call_args_list)
+        if "unit" in d.args[0]
+    )
+    assert doc["unit"] == "DummyIngestUnit"
+    config_id = doc["config"]["directives"][0]["ingest"]["combine"][0]["state_t2"][0][
+        "config"
+    ]
+
+    def get_config(config_id: int):
+        return next(
+            (
+                d.args[0]
+                for d in reversed(conf.insert_one.call_args_list)
+                if d.args[0].get("_id") == config_id
+            ),
+            None,
+        )
+
+    assert isinstance(config_id, int), "config was hashed"
+    config = get_config(config_id)
+    assert "t2_dependency" in config
+    subconfig = get_config(config["t2_dependency"][0]["config"])
+    subconfig.pop("_id")
+    assert subconfig == {"foo": 37}, "config was hashed recursively"
