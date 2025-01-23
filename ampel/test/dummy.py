@@ -25,6 +25,7 @@ from ampel.content.T1Document import T1Document
 from ampel.core.EventHandler import EventHandler
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.model.ingest.CompilerOptions import CompilerOptions
+from ampel.model.ingest.IngestDirective import IngestDirective
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.struct.Resource import Resource
 from ampel.struct.UnitResult import UnitResult
@@ -172,3 +173,10 @@ class DummyProcessorTemplate(AbsConfigMorpher):
 class DummyUnitResultAdapter(AbsUnitResultAdapter):
     def handle(self, ur: UnitResult) -> UnitResult:
         return ur
+
+
+class DummyIngestUnit(AbsEventUnit):
+    directives: list[IngestDirective]
+
+    def proceed(self, event_hdlr):
+        return super().proceed(event_hdlr)

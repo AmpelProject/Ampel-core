@@ -32,6 +32,7 @@ from ampel.model.ChannelModel import ChannelModel
 from ampel.model.UnitModel import UnitModel
 from ampel.struct.Resource import Resource
 from ampel.util.freeze import recursive_freeze
+from ampel.util.template import apply_templates
 
 
 def _handle_traceback(signal, frame):
@@ -177,20 +178,25 @@ class ProcessCommand(AbsCoreCommand):
         start_time = time()
         logger = AmpelLogger.get_logger(base_flag=LogFlag.MANUAL_RUN)
 
-        logger.info(f"Running task {args['name']}")
-
-        with open(args["schema"]) as f:
-            unit_model = UnitModel(**yaml.safe_load(f))
-        # always raise exceptions
-        unit_model.override = (unit_model.override or {}) | {
-            "raise_exc": not args["handle_exc"]
-        }
-
         ctx = self._get_context(
             args,
             unknown_args,
             logger,
         )
+
+        logger.info(f"Running task {args['name']}")
+
+        with open(args["schema"]) as f:
+            taskd = yaml.safe_load(f)
+            if "template" in taskd:
+                taskd = apply_templates(ctx, taskd["template"], taskd, logger)
+                taskd.pop("template")
+            unit_model = UnitModel(**taskd)
+
+        # always raise exceptions
+        unit_model.override = (unit_model.override or {}) | {
+            "raise_exc": not args["handle_exc"]
+        }
 
         if args["workflow"]:
             process_name = f'{args["workflow"]}.{args["name"]}'

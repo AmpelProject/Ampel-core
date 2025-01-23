@@ -614,6 +614,11 @@ unit:
     version: 0.8.0a1
     base:
       - AbsEventUnit
+  DummyIngestUnit:
+    fqn: ampel.test.dummy
+    version: 0.8.0a1
+    base:
+      - AbsEventUnit
 process:
   t0: {}
   t1: {}
@@ -634,3 +639,4 @@ resource:
     group: samsa
 template:
   dummy_processor: ampel.test.dummy:DummyProcessorTemplate
+  hash_t2_config: ampel.config.alter.HashT2Config

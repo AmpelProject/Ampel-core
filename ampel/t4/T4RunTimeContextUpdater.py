@@ -39,14 +39,11 @@ class T4RunTimeContextUpdater(AbsT4ControlUnit, DocBuilder):
 				_chan=self.channel # type: ignore[arg-type]
 			)
 			if ret := t4_unit.do():
-				if not isinstance(ret, dict):
-					raise ValueError(f'Invalid {um.unit} return value, dict expected')
+				if not (isinstance(ret, dict) and all(isinstance(k, str) for k in ret)):
+					raise ValueError(f'Invalid {um.unit} return value, dict[str, Any] expected')
+				# Ensure alias keys start with %%
+				ret = {k if k.startswith('%%') else f'%%{k}': v for k, v in ret.items()}
 				for k in ret:
-					if not k[0] == '%' == k[1]:
-						raise ValueError(
-							f'Invalid run time alias returned by {um.unit}, '
-							f'run time aliases must begin with %%'
-						)
 					if not self.allow_alias_override and k in aliases:
 						raise ValueError(
 							f'Run time alias {k} was already registered, '
