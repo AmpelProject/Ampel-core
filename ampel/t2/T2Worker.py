@@ -570,7 +570,7 @@ class T2Worker(AbsWorker[T2Document]):
 					)
 					return UnitResult(code=DocumentCode.T2_FAILED_DEPENDENCY)
 
-		if not t2_views:
+		if queries and not t2_views:
 			return UnitResult(code=DocumentCode.T2_MISSING_DEPENDENCY)
 
 		return t2_views
