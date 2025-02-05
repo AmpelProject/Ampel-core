@@ -7,6 +7,7 @@
 # Last Modified Date:  04.04.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+import contextlib
 import os
 import sys
 from collections.abc import Iterator, Mapping
@@ -270,7 +271,7 @@ class UnitLoader:
 
 		:raises: ValueError if unit cannot be found or loaded or if parent class is unrecognized
 		"""
-		if name in AuxUnitRegister._defs:  # noqa: SLF001
+		with contextlib.suppress(ValueError):
 			return AuxUnitRegister.get_aux_class(name, sub_type=unit_type)
 
 		if self._dyn_register and name in self._dyn_register:
@@ -346,7 +347,7 @@ class UnitLoader:
 	def resolve_secrets(self, unit_type: type[AmpelUnit], init_kwargs: dict[str, Any]) -> dict[str, Any]:
 		"""
 		Add a resolved Secret instance to init_kwargs for every Secret field of
-		unit_type.
+		unit_type, recursing into nested UnitModels.
 		"""
 		for k, annotation in unit_type._annots.items():  # noqa: SLF001
 			# for unions, consider the first member that is not NoneType
@@ -358,7 +359,7 @@ class UnitLoader:
 					continue
 				annotation = next((f for f in get_args(annotation) if f is not type(None)), type(None))  # noqa: PLW2901
 			field_type = get_origin(annotation) or annotation
-			if issubclass(type(field_type), type) and issubclass(field_type, Secret):
+			if issubclass(type(field_type), type) and issubclass(field_type, Secret|UnitModel):
 				default = False
 				if isinstance(kwargs := init_kwargs.get(k), Mapping):
 					v = field_type(**kwargs)
@@ -368,15 +369,21 @@ class UnitLoader:
 				else:
 					# missing required field; will be caught in validation later
 					continue
-				ValueType = args[0] if (args := annotation.get_model_args()) else object
-				if args:
-					assert ValueType is not object
-				if not self.vault:
-					raise TypeError("No vault configured")
-				if not self.vault.resolve_secret(v, ValueType):
-					raise TypeError(
-						f"Could not resolve {unit_type.__name__}.{k} as {getattr(ValueType, '__name__', '<untyped>')}"
-						f" using {'default' if default else 'configured'} value {v!r}"
+				if issubclass(field_type, Secret):
+					ValueType = args[0] if (args := annotation.get_model_args()) else object
+					if args:
+						assert ValueType is not object
+					if not self.vault:
+						raise TypeError("No vault configured")
+					if not self.vault.resolve_secret(v, ValueType):
+						raise TypeError(
+							f"Could not resolve {unit_type.__name__}.{k} as {getattr(ValueType, '__name__', '<untyped>')}"
+							f" using {'default' if default else 'configured'} value {v!r}"
+						)
+				elif isinstance(v, UnitModel) and isinstance(v.config, Mapping | None):
+					v.config = self.resolve_secrets(
+						self.get_class_by_name(v.unit),
+						(v.config or {}) | (v.override or {})
 					)
 				init_kwargs[k] = v
 

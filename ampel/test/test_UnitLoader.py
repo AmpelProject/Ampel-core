@@ -2,6 +2,8 @@
 import pytest
 
 from ampel.abstract.AbsOpsUnit import AbsOpsUnit
+from ampel.base.AmpelUnit import AmpelUnit
+from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.base.LogicalUnit import LogicalUnit
 from ampel.core.ContextUnit import ContextUnit
 from ampel.dev.DevAmpelContext import DevAmpelContext
@@ -206,6 +208,44 @@ def test_use_secret_in_init(
         unit_type=NeedsSecretInInit,
     )
     assert unit.seekrit.get() == secrets.store["dict"]
+
+
+def test_secret_in_nested_model(secret_context: DevAmpelContext, ampel_logger):
+    """Secrets are resolved for UnitModels embedded in other models"""
+    @secret_context.register_unit
+    class Outer(LogicalUnit):
+        inner: UnitModel
+        # include a secret at the top level to ensure it is not resolved twice
+        outer_secret: NamedSecret[dict] = NamedSecret[dict](label="dict")
+
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+
+            # Common pattern: instantiate an aux unit from a model in __init__
+            self.inner_thing = AuxUnitRegister.new_unit(
+                model = self.inner,
+                sub_type = Inner
+            )
+
+    @secret_context.register_unit
+    class Inner(AmpelUnit):
+        # this nested secret should be resolved
+        seekrit: NamedSecret[str] = NamedSecret[str](label="str")
+
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+
+            assert self.seekrit.get() == "blahblablah"
+
+    model = UnitModel(unit="Outer", config={"inner": {"unit": "Inner"}})
+
+    unit = secret_context.loader.new(
+        model,
+        logger=ampel_logger,
+        unit_type=Outer,
+    )
+
+    assert unit.inner_thing.seekrit.get() == "blahblablah", "loading unit resolves secret"
 
 
 def test_unit_validation(dev_context: DevAmpelContext):
