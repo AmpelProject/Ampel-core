@@ -10,14 +10,12 @@
 import contextlib
 import os
 import sys
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator
 from contextlib import contextmanager
-from copy import deepcopy
 from hashlib import blake2b
 from importlib import import_module
 from pathlib import Path
-from types import UnionType
-from typing import Any, TypeVar, Union, get_args, get_origin, overload
+from typing import Any, TypeVar, overload
 
 from ampel.base.AmpelUnit import AmpelUnit
 from ampel.base.AuxUnitRegister import AuxUnitRegister
@@ -34,7 +32,7 @@ from ampel.log.handlers.DefaultRecordBufferingHandler import (
 from ampel.model.t3.AliasableModel import AliasableModel
 from ampel.model.UnitModel import UnitModel
 from ampel.secret.AmpelVault import AmpelVault
-from ampel.secret.Secret import Secret
+from ampel.secret.NamedSecret import NamedSecret
 from ampel.types import ChannelId, check_class
 from ampel.util.collections import ampel_iter
 from ampel.util.freeze import recursive_unfreeze
@@ -185,15 +183,16 @@ class UnitLoader:
 		if unit_type:
 			check_class(Klass, unit_type)
 
-		init_config = self.get_init_config(model.config, model.override)
+		with NamedSecret.resolve_with(self.vault):
+			unit = Klass(**(
+				self.get_init_config(model.config, model.override)
+				| kwargs
+				| (model.secrets or {})
+			))
 
-		unit = Klass(
-			**self.resolve_secrets(
-				Klass,
-				init_config | kwargs | (model.secrets or {})
-			)
-		)
-				
+			if hasattr(unit, "post_init"):
+				unit.post_init()
+		
 		if isinstance(unit, LogicalUnit | ContextUnit):
 
 			trace_id = None
@@ -235,9 +234,6 @@ class UnitLoader:
 					# raise e
 
 			unit._trace_id = trace_id  # noqa: SLF001
-
-			if hasattr(unit, "post_init"):
-				unit.post_init()
 
 		return unit
 
@@ -344,52 +340,6 @@ class UnitLoader:
 		return value
 
 
-	def resolve_secrets(self, unit_type: type[AmpelUnit], init_kwargs: dict[str, Any]) -> dict[str, Any]:
-		"""
-		Add a resolved Secret instance to init_kwargs for every Secret field of
-		unit_type, recursing into nested UnitModels.
-		"""
-		for k, annotation in unit_type._annots.items():  # noqa: SLF001
-			# for unions, consider the first member that is not NoneType
-			if get_origin(annotation) in (Union, UnionType):
-				if (
-					type(None) in get_args(annotation)
-					and (unit_type._defaults | init_kwargs).get(k, object()) is None  # noqa: SLF001
-				):
-					continue
-				annotation = next((f for f in get_args(annotation) if f is not type(None)), type(None))  # noqa: PLW2901
-			field_type = get_origin(annotation) or annotation
-			if issubclass(type(field_type), type) and issubclass(field_type, Secret|UnitModel):
-				default = False
-				if isinstance(kwargs := init_kwargs.get(k), Mapping):
-					v = field_type(**kwargs)
-				elif k in unit_type._defaults:  # noqa: SLF001
-					default = True
-					v = deepcopy(unit_type._defaults[k])  # noqa: SLF001
-				else:
-					# missing required field; will be caught in validation later
-					continue
-				if issubclass(field_type, Secret):
-					ValueType = args[0] if (args := annotation.get_model_args()) else object
-					if args:
-						assert ValueType is not object
-					if not self.vault:
-						raise TypeError("No vault configured")
-					if not self.vault.resolve_secret(v, ValueType):
-						raise TypeError(
-							f"Could not resolve {unit_type.__name__}.{k} as {getattr(ValueType, '__name__', '<untyped>')}"
-							f" using {'default' if default else 'configured'} value {v!r}"
-						)
-				elif isinstance(v, UnitModel) and isinstance(v.config, Mapping | None):
-					v.config = self.resolve_secrets(
-						self.get_class_by_name(v.unit),
-						(v.config or {}) | (v.override or {})
-					)
-				init_kwargs[k] = v
-
-		return init_kwargs
-
-
 	def get_resources(self, model: UnitModel) -> dict[str, Any]:
 		"""
 		Resources are defined using the static variable 'require' in ampel units
@@ -423,17 +373,14 @@ class UnitLoader:
 		def validate_unit(value: UnitModel) -> UnitModel:
 			Unit = self.get_class_by_name(value.unit)
 			if issubclass(Unit, AmpelUnit) and not issubclass(Unit, AbsProcessController):
-				init_config = self.resolve_secrets(
-					Unit,
-					self.get_init_config(value.config, value.override)
-				)
-				Unit.validate(init_config)
+				Unit.validate(self.get_init_config(value.config, value.override))
 			return value
 
 		UnitModel.post_validate_hook = validate_unit
 		AliasableModel._config = self.config  # noqa: SLF001
 		try:
-			yield
+			with NamedSecret.resolve_with(self.vault):
+				yield
 		finally:
 			UnitModel.post_validate_hook = None
 			AliasableModel._config = None  # noqa: SLF001
