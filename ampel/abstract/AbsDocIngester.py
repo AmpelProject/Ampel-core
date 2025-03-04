@@ -12,13 +12,10 @@ from typing import Any, Generic
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.base.decorator import abstractmethod
-from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
 from ampel.types import T
 
 
 class AbsDocIngester(AmpelABC, AmpelBaseModel, Generic[T], abstract=True):
-
-	updates_buffer: DBUpdatesBuffer
 
 	@abstractmethod
 	def ingest(self, doc: T) -> None:
