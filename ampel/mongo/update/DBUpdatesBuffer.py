@@ -224,12 +224,11 @@ class DBUpdatesBuffer(Schedulable):
 		"""
 		Ensure that updates issued in this context are grouped together
 		"""
-		block_autopush = self._block_autopush
 		self._block_autopush = True
 		try:
 			yield
 		finally:
-			self._block_autopush = block_autopush
+			self.check_push()
 
 
 	def request_autopush(self) -> None:
