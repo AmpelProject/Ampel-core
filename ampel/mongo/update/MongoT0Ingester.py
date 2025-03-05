@@ -13,14 +13,14 @@ from typing import Any, Literal
 
 from pymongo import UpdateMany, UpdateOne
 
+from ampel.abstract.AbsDocIngester import AbsDocIngester
 from ampel.content.DataPoint import DataPoint
+from ampel.mongo.update.HasUpdatesBuffer import HasUpdatesBuffer
 from ampel.mongo.utils import maybe_use_each
 from ampel.types import DataPointId
 
-from .AbsMongoIngester import AbsMongoIngester
 
-
-class MongoT0Ingester(AbsMongoIngester[DataPoint]):
+class MongoT0Ingester(AbsDocIngester[DataPoint], HasUpdatesBuffer):
 	""" Inserts `DataPoint` into the t0 collection  """
 
 	#: If 1 or 2: raise DuplicateKeyError on attempts to upsert the same id with different bodies

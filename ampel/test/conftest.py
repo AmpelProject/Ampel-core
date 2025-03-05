@@ -24,6 +24,7 @@ from ampel.model.ingest.T1Combine import T1Combine
 from ampel.model.ingest.T2Compute import T2Compute
 from ampel.model.UnitModel import UnitModel
 from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
+from ampel.mongo.update.MongoIngester import MongoIngester
 from ampel.mongo.update.MongoStockIngester import MongoStockIngester
 from ampel.mongo.update.MongoT2Ingester import MongoT2Ingester
 from ampel.test.dummy import (
@@ -184,6 +185,7 @@ def ingest_tied_t2(integration_context: DevAmpelContext, ampel_logger, request):
         DummyPointT2Unit,
         DummyStateT2Unit,
         DummyTiedStateT2Unit,
+        MongoIngester,
     ):
         integration_context.register_unit(unit)
 
@@ -215,11 +217,22 @@ def ingest_tied_t2(integration_context: DevAmpelContext, ampel_logger, request):
             ]
         )
 
+    run_id = 0
+    ingester = integration_context.loader.new_context_unit(
+        UnitModel(unit="MongoIngester"),
+        context = integration_context,
+        sub_type = MongoIngester,
+        logger = ampel_logger,
+        run_id = run_id,
+        raise_exc = True,
+    )
+
     hander = ChainedIngestionHandler(
         integration_context,
         tier=0,
         run_id=run_id,
         trace_id={},
+        ingester=ingester,
         updates_buffer=updates_buffer,
         logger=ampel_logger,
         compiler_opts=CompilerOptions(),

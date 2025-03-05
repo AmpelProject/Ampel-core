@@ -7,10 +7,10 @@
 # Last Modified Date:  09.10.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from ampel.abstract.AbsDocIngester import AbsDocIngester, T
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
 
 
-class AbsMongoIngester(AbsDocIngester[T], abstract=True):
+class HasUpdatesBuffer(AmpelBaseModel):
 
 	updates_buffer: DBUpdatesBuffer

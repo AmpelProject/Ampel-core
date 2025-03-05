@@ -39,6 +39,7 @@ unit:
 - ampel.cli.T3BufferExporterUnit
 - ampel.demo.DemoProcessor
 - ampel.ingest.ChainedT0Muxer
+- ampel.mongo.update.MongoIngester
 
 # Logical units
 - ampel.t1.T1SimpleCombiner

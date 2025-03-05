@@ -515,6 +515,14 @@ unit:
     distrib: ampel-core
     file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
     version: 0.8.0a1
+  MongoIngester:
+    fqn: ampel.mongo.update.MongoIngester
+    base:
+    - MongoIngester
+    - AbsIngester
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
   MongoStockIngester:
     fqn: ampel.mongo.update.MongoStockIngester
     base:

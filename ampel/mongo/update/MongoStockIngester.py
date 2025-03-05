@@ -11,14 +11,14 @@ from typing import Any
 
 from pymongo import UpdateOne
 
+from ampel.abstract.AbsDocIngester import AbsDocIngester
 from ampel.content.StockDocument import StockDocument
+from ampel.mongo.update.HasUpdatesBuffer import HasUpdatesBuffer
 from ampel.mongo.utils import maybe_use_each
 from ampel.util.collections import try_reduce
 
-from .AbsMongoIngester import AbsMongoIngester
 
-
-class MongoStockIngester(AbsMongoIngester[StockDocument]):
+class MongoStockIngester(AbsDocIngester[StockDocument], HasUpdatesBuffer):
 
 	def ingest(self, doc: StockDocument) -> None:
 

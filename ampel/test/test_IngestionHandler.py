@@ -24,11 +24,9 @@ from ampel.model.ingest.MuxModel import MuxModel
 from ampel.model.ingest.T1Combine import T1Combine
 from ampel.model.ingest.T2Compute import T2Compute
 from ampel.model.UnitModel import UnitModel
-from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
-from ampel.mongo.update.MongoStockIngester import MongoStockIngester
-from ampel.mongo.update.MongoT0Ingester import MongoT0Ingester
-from ampel.mongo.update.MongoT1Ingester import MongoT1Ingester
-from ampel.mongo.update.MongoT2Ingester import MongoT2Ingester
+from ampel.mongo.update.AbsIngester import AbsIngester
+from ampel.mongo.update.MongoIngester import MongoIngester
+from ampel.mongo.update.QueueIngester import AbsProducer, QueueIngester
 from ampel.test.dummy import (
     DummyHistoryMuxer,
     DummyMuxer,
@@ -93,11 +91,22 @@ def multiplex_directive(
     )
 
 
-def get_handler(context: DevAmpelContext, directives) -> ChainedIngestionHandler:
+def get_handler(
+    context: DevAmpelContext,
+    directives,
+    ingester_model=UnitModel(unit="MongoIngester"),
+) -> ChainedIngestionHandler:
     run_id = 0
     logger = AmpelLogger.get_logger(console={"level": DEBUG})
-    updates_buffer = DBUpdatesBuffer(
-        context.db, run_id=run_id, logger=logger, raise_exc=True
+    ingester = context.loader.new_context_unit(
+        ingester_model,
+        context = context,
+        sub_type = AbsIngester,
+        logger = logger,
+        run_id = run_id,
+        raise_exc = True,
+        # need to disable provenance for dynamically registered unit
+        _provenance = False,
     )
     return ChainedIngestionHandler(
         context=context,
@@ -105,9 +114,10 @@ def get_handler(context: DevAmpelContext, directives) -> ChainedIngestionHandler
         shaper=UnitModel(unit="NoShaper"),
         tier=0,
         trace_id={},
-        run_id=0,
+        run_id=run_id,
         compiler_opts=CompilerOptions(t0={"tag": ["TAGGERT"]}),
-        updates_buffer=updates_buffer,
+        updates_buffer=ingester.updates_buffer,
+        ingester=ingester,
         directives=directives,
     )
 
@@ -133,16 +143,13 @@ def test_minimal_directive(
     """
     directive = IngestDirective(channel="TEST_CHANNEL")
     handler = get_handler(dev_context, [directive])
-    assert isinstance(handler.stock_ingester, MongoStockIngester)
-    assert isinstance(handler.t0_ingester, MongoT0Ingester)
-    assert isinstance(handler.t1_ingester, MongoT1Ingester)
-    assert isinstance(handler.t2_ingester, MongoT2Ingester)
+    assert isinstance(handler.ingester, MongoIngester)
 
     # ingestion is idempotent
     handler.ingest(datapoints, [(0, True)], stock_id="stockystock")
-    handler.updates_buffer.push_updates()
+    handler.ingester.updates_buffer.push_updates()
     handler.ingest(datapoints, [(0, True)], stock_id="stockystock")
-    handler.updates_buffer.push_updates()
+    handler.ingester.updates_buffer.push_updates()
 
     stock = dev_context.db.get_collection("stock")
     assert stock.count_documents({}) == 1
@@ -177,10 +184,10 @@ def test_single_source_directive(
     dev_context, single_source_directive: IngestDirective, datapoints
 ):
     handler = get_handler(dev_context, [single_source_directive])
-    assert isinstance(handler.stock_ingester, MongoStockIngester)
-    assert isinstance(handler.t0_ingester, MongoT0Ingester)
-    assert isinstance(handler.t1_ingester, MongoT1Ingester)
-    assert isinstance(handler.t2_ingester, MongoT2Ingester)
+    assert isinstance(handler.ingester.stock, MongoStockIngester)
+    assert isinstance(handler.ingester.t0, MongoT0Ingester)
+    assert isinstance(handler.ingester.t1, MongoT1Ingester)
+    assert isinstance(handler.ingester.t2, MongoT2Ingester)
 
     # include retro-completed states if configured
     assert single_source_directive.ingest.combine
@@ -202,6 +209,56 @@ def test_single_source_directive(
     assert t1.count_documents({}) == num_states if retro else 1
 
     check_unit_counts(list(t2.find({})), num_states, num_points)
+
+
+def test_queue_ingester(
+    dev_context, single_source_directive: IngestDirective, datapoints,
+):
+
+    @dev_context.register_unit
+    class DummyProducer(AbsProducer):
+
+        def __init__(self, **kwargs) -> None:
+            super().__init__(**kwargs)
+            self.items = []
+
+        def produce(self, item: AbsProducer.Item, delivery_callback=None):
+            self.items.append(item)
+
+        def flush(self):
+            pass
+
+    dev_context.register_unit(QueueIngester)
+    handler = get_handler(
+        dev_context,
+        [single_source_directive],
+        UnitModel(unit="QueueIngester", config={"producer": {"unit": "DummyProducer"}})
+    )
+    assert isinstance(handler.ingester, QueueIngester)
+    assert isinstance(handler.ingester._producer, DummyProducer)
+
+    # include retro-completed states if configured
+    assert single_source_directive.ingest.combine
+    retro = "retro" in str(single_source_directive.ingest.combine[0].unit).lower()
+    num_points = len(datapoints)
+    num_states = num_points if retro else 1
+
+    handler.ingest(datapoints, [(0, True)], stock_id="stockystock")
+    assert len(items := handler.ingester._producer.items) == 1
+    handler.ingest(datapoints, [(0, True)], stock_id="stockystock")
+    assert len(items := handler.ingester._producer.items) == 2, "second ingestion creates a second message"
+
+    t0 = items[0].t0
+    t1 = items[0].t1
+    t2 = items[0].t2
+
+    assert len(t0) == len(datapoints)
+    assert all(doc["stock"] == "stockystock" for doc in t0)
+    assert len([d for d in t0 if d["id"] == 0]) == 1
+
+    assert len(t1) == num_states if retro else 1
+
+    check_unit_counts(t2, num_states, num_points)
 
 
 def test_multiplex_directive(
@@ -332,7 +389,7 @@ def test_t0_meta_append(
     datapoints[0]["meta"] = [meta_record]
     datapoints[0]["tag"] = tags
     handler.t0_compiler.add(datapoints, "SOME_CHANNEL", None, trace_id=0)
-    handler.t0_compiler.commit(handler.t0_ingester, ts)
+    handler.t0_compiler.commit(handler.ingester.t0, ts)
     handler.updates_buffer.push_updates(force=True)
 
     doc = mock_context.db.get_collection("t0").find_one({"id": datapoints[0]["id"]})
@@ -362,7 +419,7 @@ def test_duplicate_t0_id(
             integration_context, [IngestDirective(channel="TEST_CHANNEL")]
         )
         handler.t0_compiler.add(datapoints, "SOME_CHANNEL", ttl=None, trace_id=0)
-        handler.t0_compiler.commit(handler.t0_ingester, 0)
+        handler.t0_compiler.commit(handler.ingester.t0, 0)
         handler.updates_buffer.push_updates(force=True)
 
     # populate documents

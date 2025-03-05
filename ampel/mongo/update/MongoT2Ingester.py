@@ -11,14 +11,14 @@ from typing import Any
 
 from pymongo import UpdateOne
 
+from ampel.abstract.AbsDocIngester import AbsDocIngester
 from ampel.content.T2Document import T2Document
 from ampel.enum.DocumentCode import DocumentCode
+from ampel.mongo.update.HasUpdatesBuffer import HasUpdatesBuffer
 from ampel.mongo.utils import maybe_use_each
 
-from .AbsMongoIngester import AbsMongoIngester
 
-
-class MongoT2Ingester(AbsMongoIngester[T2Document]):
+class MongoT2Ingester(AbsDocIngester[T2Document], HasUpdatesBuffer):
 
 	def ingest(self, doc: T2Document) -> None:
 
