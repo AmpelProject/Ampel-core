@@ -46,7 +46,6 @@ from ampel.model.ingest.T1CombineComputeNow import T1CombineComputeNow
 from ampel.model.ingest.T2Compute import T2Compute
 from ampel.model.UnitModel import UnitModel
 from ampel.mongo.update.AbsIngester import AbsIngester
-from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
 from ampel.struct.T1CombineResult import T1CombineResult
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import ChannelId, DataPointId, StockId, Tag, UBson, UnitId
@@ -126,7 +125,6 @@ class ChainedIngestionHandler:
 		shaper: UnitModel,
 		directives: Sequence[IngestDirective | DualIngestDirective],
 		ingester: AbsIngester,
-		updates_buffer: DBUpdatesBuffer,
 		run_id: int,
 		trace_id: dict[str, None | int],
 		tier: Literal[-1, 0, 1, 2, 3],
@@ -148,7 +146,6 @@ class ChainedIngestionHandler:
 		"""
 
 		self.ingester = ingester
-		self.updates_buffer = updates_buffer
 		self.logger = logger
 		self.context = context
 		self.run_id = run_id
@@ -183,28 +180,27 @@ class ChainedIngestionHandler:
 
 		for directive in directives:
 			self.iblocks.append(
-				self._new_ingest_blocks(directive, updates_buffer, logger)
+				self._new_ingest_blocks(directive, logger)
 			)
 
 
 	def _new_ingest_blocks(self,
 		directive: IngestDirective | DualIngestDirective,
-		updates_buffer: DBUpdatesBuffer,
 		logger: AmpelLogger
 	) -> tuple[IngestBlock, IngestBlock]:
 
 		if isinstance(directive, DualIngestDirective):
 			known_ib = self._new_ingest_block(
-				directive.ingest['known'], directive.channel, updates_buffer, logger
+				directive.ingest['known'], directive.channel, logger
 			)
 			new_ib = self._new_ingest_block(
-				directive.ingest['new'], directive.channel, updates_buffer, logger
+				directive.ingest['new'], directive.channel, logger
 			)
 			return known_ib, new_ib
 
 		if isinstance(directive, IngestDirective):
 			ib = self._new_ingest_block(
-				directive.ingest, directive.channel, updates_buffer, logger
+				directive.ingest, directive.channel, logger
 			)
 			return ib, ib
 
@@ -214,7 +210,6 @@ class ChainedIngestionHandler:
 	def _new_ingest_block(self,
 		directive: IngestBody,
 		channel: ChannelId,
-		updates_buffer: DBUpdatesBuffer,
 		logger: AmpelLogger
 	) -> IngestBlock:
 
@@ -260,7 +255,7 @@ class ChainedIngestionHandler:
 				# Spawn new instance
 				self._mux_cache[i] = muxer = self.context.loader.new_context_unit(
 					model = directive.mux, context = self.context, sub_type = AbsT0Muxer,
-					logger = buf_logger, updates_buffer = updates_buffer
+					logger = buf_logger
 				)
 
 				# Shortcut to avoid muxer.logger.handlers[?]
@@ -470,7 +465,7 @@ class ChainedIngestionHandler:
 		:param jm_extra: extra info to be added to journal or meta enties. Ex: {'alert_id': 123}
 		"""
 
-		with self.updates_buffer.group_updates():
+		with self.ingester.group():
 			ingest_start = time()
 
 			# process *modifies* dict instances loaded by fastavro

@@ -195,8 +195,6 @@ def ingest_tied_t2(integration_context: DevAmpelContext, ampel_logger, request):
     integration_context.add_conf_id(tied_config_id, unit_conf)
     run_id = 0
     channel = "TEST_CHANNEL"
-    #now = datetime.datetime.now()
-    updates_buffer = DBUpdatesBuffer(integration_context.db, run_id=run_id, logger=ampel_logger)
 
     if "stock" in dependency.lower():
         body = IngestBody(
@@ -227,13 +225,12 @@ def ingest_tied_t2(integration_context: DevAmpelContext, ampel_logger, request):
         raise_exc = True,
     )
 
-    hander = ChainedIngestionHandler(
+    handler = ChainedIngestionHandler(
         integration_context,
         tier=0,
         run_id=run_id,
         trace_id={},
         ingester=ingester,
-        updates_buffer=updates_buffer,
         logger=ampel_logger,
         compiler_opts=CompilerOptions(),
         shaper=UnitModel(unit="NoShaper"),
@@ -244,9 +241,10 @@ def ingest_tied_t2(integration_context: DevAmpelContext, ampel_logger, request):
         {"id": i, "stock": "stockystock", "body": {"thing": i + 1}} for i in range(3)
     ]
 
-    hander.ingest(datapoints, [(0, True)], stock_id="stockystock", jm_extra={"alert": 123})
+    handler.ingest(datapoints, [(0, True)], stock_id="stockystock", jm_extra={"alert": 123})
+    assert isinstance(handler.ingester, MongoIngester)
 
-    updates_buffer.push_updates()
+    handler.ingester.updates_buffer.push_updates()
 
     assert (
         integration_context.db.get_collection("t2").count_documents({"unit": request.param})

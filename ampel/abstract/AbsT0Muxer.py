@@ -12,7 +12,6 @@ from ampel.base.decorator import abstractmethod
 from ampel.content.DataPoint import DataPoint
 from ampel.core.ContextUnit import ContextUnit
 from ampel.log.AmpelLogger import AmpelLogger
-from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
 from ampel.types import StockId, Traceless
 
 
@@ -23,7 +22,6 @@ class AbsT0Muxer(AmpelABC, ContextUnit, abstract=True):
 	"""
 
 	logger: Traceless[AmpelLogger]
-	updates_buffer: Traceless[DBUpdatesBuffer]
 
 	@abstractmethod
 	def process(self,
