@@ -165,7 +165,11 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"ampel/test/*" = ["T20", "E731"]
+"ampel/test/*" = [
+    "T20",
+    "E731",
+    "SLF001",
+]
 "ampel/cli/*" = ["T20"]
 "ampel/config/collector/*" = ["T20"]
 
