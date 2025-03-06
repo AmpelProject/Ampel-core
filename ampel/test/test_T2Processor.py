@@ -50,7 +50,7 @@ def test_metrics(integration_context):
 def test_error_reporting(integration_context: DevAmpelContext, config):
     integration_context.register_unit(DummyPointT2Unit)
     # DummyPointT2Unit will raise an error on the malformed T0 doc
-    integration_context.db.get_collection("t0").insert_one({"id": 42})
+    integration_context.db.get_collection("t0").insert_one({"id": 42, "stock": 42})
     channels = ["channel_a", "channel_b"]
     doc: T2Document = {
         "unit": "DummyPointT2Unit",
