@@ -216,7 +216,7 @@ def test_queue_ingester(
 
         def __init__(self, **kwargs) -> None:
             super().__init__(**kwargs)
-            self.items = []
+            self.items: list[AbsProducer.Item] = []
 
         def produce(self, item: AbsProducer.Item, delivery_callback=None):
             self.items.append(item)

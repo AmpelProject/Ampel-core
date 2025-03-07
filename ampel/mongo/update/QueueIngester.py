@@ -1,7 +1,8 @@
 from collections.abc import Callable, Generator
 from contextlib import contextmanager
+from dataclasses import dataclass
 from functools import partial
-from typing import Any, NamedTuple, TypeVar
+from typing import Any, TypeVar
 
 from ampel.abstract.AbsDocIngester import AbsDocIngester
 from ampel.base.AmpelABC import AmpelABC
@@ -20,7 +21,8 @@ _T = TypeVar("_T", StockDocument, DataPoint, T1Document, T2Document)
 
 class AbsProducer(AmpelABC, AmpelUnit, abstract=True):
 
-    class Item(NamedTuple):
+    @dataclass
+    class Item:
         """
         A bundle of documents that all belong to the same context (e.g. an alert)
         """
