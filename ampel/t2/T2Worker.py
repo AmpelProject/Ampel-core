@@ -28,6 +28,7 @@ from ampel.abstract.AbsWorker import AbsWorker, register_stats
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.base.BadConfig import BadConfig
 from ampel.content.DataPoint import DataPoint
+from ampel.content.MetaRecord import MetaRecord
 from ampel.content.StockDocument import StockDocument
 from ampel.content.T1Document import T1Document
 from ampel.content.T2Document import T2Document
@@ -47,6 +48,7 @@ from ampel.types import (
 	StockId,
 	T,
 	T2Link,
+	Tag,
 	UBson,
 	ubson,
 )
@@ -133,6 +135,19 @@ class T2Worker(AbsWorker[T2Document]):
 		"""Would we retry this document later?"""
 		return code in self._pending_codes and self._get_trials(doc) < self.max_try
 
+	def update_doc(self,
+		doc: T2Document,
+		meta: MetaRecord,
+		logger: AmpelLogger, *,
+		body: UBson = None,
+		tag: None | OneOrMany[Tag] = None,
+		code: int = 0
+	) -> None:
+		with stat_time.labels(doc["unit"], "commit_update").time():
+			self.commit_update(
+				{'_id': doc['_id']}, # type: ignore[typeddict-item]
+				meta, logger, body=body, tag=tag, code=code
+			)
 
 	def process_doc(self,
 		doc: T2Document,
@@ -184,7 +199,7 @@ class T2Worker(AbsWorker[T2Document]):
 			jrec = stock_updr.add_journal_record(
 				stock = doc['stock'],
 				channel = doc['channel'],
-				doc_id = doc['_id'], # type: ignore[typeddict-item]
+				doc_id = doc.get('_id'),  # type: ignore[arg-type]
 				trace_id = trace_id or None,
 				unit = doc['unit']
 			)
@@ -257,11 +272,7 @@ class T2Worker(AbsWorker[T2Document]):
 				)
 
 			meta['code'] = code
-			with stat_time.labels(doc["unit"], "commit_update").time():
-				self.commit_update(
-					{'_id': doc['_id']}, # type: ignore[typeddict-item]
-					meta, logger, body=body, tag=tag, code=code
-				)
+			self.update_doc(doc, meta, logger, body=body, tag=tag, code=code)
 
 			# Update stock document
 			if len(stock_updr._updates) >= self.updates_buffer_size:  # noqa: SLF001
@@ -561,6 +572,7 @@ class T2Worker(AbsWorker[T2Document]):
 					body, code = self.process_doc(dep_t2_doc, stock_updr, logger)
 					dep_t2_doc['body'].append(body)  # type: ignore[attr-defined]
 					dep_t2_doc['meta'].append({'code': code, 'tier': 2})  # type: ignore[attr-defined]
+					dep_t2_doc['code'] = code
 
 					t2_views.append(T2DocView.of(dep_t2_doc, self.context.config))
 					# may not come from mongo, and so not have an _id

@@ -23,6 +23,7 @@ from ampel.model.ingest.IngestDirective import IngestDirective
 from ampel.model.ingest.T1Combine import T1Combine
 from ampel.model.ingest.T2Compute import T2Compute
 from ampel.model.UnitModel import UnitModel
+from ampel.mongo.update.AbsIngester import AbsIngester
 from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
 from ampel.mongo.update.MongoIngester import MongoIngester
 from ampel.mongo.update.MongoStockIngester import MongoStockIngester
@@ -175,21 +176,21 @@ def _ingest_stock_t2(integration_context: DevAmpelContext, ampel_logger):
 
     integration_context.register_unit(DummyStockT2Unit)
 
-
-@pytest.fixture(params=["DummyStateT2Unit", "DummyPointT2Unit", "DummyStockT2Unit"])
-def ingest_tied_t2(integration_context: DevAmpelContext, ampel_logger, request):
-    """Create a T2 document with dependencies"""
+def make_tied_ingestion_handler(
+    integration_context: DevAmpelContext,
+    logger: AmpelLogger,
+    dependency: str,
+    ingester_model=UnitModel(unit="MongoIngester")
+) -> ChainedIngestionHandler:
 
     for unit in (
         DummyStockT2Unit,
         DummyPointT2Unit,
         DummyStateT2Unit,
         DummyTiedStateT2Unit,
-        MongoIngester,
     ):
         integration_context.register_unit(unit)
 
-    dependency = request.param
     unit_conf = {"t2_dependency": [{"unit": dependency}]}
     tied_config_id = get_unit_confid(integration_context.loader, unit="DummyTiedStateT2Unit", config=unit_conf)
     integration_context.add_conf_id(tied_config_id, unit_conf)
@@ -217,25 +218,41 @@ def ingest_tied_t2(integration_context: DevAmpelContext, ampel_logger, request):
 
     run_id = 0
     ingester = integration_context.loader.new_context_unit(
-        UnitModel(unit="MongoIngester"),
+        ingester_model,
         context = integration_context,
-        sub_type = MongoIngester,
-        logger = ampel_logger,
+        sub_type = AbsIngester,
+        logger = logger,
         run_id = run_id,
         raise_exc = True,
     )
 
-    handler = ChainedIngestionHandler(
+    return ChainedIngestionHandler(
         integration_context,
         tier=0,
         run_id=run_id,
         trace_id={},
         ingester=ingester,
-        logger=ampel_logger,
+        logger=logger,
         compiler_opts=CompilerOptions(),
         shaper=UnitModel(unit="NoShaper"),
         directives=[IngestDirective(channel=channel, ingest=body)],
     )
+
+
+@pytest.fixture(params=["DummyStateT2Unit", "DummyPointT2Unit", "DummyStockT2Unit"])
+def ingest_tied_t2(integration_context: DevAmpelContext, ampel_logger, request):
+    """Create a T2 document with dependencies"""
+
+    for unit in (
+        DummyStockT2Unit,
+        DummyPointT2Unit,
+        DummyStateT2Unit,
+        DummyTiedStateT2Unit,
+        MongoIngester,
+    ):
+        integration_context.register_unit(unit)
+    
+    handler = make_tied_ingestion_handler(integration_context, ampel_logger, request.param)
 
     datapoints: list[dict[str, Any]] = [
         {"id": i, "stock": "stockystock", "body": {"thing": i + 1}} for i in range(3)

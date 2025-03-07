@@ -9,11 +9,12 @@ from bson import ObjectId
 # FIXME: vendor this import
 from mongomock.filtering import filter_applies
 
-from ampel.abstract.AbsWorker import stop_on_signal
+from ampel.abstract.AbsWorker import stat_time, stop_on_signal
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.AmpelUnit import AmpelUnit
 from ampel.base.decorator import abstractmethod
 from ampel.content.DataPoint import DataPoint
+from ampel.content.MetaRecord import MetaRecord
 from ampel.content.StockDocument import StockDocument
 from ampel.content.T1Document import T1Document
 from ampel.content.T2Document import T2Document
@@ -22,12 +23,15 @@ from ampel.enum.DocumentCode import DocumentCode
 from ampel.log import AmpelLogger, LogFlag
 from ampel.model.UnitModel import UnitModel
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
-from ampel.t2.T2Worker import T2Worker, stat_time
+from ampel.t2.T2Worker import T2Worker
 from ampel.types import (
 	DataPointId,
+	OneOrMany,
 	StockId,
 	T,
 	T2Link,
+	Tag,
+	UBson,
 )
 
 
@@ -56,6 +60,7 @@ class T2QueueWorker(T2Worker):
 	
 	# Must run dependent t2s, as no other worker will see them
 	run_dependent_t2s: Literal[True] = True
+	pre_check: Literal[False] = False
 
 	def __init__(self, **kwargs) -> None:
 		super().__init__(**kwargs)
@@ -88,7 +93,6 @@ class T2QueueWorker(T2Worker):
 
 		# Loop variables
 		doc_counter = 0
-		update = {'$set': {'code': DocumentCode.RUNNING}}
 		garbage_collect = self.garbage_collect
 		doc_limit = self.doc_limit
 
@@ -103,10 +107,8 @@ class T2QueueWorker(T2Worker):
 
 					# get t1/t2 document (code is usually NEW or NEW_PRIO), excluding
 					# docs with retry times in the future
-					with stat_time.time() as timer:
+					with stat_time.labels(self.tier, "consume", None).time():
 						item: None | QueueItem = self._consumer.consume()
-						doc = self.find_one_and_update(self.query, update, stop_token)
-						timer.labels(self.tier, "find_one_and_update", doc["unit"] if doc else None)
 
 					# No match
 					if item is None:
@@ -138,7 +140,23 @@ class T2QueueWorker(T2Worker):
 				self._current_item = None
 
 		return doc_counter
-	
+
+	def update_doc(self,
+		doc: T2Document,
+		meta: MetaRecord,
+		logger: AmpelLogger, *,
+		body: UBson = None,
+		tag: None | OneOrMany[Tag] = None,
+		code: int = 0
+	) -> None:
+		# TODO: ingest doc
+		return
+		with stat_time.labels(doc["unit"], "commit_update").time():
+			self.commit_update(
+				{'_id': doc['_id']}, # type: ignore[typeddict-item]
+				meta, logger, body=body, tag=tag, code=code
+			)
+
 	def load_stock(self, stock: StockId) -> None | StockDocument:
 		"""Load stock document from current message"""
 		return (
