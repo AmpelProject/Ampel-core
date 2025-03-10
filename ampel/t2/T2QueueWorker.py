@@ -23,6 +23,7 @@ from ampel.enum.DocumentCode import DocumentCode
 from ampel.log import AmpelLogger, LogFlag
 from ampel.model.UnitModel import UnitModel
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
+from ampel.mongo.update.QueueIngester import AbsIngester
 from ampel.t2.T2Worker import T2Worker
 from ampel.types import (
 	DataPointId,
@@ -57,6 +58,7 @@ class QueueItem(TypedDict):
 class T2QueueWorker(T2Worker):
 
 	consumer: UnitModel
+	ingester: UnitModel = UnitModel(unit="MongoIngester")
 	
 	# Must run dependent t2s, as no other worker will see them
 	run_dependent_t2s: Literal[True] = True
@@ -65,7 +67,6 @@ class T2QueueWorker(T2Worker):
 	def __init__(self, **kwargs) -> None:
 		super().__init__(**kwargs)
 
-		self._consumer = self.context.loader.new(self.consumer, unit_type=AbsConsumer)
 		self._current_item: None | QueueItem = None
 	
 	def proceed(self, event_hdlr: EventHandler) -> int:
@@ -91,6 +92,8 @@ class T2QueueWorker(T2Worker):
 			raise_exc = self.raise_exc, extra_tag = self.jtag
 		)
 
+		consumer = self.context.loader.new(self.consumer, unit_type=AbsConsumer)
+
 		# Loop variables
 		doc_counter = 0
 		garbage_collect = self.garbage_collect
@@ -100,6 +103,16 @@ class T2QueueWorker(T2Worker):
 			[signal.SIGINT, signal.SIGTERM, signal.SIGQUIT, signal.SIGHUP],
 			logger
 		) as stop_token:
+			ingester = self.context.loader.new_context_unit(
+				self.ingester,
+				context = self.context,
+				run_id = run_id,
+				error_callback = stop_token.set,
+				acknowledge_callback = consumer.acknowledge,
+				logger = logger,
+				sub_type = AbsIngester,
+			)
+
 			try:
 				self._current_run_id = run_id
 				# Process docs until next() returns None (breaks condition below)
@@ -108,7 +121,7 @@ class T2QueueWorker(T2Worker):
 					# get t1/t2 document (code is usually NEW or NEW_PRIO), excluding
 					# docs with retry times in the future
 					with stat_time.labels(self.tier, "consume", None).time():
-						item: None | QueueItem = self._consumer.consume()
+						item: None | QueueItem = consumer.consume()
 
 					# No match
 					if item is None:
@@ -123,6 +136,16 @@ class T2QueueWorker(T2Worker):
 							self.process_doc(doc, stock_updr, logger)
 					doc_counter += 1
 
+					with ingester.group():
+						for stock in item["stock"]:
+							ingester.stock.ingest(stock)
+						for dp in item["t0"]:
+							ingester.t0.ingest(dp)
+						for t1 in item["t1"]:
+							ingester.t1.ingest(t1)
+						for t2 in item["t2"]:
+							ingester.t2.ingest(t2)
+
 					# Check possibly defined doc_limit
 					if doc_limit and doc_counter >= doc_limit:
 						break
@@ -131,13 +154,13 @@ class T2QueueWorker(T2Worker):
 						gc.collect()
 			finally:
 				stock_updr.flush()
+				ingester.flush()
 				event_hdlr.add_extra(docs=doc_counter)
 
 				logger.flush()
 				self._instances.clear()
 				self._adapters.clear()
 				self._current_run_id = None
-				self._current_item = None
 
 		return doc_counter
 
@@ -149,12 +172,17 @@ class T2QueueWorker(T2Worker):
 		tag: None | OneOrMany[Tag] = None,
 		code: int = 0
 	) -> None:
-		# TODO: ingest doc
-		return
-		with stat_time.labels(doc["unit"], "commit_update").time():
-			self.commit_update(
-				{'_id': doc['_id']}, # type: ignore[typeddict-item]
-				meta, logger, body=body, tag=tag, code=code
+		# update doc in place; changes will be propagated by the ingester as a block
+		doc["code"] = code
+		doc["meta"].append(meta)
+		if body:
+			doc["body"].append(body)
+		if tag:
+			doc["tag"] = list(
+				set(
+					doc.get("tag", [])
+					.union([tag] if isinstance(tag, Tag) else tag)
+				)
 			)
 
 	def load_stock(self, stock: StockId) -> None | StockDocument:
@@ -212,9 +240,10 @@ class T2QueueWorker(T2Worker):
 				if self.col.count_documents({"code": DocumentCode.OK} | query):
 					return
 				for doc in self._current_item["t2"]:
-					if filter_applies(query, doc):
+					if doc["code"] != DocumentCode.OK and filter_applies(query, doc):
 						# prevent this doc from being returned by a call with for_update=False
-						doc["_id"] = ObjectId()  # type: ignore[typeddict-unknown-key]
+						if "_id" not in doc:
+							doc["_id"] = ObjectId()  # type: ignore[typeddict-unknown-key]
 						yield doc
 			else:
 				count = 0

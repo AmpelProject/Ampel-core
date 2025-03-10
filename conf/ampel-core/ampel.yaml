@@ -14,6 +14,7 @@ unit:
 - ampel.ops.AmpelExceptionPublisher
 - ampel.ops.OpsProcessor
 - ampel.t2.T2Worker
+- ampel.t2.T2QueueWorker
 - ampel.t3.T3Processor
 - ampel.t3.include.session.T3SessionLastRunTime
 - ampel.t3.include.session.T3SessionAlertsNumber
