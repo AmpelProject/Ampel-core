@@ -14,6 +14,7 @@ from ampel.abstract.AbsCompiler import AbsCompiler, ActivityRegister
 from ampel.abstract.AbsDocIngester import AbsDocIngester
 from ampel.content.MetaActivity import MetaActivity
 from ampel.content.T2Document import T2Document
+from ampel.enum.DocumentCode import DocumentCode
 from ampel.types import ChannelId, StockId, T2Link, UnitId
 
 
@@ -95,19 +96,26 @@ class T2Compiler(AbsCompiler):
 
 		for k, v in self.t2s.items():
 
+			meta, tags = self.build_meta(v.meta, now)
+
 			# Note: mongodb maintains key order
-			d: T2Document = {'unit': k.unit, 'config': k.config, 'link': k.link} # type: ignore[typeddict-item]
+			d: T2Document = {
+				'stock': k.stock,
+				'unit': k.unit,
+				'config': k.config,
+				'link': k.link,
+				'channel': list(v.channels),
+				'meta': meta,
+				'code': DocumentCode.NEW,
+				'body': [],
+			}
 
 			if self.col:
 				d['col'] = self.col
 
-			d['stock'] = k.stock
-
 			if self.origin:
 				d['origin'] = self.origin
 
-			d['channel'] = list(v.channels)
-			d['meta'], tags = self.build_meta(v.meta, now)
 			if v.ttl is not None:
 				d['expiry'] = datetime.datetime.fromtimestamp(
 					now, tz=datetime.timezone.utc

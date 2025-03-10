@@ -21,9 +21,10 @@ from ampel.mongo.utils import maybe_use_each
 class MongoT2Ingester(AbsDocIngester[T2Document], HasUpdatesBuffer):
 
 	def ingest(self, doc: T2Document) -> None:
+		new = doc.get('code', DocumentCode.NEW) == DocumentCode.NEW
 
 		# Note: mongodb $setOnInsert does not retain key order
-		set_on_insert: dict[str, Any] = {'code': DocumentCode.NEW.value}
+		set_on_insert: dict[str, Any] = {'code': DocumentCode.NEW} if new else {}
 		add_to_set: dict[str, Any] = {'channel': maybe_use_each(doc['channel'])}
 
 		match = {
@@ -48,9 +49,13 @@ class MongoT2Ingester(AbsDocIngester[T2Document], HasUpdatesBuffer):
 				match,
 				{
 					'$setOnInsert': set_on_insert,
+					'$set': {} if new else {'code': doc['code']},
 					'$addToSet': add_to_set,
 					'$max': {'expiry': doc['expiry']} if 'expiry' in doc else {},
-					'$push': {'meta': maybe_use_each(doc['meta'])} # meta must be set by compiler
+					'$push': {
+						'meta': maybe_use_each(doc['meta']), # meta must be set by compiler
+						'body': maybe_use_each(doc['body']),
+					} 
 				},
 				upsert=True
 			)
