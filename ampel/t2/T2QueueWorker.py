@@ -232,7 +232,7 @@ class T2QueueWorker(T2Worker):
 						yield doc
 			else:
 				count = 0
-				for count, doc in enumerate(super().load_t2(query, for_update), 1):
+				for count, doc in enumerate(super().load_t2(query, for_update), 1):  # noqa: B007
 					yield doc
 				if count == 0:
 					# return t2 docs that are not in the database

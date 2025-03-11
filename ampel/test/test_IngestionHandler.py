@@ -95,7 +95,7 @@ def multiplex_directive(
 def get_handler(
     context: DevAmpelContext,
     directives,
-    ingester_model=UnitModel(unit="MongoIngester"),
+    ingester_model=UnitModel(unit="MongoIngester"),  # noqa: B008
 ) -> ChainedIngestionHandler:
     run_id = 0
     logger = AmpelLogger.get_logger(console={"level": DEBUG})

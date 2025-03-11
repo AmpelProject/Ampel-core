@@ -180,7 +180,7 @@ def make_tied_ingestion_handler(
     integration_context: DevAmpelContext,
     logger: AmpelLogger,
     dependency: str,
-    ingester_model=UnitModel(unit="MongoIngester")
+    ingester_model=UnitModel(unit="MongoIngester")  # noqa: B008
 ) -> ChainedIngestionHandler:
 
     for unit in (
