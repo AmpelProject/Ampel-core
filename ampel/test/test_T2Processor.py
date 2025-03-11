@@ -1,5 +1,6 @@
 from contextlib import contextmanager
 from time import time
+from typing import Any
 
 import pytest
 from pymongo.errors import OperationFailure
@@ -10,7 +11,11 @@ from ampel.core.AmpelContext import AmpelContext
 from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
+from ampel.model.UnitModel import UnitModel
+from ampel.queue.QueueIngester import AbsProducer, QueueIngester
+from ampel.t2.T2QueueWorker import AbsConsumer, QueueItem, T2QueueWorker
 from ampel.t2.T2Worker import T2Worker
+from ampel.test.conftest import make_tied_ingestion_handler
 from ampel.test.dummy import DummyPointT2Unit
 
 
@@ -50,7 +55,7 @@ def test_metrics(integration_context):
 def test_error_reporting(integration_context: DevAmpelContext, config):
     integration_context.register_unit(DummyPointT2Unit)
     # DummyPointT2Unit will raise an error on the malformed T0 doc
-    integration_context.db.get_collection("t0").insert_one({"id": 42})
+    integration_context.db.get_collection("t0").insert_one({"id": 42, "stock": 42})
     channels = ["channel_a", "channel_b"]
     doc: T2Document = {
         "unit": "DummyPointT2Unit",
@@ -190,3 +195,71 @@ def test_slow_dependency(
     assert ptime.called
     assert (db_doc := col.find_one({"_id": dependent_doc["_id"]})) is not None, "dependent doc found"
     assert db_doc["code"] == DocumentCode.OK
+
+
+def test_queue_worker(
+    mock_context: DevAmpelContext, mocker: MockerFixture, ampel_logger
+):
+    """
+    Simulate a race conditions between parallel T2 workers
+    """
+    items: list[AbsProducer.Item] = []
+
+    @mock_context.register_unit
+    class DummyProducer(AbsProducer):
+        def produce(self, item: AbsProducer.Item, delivery_callback=None):
+            items.append(item)
+
+        def flush(self):
+            pass
+
+    @mock_context.register_unit
+    class DummyConsumer(AbsConsumer):
+        def consume(self) -> None | QueueItem:
+            if not items:
+                return None
+            item = items.pop()
+            return {"stock": item.stock, "t0": item.t0, "t1": item.t1, "t2": item.t2}
+
+        def acknowledge(self, doc: QueueItem) -> None:
+            pass
+
+    ack = mocker.patch.object(DummyConsumer, "acknowledge")
+
+    mock_context.register_unit(QueueIngester)
+
+    handler = make_tied_ingestion_handler(
+        mock_context,
+        ampel_logger,
+        "DummyStateT2Unit",
+        UnitModel(
+            unit="QueueIngester",
+            config={"producer": {"unit": "DummyProducer"}},
+        ),
+    )
+
+    datapoints: list[dict[str, Any]] = [
+        {"id": i, "stock": "stockystock", "body": {"thing": i + 1}} for i in range(3)
+    ]
+
+    handler.ingest(datapoints, [(0, True)], stock_id="stockystock", jm_extra={"alert": 123})
+
+    t2 = T2QueueWorker(
+        context=mock_context,
+        consumer={"unit": "DummyConsumer"},
+        raise_exc=True,
+        process_name="t2",
+        run_dependent_t2s=True,
+        backoff_on_retry=[{"jitter": False, "factor": 10}],
+    )
+
+    assert t2.run() == 1
+
+    assert ack.call_count == 1
+
+    assert mock_context.db.get_collection("stock").count_documents({}) == 1
+    assert mock_context.db.get_collection("t0").count_documents({}) == 3
+    assert mock_context.db.get_collection("t1").count_documents({}) == 1
+
+    docs = list(mock_context.db.get_collection("t2").find({"code": DocumentCode.OK}))
+    assert len(docs) == 2

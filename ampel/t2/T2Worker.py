@@ -8,10 +8,10 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import random
-from collections.abc import Sequence
+from collections.abc import Generator, Sequence
 from math import ceil
 from time import time
-from typing import Any, ClassVar, Literal, Union
+from typing import Any, ClassVar, Literal, Union, overload
 
 from bson import ObjectId
 
@@ -28,6 +28,7 @@ from ampel.abstract.AbsWorker import AbsWorker, register_stats
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.base.BadConfig import BadConfig
 from ampel.content.DataPoint import DataPoint
+from ampel.content.MetaRecord import MetaRecord
 from ampel.content.StockDocument import StockDocument
 from ampel.content.T1Document import T1Document
 from ampel.content.T2Document import T2Document
@@ -41,7 +42,16 @@ from ampel.model.UnitModel import UnitModel
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
 from ampel.mongo.utils import maybe_match_array
 from ampel.struct.UnitResult import UnitResult
-from ampel.types import OneOrMany, T, UBson, ubson
+from ampel.types import (
+	DataPointId,
+	OneOrMany,
+	StockId,
+	T,
+	T2Link,
+	Tag,
+	UBson,
+	ubson,
+)
 from ampel.view.T2DocView import T2DocView
 
 AbsT2 = Union[ # noqa: UP007
@@ -125,6 +135,19 @@ class T2Worker(AbsWorker[T2Document]):
 		"""Would we retry this document later?"""
 		return code in self._pending_codes and self._get_trials(doc) < self.max_try
 
+	def update_doc(self,
+		doc: T2Document,
+		meta: MetaRecord,
+		logger: AmpelLogger, *,
+		body: UBson = None,
+		tag: None | OneOrMany[Tag] = None,
+		code: int = 0
+	) -> None:
+		with stat_time.labels(doc["unit"], "commit_update").time():
+			self.commit_update(
+				{'_id': doc['_id']}, # type: ignore[typeddict-item]
+				meta, logger, body=body, tag=tag, code=code
+			)
 
 	def process_doc(self,
 		doc: T2Document,
@@ -176,7 +199,7 @@ class T2Worker(AbsWorker[T2Document]):
 			jrec = stock_updr.add_journal_record(
 				stock = doc['stock'],
 				channel = doc['channel'],
-				doc_id = doc['_id'], # type: ignore[typeddict-item]
+				doc_id = doc.get('_id'),  # type: ignore[arg-type]
 				trace_id = trace_id or None,
 				unit = doc['unit']
 			)
@@ -249,11 +272,7 @@ class T2Worker(AbsWorker[T2Document]):
 				)
 
 			meta['code'] = code
-			with stat_time.labels(doc["unit"], "commit_update").time():
-				self.commit_update(
-					{'_id': doc['_id']}, # type: ignore[typeddict-item]
-					meta, logger, body=body, tag=tag, code=code
-				)
+			self.update_doc(doc, meta, logger, body=body, tag=tag, code=code)
 
 			# Update stock document
 			if len(stock_updr._updates) >= self.updates_buffer_size:  # noqa: SLF001
@@ -278,6 +297,49 @@ class T2Worker(AbsWorker[T2Document]):
 
 		return body, code
 
+	def load_stock(self, stock: StockId) -> None | StockDocument:
+		"""Load stock document from database"""
+		return next(self.col_stock.find({'stock': stock}), None)
+
+	@overload
+	def load_t0(self, stock: StockId | Sequence[StockId], t1_dps_ids: DataPointId) -> None | DataPoint: ...
+
+	@overload
+	def load_t0(self, stock: StockId | Sequence[StockId], t1_dps_ids: Sequence[DataPointId]) -> list[DataPoint]: ...
+
+	def load_t0(self, stock: StockId | Sequence[StockId], t1_dps_ids: DataPointId | Sequence[DataPointId]) -> None | DataPoint | list[DataPoint]:
+		"""Load datapoints from database"""
+		if isinstance(t1_dps_ids, DataPointId):
+			return next(self.col_t0.find({'stock': stock if isinstance(stock, StockId) else {"$in": stock}, 'id': t1_dps_ids}), None)
+		return list(
+			self.col_t0.find(
+				{
+					'stock': stock if isinstance(stock, StockId) else {"$in": stock},
+					'id': {'$in': t1_dps_ids}
+				}
+			)
+		)
+
+	def load_t1(self, stock: StockId | Sequence[StockId], link: T2Link) -> None | T1Document:
+		"""Load T1 document from database"""
+		return next(self.col_t1.find({'stock': stock if isinstance(stock, StockId) else {"$in": stock}, 'link': link}), None)
+	
+	def load_t2(self, query: dict[str, Any], for_update: bool=False) -> Generator[T2Document]:
+		"""Load T2 documents from database"""
+		if for_update:
+			while (
+					dep_t2_doc := self.col.find_one_and_update(
+						{
+							'code': self.code_match if isinstance(self.code_match, DocumentCode)
+							else maybe_match_array(self.code_match) # type: ignore[arg-type]
+						} | query,
+						{'$set': {'code': DocumentCode.RUNNING}}
+					)
+				):
+				yield dep_t2_doc
+		else:
+			yield from self.col.find(query)
+
 
 	# NB: spell out union arg to ensure a common context for the TypeVar T
 	def load_input_docs(self,
@@ -285,8 +347,8 @@ class T2Worker(AbsWorker[T2Document]):
 	) -> Union[ # noqa: UP007
 		None,
 		UnitResult,                                              # Error / missing dependency
-		DataPoint,                                               # point t2
-		tuple[DataPoint, T2DocView],                             # tied point t2
+		tuple[DataPoint],                                        # point t2
+		tuple[DataPoint, list[T2DocView]],                       # tied point t2
 		tuple[StockDocument],                                    # stock t2
 		tuple[T1Document, Sequence[DataPoint]],                  # state t2
 		tuple[T],                                                # custom state t2 (T could be LightCurve)
@@ -321,11 +383,7 @@ class T2Worker(AbsWorker[T2Document]):
 		):
 			dps: list[DataPoint] = []
 			with stat_time.labels(t2_doc["unit"], "load_t1").time():
-				t1_doc: None | T1Document = next(
-					self.col_t1.find(
-						{'stock': t2_doc['stock'], 'link': t2_doc['link']}
-					), None
-				)
+				t1_doc = self.load_t1(stock=t2_doc['stock'], link=t2_doc['link'])
 
 			# compound doc must exist (None could mean an ingester bug)
 			if t1_doc is None:
@@ -338,14 +396,14 @@ class T2Worker(AbsWorker[T2Document]):
 
 			# Datarights: suppress channel info (T3 uses instead a
 			# 'projection' procedure that should not be necessary here)
-			t1_doc.pop('channel') # type: ignore[misc]
+			t1_doc = {k: v for k, v in t1_doc.items() if k != 'channel'}  # type: ignore[assignment]
 
 			t1_dps_ids = list(t1_doc['dps'])
 
 			# Sort DPS from DB in the same order than referenced by 'dps' from t1 doc
 			with stat_time.labels(t2_doc["unit"], "load_t0").time():
 				dps = sorted(
-					self.col_t0.find({'id': {'$in': t1_dps_ids}}),
+					self.load_t0(stock=t2_doc['stock'], t1_dps_ids=t1_dps_ids),
 					key = lambda dp: t1_dps_ids.index(dp['id'])
 				)
 
@@ -436,7 +494,7 @@ class T2Worker(AbsWorker[T2Document]):
 
 		if isinstance(t2_unit, AbsStockT2Unit):
 
-			if doc := next(self.col_stock.find({'stock': t2_doc['link']}), None):
+			if doc := self.load_stock(t2_doc['link']):
 				return (doc, )
 
 			if not self._is_retriable(t2_doc, DocumentCode.T2_UNKNOWN_LINK):
@@ -448,7 +506,10 @@ class T2Worker(AbsWorker[T2Document]):
 
 		if isinstance(t2_unit, AbsPointT2Unit | AbsTiedPointT2Unit):
 
-			if doc := next(self.col_t0.find({'id': t2_doc['link']}), None):
+			if datapoint := self.load_t0(
+				t2_doc['stock'],
+				t2_doc['link'],  # type: ignore[arg-type]
+			):
 				if isinstance(t2_unit, AbsTiedPointT2Unit):
 
 					qres = self.run_tied_queries(
@@ -462,9 +523,9 @@ class T2Worker(AbsWorker[T2Document]):
 					if isinstance(qres, UnitResult):
 						return qres
 
-					return (doc, qres)
+					return (datapoint, qres)
 
-				return (doc, )
+				return (datapoint, )
 
 			if not self._is_retriable(t2_doc, DocumentCode.T2_UNKNOWN_LINK):
 				report_error(
@@ -497,15 +558,7 @@ class T2Worker(AbsWorker[T2Document]):
 				processed_ids: list[ObjectId] = []
 
 				# run pending dependencies
-				while (
-					dep_t2_doc := self.col.find_one_and_update(
-						{
-							'code': self.code_match if isinstance(self.code_match, DocumentCode)
-							else maybe_match_array(self.code_match) # type: ignore[arg-type]
-						} | query,
-						{'$set': {'code': DocumentCode.RUNNING}}
-					)
-				):
+				for dep_t2_doc in self.load_t2(query, for_update=True):
 
 					if logger.verbose > 1:
 						logger.debug(
@@ -517,13 +570,14 @@ class T2Worker(AbsWorker[T2Document]):
 						dep_t2_doc['body'] = []
 
 					body, code = self.process_doc(dep_t2_doc, stock_updr, logger)
-					dep_t2_doc['body'].append(body)
-					dep_t2_doc['meta'].append({'code': code, 'tier': 2})
+					dep_t2_doc['body'].append(body)  # type: ignore[attr-defined]
+					dep_t2_doc['meta'].append({'code': code, 'tier': 2})  # type: ignore[attr-defined]
+					dep_t2_doc['code'] = code
 
-					# suppress channel info
-					dep_t2_doc.pop('channel')
 					t2_views.append(T2DocView.of(dep_t2_doc, self.context.config))
-					processed_ids.append(dep_t2_doc['_id'])
+					# may not come from mongo, and so not have an _id
+					if '_id' in dep_t2_doc:
+						processed_ids.append(dep_t2_doc['_id'])  # type: ignore[typeddict-item]
 
 				if len(processed_ids) > 0:
 					query['_id'] = {'$nin': processed_ids}
@@ -539,10 +593,10 @@ class T2Worker(AbsWorker[T2Document]):
 				)
 
 			# collect dependencies
-			for dep_t2_doc in self.col.find(query):
-				# suppress channel info
-				dep_t2_doc.pop('channel')
-				t2_views.append(T2DocView.of(dep_t2_doc, self.context.config))
+			t2_views.extend(
+				T2DocView.of(dep_t2_doc, self.context.config)
+				for dep_t2_doc in self.load_t2(query)
+			)
 
 			for view in t2_views:
 				if view.code in self._pending_codes:

@@ -71,7 +71,7 @@ class DataLoader:
 		register: dict[StockId, AmpelBuffer] = {
 			stock_id: AmpelBuffer(
 				id = stock_id,
-				stock = None if "stock" in col_set else None,
+				stock = None,
 				t0 = [] if "t0" in col_set else None,
 				t1 = [] if "t1" in col_set else None,
 				t2 = [] if "t2" in col_set else None

@@ -325,8 +325,8 @@ async def test_process_collector(unused_tcp_port):
 @pytest.mark.asyncio
 async def test_replica_numbering():
     launch = lambda: _Process(target=echo, args=(42,), name="echo").launch()
-    assert not _Process._active  # noqa: SLF001
-    assert not _Process._expired  # noqa: SLF001
+    assert not _Process._active
+    assert not _Process._expired
     await launch()
-    assert not _Process._active  # noqa: SLF001
-    assert not _Process._expired  # noqa: SLF001
+    assert not _Process._active
+    assert not _Process._expired

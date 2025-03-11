@@ -13,19 +13,15 @@ from time import time
 from typing import Any, Literal
 
 from ampel.abstract.AbsApplicable import AbsApplicable
-from ampel.abstract.AbsDocIngester import AbsDocIngester
+from ampel.abstract.AbsIngester import AbsIngester
 from ampel.abstract.AbsT0Muxer import AbsT0Muxer
 from ampel.abstract.AbsT0Unit import AbsT0Unit
 from ampel.abstract.AbsT1CombineUnit import AbsT1CombineUnit
 from ampel.abstract.AbsT1ComputeUnit import AbsT1ComputeUnit
 from ampel.abstract.AbsT1RetroCombineUnit import AbsT1RetroCombineUnit
-from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.base.LogicalUnit import LogicalUnit
 from ampel.content.DataPoint import DataPoint
 from ampel.content.MetaActivity import MetaActivity
-from ampel.content.StockDocument import StockDocument
-from ampel.content.T1Document import T1Document
-from ampel.content.T2Document import T2Document
 from ampel.core.AmpelContext import AmpelContext
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.enum.JournalActionCode import JournalActionCode
@@ -50,7 +46,6 @@ from ampel.model.ingest.T1CombineCompute import T1CombineCompute
 from ampel.model.ingest.T1CombineComputeNow import T1CombineComputeNow
 from ampel.model.ingest.T2Compute import T2Compute
 from ampel.model.UnitModel import UnitModel
-from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
 from ampel.struct.T1CombineResult import T1CombineResult
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import ChannelId, DataPointId, StockId, Tag, UBson, UnitId
@@ -129,13 +124,12 @@ class ChainedIngestionHandler:
 		context: AmpelContext,
 		shaper: UnitModel,
 		directives: Sequence[IngestDirective | DualIngestDirective],
-		updates_buffer: DBUpdatesBuffer,
+		ingester: AbsIngester,
 		run_id: int,
 		trace_id: dict[str, None | int],
 		tier: Literal[-1, 0, 1, 2, 3],
 		compiler_opts: CompilerOptions,
 		logger: AmpelLogger,
-		database: str = "mongo",
 		origin: None | int = None,
 		int_time: bool = True,
 		include_extra_meta: int = 2
@@ -150,7 +144,7 @@ class ChainedIngestionHandler:
 		Note: granularity might increase in the future
 		"""
 
-		self.updates_buffer = updates_buffer
+		self.ingester = ingester
 		self.logger = logger
 		self.context = context
 		self.run_id = run_id
@@ -183,61 +177,29 @@ class ChainedIngestionHandler:
 		self.point_t2_compiler = T2Compiler(**(compiler_opts.point_t2 | bopts), col="t0")
 		self.stock_t2_compiler = T2Compiler(**(compiler_opts.stock_t2 | bopts), col='stock')
 
-		# Create ingesters
-		dbconf = self.context.config.get(f'{database}.ingest', dict, raise_exc=True)
-		def get_ingester_model(key: str) -> UnitModel:
-			model = dbconf[key]
-			if isinstance(model, str):
-				return UnitModel(unit=model)
-			return UnitModel(**model)
-		self.t0_ingester = AuxUnitRegister.new_unit(
-			model = get_ingester_model('t0'),
-			sub_type = AbsDocIngester[DataPoint],
-			updates_buffer = updates_buffer
-		)
-
-		self.t1_ingester = AuxUnitRegister.new_unit(
-			model = get_ingester_model('t1'),
-			sub_type = AbsDocIngester[T1Document],
-			updates_buffer = updates_buffer
-		)
-
-		self.t2_ingester = AuxUnitRegister.new_unit(
-			model = get_ingester_model('t2'),
-			sub_type = AbsDocIngester[T2Document],
-			updates_buffer = updates_buffer
-		)
-
-		self.stock_ingester = AuxUnitRegister.new_unit(
-			model = get_ingester_model('stock'),
-			sub_type = AbsDocIngester[StockDocument],
-			updates_buffer = updates_buffer
-		)
-
 		for directive in directives:
 			self.iblocks.append(
-				self._new_ingest_blocks(directive, updates_buffer, logger)
+				self._new_ingest_blocks(directive, logger)
 			)
 
 
 	def _new_ingest_blocks(self,
 		directive: IngestDirective | DualIngestDirective,
-		updates_buffer: DBUpdatesBuffer,
 		logger: AmpelLogger
 	) -> tuple[IngestBlock, IngestBlock]:
 
 		if isinstance(directive, DualIngestDirective):
 			known_ib = self._new_ingest_block(
-				directive.ingest['known'], directive.channel, updates_buffer, logger
+				directive.ingest['known'], directive.channel, logger
 			)
 			new_ib = self._new_ingest_block(
-				directive.ingest['new'], directive.channel, updates_buffer, logger
+				directive.ingest['new'], directive.channel, logger
 			)
 			return known_ib, new_ib
 
 		if isinstance(directive, IngestDirective):
 			ib = self._new_ingest_block(
-				directive.ingest, directive.channel, updates_buffer, logger
+				directive.ingest, directive.channel, logger
 			)
 			return ib, ib
 
@@ -247,7 +209,6 @@ class ChainedIngestionHandler:
 	def _new_ingest_block(self,
 		directive: IngestBody,
 		channel: ChannelId,
-		updates_buffer: DBUpdatesBuffer,
 		logger: AmpelLogger
 	) -> IngestBlock:
 
@@ -293,7 +254,7 @@ class ChainedIngestionHandler:
 				# Spawn new instance
 				self._mux_cache[i] = muxer = self.context.loader.new_context_unit(
 					model = directive.mux, context = self.context, sub_type = AbsT0Muxer,
-					logger = buf_logger, updates_buffer = updates_buffer
+					logger = buf_logger
 				)
 
 				# Shortcut to avoid muxer.logger.handlers[?]
@@ -503,7 +464,7 @@ class ChainedIngestionHandler:
 		:param jm_extra: extra info to be added to journal or meta enties. Ex: {'alert_id': 123}
 		"""
 
-		with self.updates_buffer.group_updates():
+		with self.ingester.group():
 			ingest_start = time()
 
 			# process *modifies* dict instances loaded by fastavro
@@ -639,21 +600,21 @@ class ChainedIngestionHandler:
 			########
 			now = int(time()) if self.int_time else time()
 
-			self.t0_compiler.commit(self.t0_ingester, now)
+			self.t0_compiler.commit(self.ingester.t0, now)
 
 			if self.t1_compiler.t1s:
-				self.t1_compiler.commit(self.t1_ingester, now)
+				self.t1_compiler.commit(self.ingester.t1, now)
 
 			if self.stock_t2_compiler.t2s:
-				self.stock_t2_compiler.commit(self.t2_ingester, now)
+				self.stock_t2_compiler.commit(self.ingester.t2, now)
 
 			if self.point_t2_compiler.t2s:
-				self.point_t2_compiler.commit(self.t2_ingester, now)
+				self.point_t2_compiler.commit(self.ingester.t2, now)
 
 			if self.state_t2_compiler.t2s:
-				self.state_t2_compiler.commit(self.t2_ingester, now)
+				self.state_t2_compiler.commit(self.ingester.t2, now)
 
-			self.stock_compiler.commit(self.stock_ingester, now, body=stock_body)
+			self.stock_compiler.commit(self.ingester.stock, now, body=stock_body)
 			self.ingest_stats.append(time() - ingest_start)
 
 

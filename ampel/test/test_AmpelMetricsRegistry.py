@@ -6,15 +6,15 @@ from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry, reset_regis
 
 @pytest.fixture
 def empty_registry():
-    prev = AmpelMetricsRegistry._registry  # noqa: SLF001
-    AmpelMetricsRegistry._registry = None  # noqa: SLF001
+    prev = AmpelMetricsRegistry._registry
+    AmpelMetricsRegistry._registry = None
     yield AmpelMetricsRegistry.registry()
-    AmpelMetricsRegistry._registry = prev  # noqa: SLF001
+    AmpelMetricsRegistry._registry = prev
 
 
 def test_autoname(empty_registry):
     assert (
-        AmpelMetricsRegistry.counter(  # noqa: SLF001
+        AmpelMetricsRegistry.counter(
             "foo", "foos", unit="blarghs", subsystem="blah"
         )._name
         == "ampel_blah_foo_blarghs"
