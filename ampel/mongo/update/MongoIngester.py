@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 
 from ampel.abstract.AbsDocIngester import AbsDocIngester
+from ampel.abstract.AbsIngester import AbsIngester
 from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.content.DataPoint import DataPoint
 from ampel.content.StockDocument import StockDocument
@@ -8,8 +9,6 @@ from ampel.content.T1Document import T1Document
 from ampel.content.T2Document import T2Document
 from ampel.model.UnitModel import UnitModel
 from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
-
-from .AbsIngester import AbsIngester
 
 
 class MongoIngester(AbsIngester):

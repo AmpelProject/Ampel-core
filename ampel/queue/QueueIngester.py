@@ -1,48 +1,16 @@
-from collections.abc import Callable, Generator
+from collections.abc import Generator
 from contextlib import contextmanager
-from dataclasses import dataclass
 from functools import partial
-from typing import Any, TypeVar
+from typing import Any
 
 from ampel.abstract.AbsDocIngester import AbsDocIngester
-from ampel.base.AmpelABC import AmpelABC
-from ampel.base.AmpelUnit import AmpelUnit
-from ampel.base.decorator import abstractmethod
+from ampel.abstract.AbsIngester import AbsIngester
 from ampel.content.DataPoint import DataPoint
 from ampel.content.StockDocument import StockDocument
 from ampel.content.T1Document import T1Document
 from ampel.content.T2Document import T2Document
 from ampel.model.UnitModel import UnitModel
-
-from .AbsIngester import AbsIngester
-
-_T = TypeVar("_T", StockDocument, DataPoint, T1Document, T2Document)
-
-
-class AbsProducer(AmpelABC, AmpelUnit, abstract=True):
-
-    @dataclass
-    class Item:
-        """
-        A bundle of documents that all belong to the same context (e.g. an alert)
-        """
-
-        stock: list[StockDocument]
-        t0: list[DataPoint]
-        t1: list[T1Document]
-        t2: list[T2Document]
-
-        @classmethod
-        def new(cls) -> "AbsProducer.Item":
-            return cls([], [], [], [])
-
-    @abstractmethod
-    def produce(
-        self, item: Item, delivery_callback: None | Callable[[], None]
-    ) -> None: ...
-
-    @abstractmethod
-    def flush(self) -> None: ...
+from ampel.queue.AbsProducer import AbsProducer
 
 
 class QueueIngester(AbsIngester):

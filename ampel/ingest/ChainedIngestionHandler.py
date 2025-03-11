@@ -13,6 +13,7 @@ from time import time
 from typing import Any, Literal
 
 from ampel.abstract.AbsApplicable import AbsApplicable
+from ampel.abstract.AbsIngester import AbsIngester
 from ampel.abstract.AbsT0Muxer import AbsT0Muxer
 from ampel.abstract.AbsT0Unit import AbsT0Unit
 from ampel.abstract.AbsT1CombineUnit import AbsT1CombineUnit
@@ -45,7 +46,6 @@ from ampel.model.ingest.T1CombineCompute import T1CombineCompute
 from ampel.model.ingest.T1CombineComputeNow import T1CombineComputeNow
 from ampel.model.ingest.T2Compute import T2Compute
 from ampel.model.UnitModel import UnitModel
-from ampel.mongo.update.AbsIngester import AbsIngester
 from ampel.struct.T1CombineResult import T1CombineResult
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import ChannelId, DataPointId, StockId, Tag, UBson, UnitId

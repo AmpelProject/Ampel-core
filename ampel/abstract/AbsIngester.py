@@ -25,7 +25,7 @@ class AbsIngester(AmpelABC, ContextUnit, abstract=True):
 
     @contextmanager
     @abstractmethod
-    def group(self) -> Generator:  # type: ignore[empty-body]
+    def group(self) -> Generator:
         """
         Ensure that documents ingested in this context are grouped together
         """
@@ -48,16 +48,16 @@ class AbsIngester(AmpelABC, ContextUnit, abstract=True):
 
     @property
     @abstractmethod
-    def stock(self) -> AbsDocIngester[StockDocument]: ...  # type: ignore[empty-body]
+    def stock(self) -> AbsDocIngester[StockDocument]: ...
 
     @property
     @abstractmethod
-    def t0(self) -> AbsDocIngester[DataPoint]: ...  # type: ignore[empty-body]
+    def t0(self) -> AbsDocIngester[DataPoint]: ...
 
     @property
     @abstractmethod
-    def t1(self) -> AbsDocIngester[T1Document]: ...  # type: ignore[empty-body]
+    def t1(self) -> AbsDocIngester[T1Document]: ...
 
     @property
     @abstractmethod
-    def t2(self) -> AbsDocIngester[T2Document]: ...  # type: ignore[empty-body]
+    def t2(self) -> AbsDocIngester[T2Document]: ...

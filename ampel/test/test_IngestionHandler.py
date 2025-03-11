@@ -9,6 +9,7 @@ import pytest
 from pymongo.errors import DuplicateKeyError
 from pytest_mock import MockFixture
 
+from ampel.abstract.AbsIngester import AbsIngester
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.content.DataPoint import DataPoint
 from ampel.content.MetaRecord import MetaRecord
@@ -25,9 +26,8 @@ from ampel.model.ingest.MuxModel import MuxModel
 from ampel.model.ingest.T1Combine import T1Combine
 from ampel.model.ingest.T2Compute import T2Compute
 from ampel.model.UnitModel import UnitModel
-from ampel.mongo.update.AbsIngester import AbsIngester
 from ampel.mongo.update.MongoIngester import MongoIngester
-from ampel.mongo.update.QueueIngester import AbsProducer, QueueIngester
+from ampel.queue.QueueIngester import AbsProducer, QueueIngester
 from ampel.test.dummy import (
     DummyHistoryMuxer,
     DummyMuxer,

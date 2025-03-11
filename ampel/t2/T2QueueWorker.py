@@ -2,17 +2,15 @@ import gc
 import signal
 from collections.abc import Generator, Sequence
 from time import time
-from typing import Any, Generic, Literal, TypedDict, overload
+from typing import Any, Literal, TypedDict, overload
 
 from bson import ObjectId
 
 # FIXME: vendor this import
 from mongomock.filtering import filter_applies
 
+from ampel.abstract.AbsIngester import AbsIngester
 from ampel.abstract.AbsWorker import stat_time, stop_on_signal
-from ampel.base.AmpelABC import AmpelABC
-from ampel.base.AmpelUnit import AmpelUnit
-from ampel.base.decorator import abstractmethod
 from ampel.content.DataPoint import DataPoint
 from ampel.content.MetaRecord import MetaRecord
 from ampel.content.StockDocument import StockDocument
@@ -23,28 +21,16 @@ from ampel.enum.DocumentCode import DocumentCode
 from ampel.log import AmpelLogger, LogFlag
 from ampel.model.UnitModel import UnitModel
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
-from ampel.mongo.update.QueueIngester import AbsIngester
+from ampel.queue.AbsConsumer import AbsConsumer
 from ampel.t2.T2Worker import T2Worker
 from ampel.types import (
 	DataPointId,
 	OneOrMany,
 	StockId,
-	T,
 	T2Link,
 	Tag,
 	UBson,
 )
-
-
-class AbsConsumer(AmpelABC, AmpelUnit, Generic[T], abstract=True):
-
-	@abstractmethod
-	def consume(self) -> None | T:
-		...
-	
-	@abstractmethod
-	def acknowledge(self, doc: T) -> None:
-		...
 
 
 class QueueItem(TypedDict):
@@ -175,15 +161,13 @@ class T2QueueWorker(T2Worker):
 	) -> None:
 		# update doc in place; changes will be propagated by the ingester as a block
 		doc["code"] = code
-		doc["meta"].append(meta)
+		doc["meta"] = [*doc["meta"], meta]
 		if body:
-			doc["body"].append(body)
+			doc["body"] = [*doc["body"], body]
 		if tag:
 			doc["tag"] = list(
-				set(
-					doc.get("tag", [])
-					.union([tag] if isinstance(tag, Tag) else tag)
-				)
+				set([tag] if isinstance(tag, Tag) else tag)
+				.union(doc.get("tag", []))
 			)
 
 	def load_stock(self, stock: StockId) -> None | StockDocument:

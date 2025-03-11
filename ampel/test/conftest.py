@@ -9,6 +9,7 @@ import mongomock
 import pymongo
 import pytest
 
+from ampel.abstract.AbsIngester import AbsIngester
 from ampel.config.builder.DisplayOptions import DisplayOptions
 from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
 from ampel.content.JournalRecord import JournalRecord
@@ -23,7 +24,6 @@ from ampel.model.ingest.IngestDirective import IngestDirective
 from ampel.model.ingest.T1Combine import T1Combine
 from ampel.model.ingest.T2Compute import T2Compute
 from ampel.model.UnitModel import UnitModel
-from ampel.mongo.update.AbsIngester import AbsIngester
 from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
 from ampel.mongo.update.MongoIngester import MongoIngester
 from ampel.mongo.update.MongoStockIngester import MongoStockIngester

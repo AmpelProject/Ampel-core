@@ -12,7 +12,7 @@ from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 from ampel.model.UnitModel import UnitModel
-from ampel.mongo.update.QueueIngester import AbsProducer, QueueIngester
+from ampel.queue.QueueIngester import AbsProducer, QueueIngester
 from ampel.t2.T2QueueWorker import AbsConsumer, QueueItem, T2QueueWorker
 from ampel.t2.T2Worker import T2Worker
 from ampel.test.conftest import make_tied_ingestion_handler
