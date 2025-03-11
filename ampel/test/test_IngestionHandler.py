@@ -15,6 +15,7 @@ from ampel.content.MetaRecord import MetaRecord
 from ampel.content.T1Document import T1Document
 from ampel.content.T2Document import T2Document
 from ampel.dev.DevAmpelContext import DevAmpelContext
+from ampel.enum.DocumentCode import DocumentCode
 from ampel.enum.MetaActionCode import MetaActionCode
 from ampel.ingest.ChainedIngestionHandler import ChainedIngestionHandler, IngestBody
 from ampel.log.AmpelLogger import DEBUG, AmpelLogger
@@ -206,6 +207,15 @@ def test_single_source_directive(
 
     check_unit_counts(list(t2.find({})), num_states, num_points)
 
+    # test MongoT2Ingester idempotency 
+    before = t2.find_one_and_update({}, {"$set": {"code": DocumentCode.OK}})
+    handler.ingest(datapoints, [(0, True)], stock_id="stockystock")
+    handler.ingester.updates_buffer.push_updates()
+    after = t2.find_one({"_id": before["_id"]})
+    assert before["code"] == DocumentCode.NEW
+    assert after["code"] == DocumentCode.OK, "code was not overwitten"
+    assert before["body"] == after["body"]
+    assert len(after["meta"]) > len(before["meta"])
 
 def test_queue_ingester(
     dev_context, single_source_directive: IngestDirective, datapoints,
