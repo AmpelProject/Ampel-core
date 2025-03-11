@@ -5,8 +5,6 @@ from time import time
 from typing import Any, Literal, TypedDict, overload
 
 from bson import ObjectId
-
-# FIXME: vendor this import
 from mongomock.filtering import filter_applies
 
 from ampel.abstract.AbsIngester import AbsIngester
