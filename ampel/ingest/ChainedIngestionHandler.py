@@ -130,7 +130,6 @@ class ChainedIngestionHandler:
 		tier: Literal[-1, 0, 1, 2, 3],
 		compiler_opts: CompilerOptions,
 		logger: AmpelLogger,
-		database: str = "mongo",
 		origin: None | int = None,
 		int_time: bool = True,
 		include_extra_meta: int = 2
