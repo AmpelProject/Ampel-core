@@ -65,6 +65,9 @@ class MongoIngester(AbsIngester):
 
         self.updates_buffer = updates_buffer
 
+    def __del__(self) -> None:
+        self.flush()
+
     @contextmanager
     def group(self):
         with self.updates_buffer.group_updates():
