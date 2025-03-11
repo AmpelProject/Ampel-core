@@ -163,7 +163,7 @@ class DBUpdatesBuffer(Schedulable):
 		self.db_ops: dict[AmpelMainCol, list[DBOp]] = {
 			't2': [], 't0': [], 'stock': [], 't1': []
 		}
-		self._messages_to_ack: set[Any] = set()
+		self._messages_to_ack: list[Any] = []
 
 
 	def stop(self) -> None:
@@ -182,7 +182,7 @@ class DBUpdatesBuffer(Schedulable):
 		buffer has been pushed
 		"""
 		if self.acknowledge_callback:
-			self._messages_to_ack.add(message)
+			self._messages_to_ack.append(message)
 
 
 	def add_updates(self, updates: dict[AmpelMainCol, list[DBOp]]) -> None:

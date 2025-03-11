@@ -145,6 +145,7 @@ class T2QueueWorker(T2Worker):
 							ingester.t1.ingest(t1)
 						for t2 in item["t2"]:
 							ingester.t2.ingest(t2)
+						ingester.acknowledge_on_delivery(item)
 
 					# Check possibly defined doc_limit
 					if doc_limit and doc_counter >= doc_limit:

@@ -224,6 +224,8 @@ def test_queue_worker(
         def acknowledge(self, doc: QueueItem) -> None:
             pass
 
+    ack = mocker.patch.object(DummyConsumer, "acknowledge")
+
     mock_context.register_unit(QueueIngester)
 
     handler = make_tied_ingestion_handler(
@@ -252,6 +254,8 @@ def test_queue_worker(
     )
 
     assert t2.run() == 1
+
+    assert ack.call_count == 1
 
     assert mock_context.db.get_collection("stock").count_documents({}) == 1
     assert mock_context.db.get_collection("t0").count_documents({}) == 3

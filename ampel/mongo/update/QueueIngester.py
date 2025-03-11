@@ -86,7 +86,7 @@ class QueueIngester(AbsIngester):
         self._t2 = self.QueueT2Ingester(queue=self)
 
         self._item = AbsProducer.Item.new()
-        self._messages_to_ack: set[Any] = set()
+        self._messages_to_ack: list[Any] = []
 
     @contextmanager
     def group(self) -> Generator:
@@ -109,7 +109,7 @@ class QueueIngester(AbsIngester):
             )
 
     def acknowledge_on_delivery(self, message) -> None:
-        self._messages_to_ack.add(message)
+        self._messages_to_ack.append(message)
 
     def flush(self) -> None:
         self._producer.flush()
