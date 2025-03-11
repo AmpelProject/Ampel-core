@@ -46,7 +46,7 @@ ampel = 'ampel.cli.main:main'
 'event_Show_events_information' = 'ampel.cli.EventCommand'
 
 [tool.poetry.dependencies]
-ampel-interface = {version = ">=0.10.5a2,<0.11"}
+ampel-interface = {version = ">=0.10.5a4,<0.11"}
 python = "^3.10"
 pymongo = "^4.0"
 schedule = "^1.0.0"
