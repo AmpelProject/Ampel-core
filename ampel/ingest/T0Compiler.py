@@ -114,7 +114,8 @@ class T0Compiler(AbsCompiler):
 			nowdt = datetime.datetime.fromtimestamp(
 				now, tz=datetime.timezone.utc
 			)
-			ingester.update_expiry({k: nowdt + self.retained[k] for k in retained})  # type: ignore[attr-defined]
+			if hasattr(ingester, "update_expiry"):
+				ingester.update_expiry({k: nowdt + self.retained[k] for k in retained})
 
 		self.register.clear()
 		self.retained.clear()
