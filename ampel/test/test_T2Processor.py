@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from contextlib import contextmanager
 from time import time
 from typing import Any
@@ -256,6 +257,11 @@ def test_queue_worker(
     assert t2.run() == 1
 
     assert ack.call_count == 1
+    acks_iter = ack.call_args[0][0]
+    assert isinstance(acks_iter, Iterable)
+    acks = list(acks_iter)
+    assert len(acks)
+    assert acks[0]["stock"][0]["stock"] == "stockystock"
 
     assert mock_context.db.get_collection("stock").count_documents({}) == 1
     assert mock_context.db.get_collection("t0").count_documents({}) == 3
