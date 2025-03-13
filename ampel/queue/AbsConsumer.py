@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from typing import Generic
 
 from ampel.base.AmpelABC import AmpelABC
@@ -16,6 +17,6 @@ class AbsConsumer(AmpelABC, AmpelUnit, Generic[T], abstract=True):
 		...
 	
 	@abstractmethod
-	def acknowledge(self, doc: T) -> None:
-		"""Acknowledge the processing of a message"""
+	def acknowledge(self, docs: Iterable[T]) -> None:
+		"""Acknowledge the processing of a batch of messages"""
 		...
