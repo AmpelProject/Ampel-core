@@ -221,7 +221,7 @@ def test_queue_worker(
             item = items.pop()
             return {"stock": item.stock, "t0": item.t0, "t1": item.t1, "t2": item.t2}
 
-        def acknowledge(self, doc: QueueItem) -> None:
+        def acknowledge(self, docs: Iterable[QueueItem]) -> None:
             pass
 
     ack = mocker.patch.object(DummyConsumer, "acknowledge")
