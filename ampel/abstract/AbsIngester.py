@@ -1,4 +1,4 @@
-from collections.abc import Callable, Generator, Iterator
+from collections.abc import Callable, Generator, Iterable
 from contextlib import contextmanager
 from typing import Any
 
@@ -16,7 +16,7 @@ from ampel.types import Traceless
 
 class AbsIngester(AmpelABC, ContextUnit, abstract=True):
     error_callback: Traceless[None | Callable[[], None]] = None
-    acknowledge_callback: Traceless[None | Callable[[Iterator[Any]], None]] = None
+    acknowledge_callback: Traceless[None | Callable[[Iterable[Any]], None]] = None
 
     raise_exc: bool = False
 
@@ -25,17 +25,13 @@ class AbsIngester(AmpelABC, ContextUnit, abstract=True):
 
     @contextmanager
     @abstractmethod
-    def group(self) -> Generator:
+    def group(self, acknowledge_messages: None | Iterable[Any] = None) -> Generator:
         """
         Ensure that documents ingested in this context are grouped together
-        """
-        ...
 
-    @abstractmethod
-    def acknowledge_on_delivery(self, message: Any) -> None:
-        """
-        Add a message to be passed to acknowledge_callback when the current
-        batch of documents has been delivered
+        :param acknowledge_messages: messages to be passed to
+            acknowledge_callback when documents ingested in the context are
+            delivered
         """
         ...
 

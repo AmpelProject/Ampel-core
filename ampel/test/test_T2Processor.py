@@ -243,7 +243,8 @@ def test_queue_worker(
         {"id": i, "stock": "stockystock", "body": {"thing": i + 1}} for i in range(3)
     ]
 
-    handler.ingest(datapoints, [(0, True)], stock_id="stockystock", jm_extra={"alert": 123})
+    with handler.ingester.group():
+        handler.ingest(datapoints, [(0, True)], stock_id="stockystock", jm_extra={"alert": 123})
 
     t2 = T2QueueWorker(
         context=mock_context,

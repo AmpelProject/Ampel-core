@@ -1,4 +1,6 @@
+from collections.abc import Iterable
 from contextlib import contextmanager
+from typing import Any
 
 from ampel.abstract.AbsDocIngester import AbsDocIngester
 from ampel.abstract.AbsIngester import AbsIngester
@@ -69,12 +71,11 @@ class MongoIngester(AbsIngester):
         self.flush()
 
     @contextmanager
-    def group(self):
+    def group(self, acknowledge_messages: None | Iterable[Any] = None):
         with self.updates_buffer.group_updates():
             yield
-
-    def acknowledge_on_delivery(self, message):
-        self.updates_buffer.acknowledge_on_push(message)
+            for message in acknowledge_messages or []:
+                self.updates_buffer.acknowledge_on_push(message)
 
     def flush(self):
         self.updates_buffer.stop()

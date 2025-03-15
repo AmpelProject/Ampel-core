@@ -28,6 +28,9 @@ class AbsProducer(AmpelABC, AmpelUnit, abstract=True):
         @classmethod
         def new(cls) -> "AbsProducer.Item":
             return cls([], [], [], [])
+        
+        def __bool__(self) -> bool:
+            return any((self.stock, self.t0, self.t1, self.t2))
 
     @abstractmethod
     def produce(
