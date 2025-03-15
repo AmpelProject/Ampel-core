@@ -1,4 +1,4 @@
-from collections.abc import Generator
+from collections.abc import Generator, Iterable
 from contextlib import contextmanager
 from functools import partial
 from typing import Any
@@ -54,42 +54,28 @@ class QueueIngester(AbsIngester):
         self._t2 = self.QueueT2Ingester(queue=self)
 
         self._item = AbsProducer.Item.new()
-        self._messages_to_ack: list[Any] = []
 
     @contextmanager
-    def group(self) -> Generator:
+    def group(self, acknowledge_messages: None | Iterable[Any] = None) -> Generator:
         """
         Ensure that updates issued in this context are grouped together
         """
-        try:
-            yield
-        finally:
-            item, messages = self._new_buffer()
-            if item or messages:
-                self._send(item, messages)
+        yield
+        item = self._swap_buffer()
+        if item or acknowledge_messages:
+            self._producer.produce(
+                item,
+                partial(self.acknowledge_callback, acknowledge_messages)
+                if self.acknowledge_callback and acknowledge_messages is not None
+                else None,
+            )      
 
-    def _new_buffer(self) -> tuple[AbsProducer.Item, list[Any]]:
-        prev = self._item, self._messages_to_ack
-        item = AbsProducer.Item.new()
-        messages: list[Any] = list()
-        self._item, self._messages_to_ack = item, messages
+    def _swap_buffer(self) -> AbsProducer.Item:
+        prev = self._item
+        self._item = AbsProducer.Item.new()
         return prev
 
-    def _send(self, item: AbsProducer.Item, messages_to_ack: list[Any]) -> None:
-        self._producer.produce(
-            item,
-            partial(self.acknowledge_callback, iter(messages_to_ack))
-            if self.acknowledge_callback
-            else None,
-        )
-
-    def acknowledge_on_delivery(self, message) -> None:
-        self._messages_to_ack.append(message)
-
     def flush(self) -> None:
-        item, messages = self._new_buffer()
-        if item or messages:
-            self._send(item, messages)
         self._producer.flush()
 
     def add_stock(self, doc: StockDocument) -> None:

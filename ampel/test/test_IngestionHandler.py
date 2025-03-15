@@ -265,9 +265,8 @@ def test_queue_ingester(
 
     sentinel = object()
 
-    with handler.ingester.group():
+    with handler.ingester.group([sentinel]):
         handler.ingest(datapoints, [(0, True)], stock_id="stockystock")
-        handler.ingester.acknowledge_on_delivery(sentinel)
     assert len(items := handler.ingester._producer.items) == 1
     assert acknowledge_callback.call_count == 1, "acknowledge callback called"
     assert list(acknowledge_callback.call_args[0][0]) == [sentinel], "callback payload contains sentinel"
@@ -276,8 +275,7 @@ def test_queue_ingester(
     assert len(items := handler.ingester._producer.items) == 2, (
         "second ingestion creates a second message"
     )
-    assert acknowledge_callback.call_count == 2, "acknowledge callback called again"
-    assert list(acknowledge_callback.call_args[0][0]) == [], "callback payload is empty"
+    assert acknowledge_callback.call_count == 1, "acknowledge callback called only once"
 
     t0 = items[0].t0
     t1 = items[0].t1
