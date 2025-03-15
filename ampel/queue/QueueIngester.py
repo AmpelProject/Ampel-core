@@ -61,25 +61,35 @@ class QueueIngester(AbsIngester):
         """
         Ensure that updates issued in this context are grouped together
         """
-        item = AbsProducer.Item.new()
-        messages: set[Any] = set()
-        prev = self._item, self._messages_to_ack
-        self._item, self._messages = item, messages
         try:
             yield
         finally:
-            self._item, self._messages_to_ack = prev
-            self._producer.produce(
-                item,
-                partial(self.acknowledge_callback, iter(messages))
-                if self.acknowledge_callback
-                else None,
-            )
+            item, messages = self._new_buffer()
+            if item or messages:
+                self._send(item, messages)
+
+    def _new_buffer(self) -> tuple[AbsProducer.Item, list[Any]]:
+        prev = self._item, self._messages_to_ack
+        item = AbsProducer.Item.new()
+        messages: list[Any] = list()
+        self._item, self._messages_to_ack = item, messages
+        return prev
+
+    def _send(self, item: AbsProducer.Item, messages_to_ack: list[Any]) -> None:
+        self._producer.produce(
+            item,
+            partial(self.acknowledge_callback, iter(messages_to_ack))
+            if self.acknowledge_callback
+            else None,
+        )
 
     def acknowledge_on_delivery(self, message) -> None:
         self._messages_to_ack.append(message)
 
     def flush(self) -> None:
+        item, messages = self._new_buffer()
+        if item or messages:
+            self._send(item, messages)
         self._producer.flush()
 
     def add_stock(self, doc: StockDocument) -> None:

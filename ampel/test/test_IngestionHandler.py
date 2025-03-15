@@ -7,7 +7,7 @@ from typing import Any
 
 import pytest
 from pymongo.errors import DuplicateKeyError
-from pytest_mock import MockFixture
+from pytest_mock import MockerFixture, MockFixture
 
 from ampel.abstract.AbsIngester import AbsIngester
 from ampel.config.AmpelConfig import AmpelConfig
@@ -101,13 +101,13 @@ def get_handler(
     logger = AmpelLogger.get_logger(console={"level": DEBUG})
     ingester = context.loader.new_context_unit(
         ingester_model,
-        context = context,
-        sub_type = AbsIngester,
-        logger = logger,
-        run_id = run_id,
-        raise_exc = True,
+        context=context,
+        sub_type=AbsIngester,
+        logger=logger,
+        run_id=run_id,
+        raise_exc=True,
         # need to disable provenance for dynamically registered unit
-        _provenance = False,
+        _provenance=False,
     )
     return ChainedIngestionHandler(
         context=context,
@@ -207,7 +207,7 @@ def test_single_source_directive(
 
     check_unit_counts(list(t2.find({})), num_states, num_points)
 
-    # test MongoT2Ingester idempotency 
+    # test MongoT2Ingester idempotency
     before = t2.find_one_and_update({}, {"$set": {"code": DocumentCode.OK}})
     handler.ingest(datapoints, [(0, True)], stock_id="stockystock")
     handler.ingester.updates_buffer.push_updates()
@@ -217,28 +217,42 @@ def test_single_source_directive(
     assert before["body"] == after["body"]
     assert len(after["meta"]) > len(before["meta"])
 
-def test_queue_ingester(
-    dev_context, single_source_directive: IngestDirective, datapoints,
-):
 
+def test_queue_ingester(
+    dev_context,
+    single_source_directive: IngestDirective,
+    datapoints,
+    mocker: MockerFixture,
+):
     @dev_context.register_unit
     class DummyProducer(AbsProducer):
-
         def __init__(self, **kwargs) -> None:
             super().__init__(**kwargs)
             self.items: list[AbsProducer.Item] = []
 
         def produce(self, item: AbsProducer.Item, delivery_callback=None):
             self.items.append(item)
+            if delivery_callback:
+                delivery_callback()
 
         def flush(self):
             pass
+
+    acknowledge_callback = mocker.MagicMock()
 
     dev_context.register_unit(QueueIngester)
     handler = get_handler(
         dev_context,
         [single_source_directive],
-        UnitModel(unit="QueueIngester", config={"producer": {"unit": "DummyProducer"}})
+        UnitModel(
+            unit="QueueIngester",
+            config={
+                "producer": {
+                    "unit": "DummyProducer",
+                },
+                "acknowledge_callback": acknowledge_callback,
+            },
+        ),
     )
     assert isinstance(handler.ingester, QueueIngester)
     assert isinstance(handler.ingester._producer, DummyProducer)
@@ -249,10 +263,21 @@ def test_queue_ingester(
     num_points = len(datapoints)
     num_states = num_points if retro else 1
 
-    handler.ingest(datapoints, [(0, True)], stock_id="stockystock")
+    sentinel = object()
+
+    with handler.ingester.group():
+        handler.ingest(datapoints, [(0, True)], stock_id="stockystock")
+        handler.ingester.acknowledge_on_delivery(sentinel)
     assert len(items := handler.ingester._producer.items) == 1
-    handler.ingest(datapoints, [(0, True)], stock_id="stockystock")
-    assert len(items := handler.ingester._producer.items) == 2, "second ingestion creates a second message"
+    assert acknowledge_callback.call_count == 1, "acknowledge callback called"
+    assert list(acknowledge_callback.call_args[0][0]) == [sentinel], "callback payload contains sentinel"
+    with handler.ingester.group():
+        handler.ingest(datapoints, [(0, True)], stock_id="stockystock")
+    assert len(items := handler.ingester._producer.items) == 2, (
+        "second ingestion creates a second message"
+    )
+    assert acknowledge_callback.call_count == 2, "acknowledge callback called again"
+    assert list(acknowledge_callback.call_args[0][0]) == [], "callback payload is empty"
 
     t0 = items[0].t0
     t1 = items[0].t1
@@ -327,12 +352,12 @@ def test_multiplex_dispatch(
     t0 = dev_context.db.get_collection("t0")
     t1 = dev_context.db.get_collection("t1")
 
-    assert t0.count_documents({"channel": "TEST_CHANNEL"}) == len(
-        datapoints
-    ), "single-stream channel contains only direct datapoints"
-    assert (
-        t0.count_documents({"channel": "LONG_CHANNEL"}) == num_points
-    ), "multiplexed channel contains additional datapoints"
+    assert t0.count_documents({"channel": "TEST_CHANNEL"}) == len(datapoints), (
+        "single-stream channel contains only direct datapoints"
+    )
+    assert t0.count_documents({"channel": "LONG_CHANNEL"}) == num_points, (
+        "multiplexed channel contains additional datapoints"
+    )
 
     assert t1.count_documents({"channel": "TEST_CHANNEL"}) == (
         len(datapoints) if retro_short else 1
@@ -369,12 +394,12 @@ def test_multiplex_elision(
 
     t0 = dev_context.db.get_collection("t0")
 
-    assert t0.count_documents({"channel": "TEST_CHANNEL"}) == len(
-        datapoints
-    ), "single-stream channel contains only direct datapoints"
-    assert (
-        t0.count_documents({"channel": "LONG_CHANNEL"}) == 0
-    ), "multiplexed channel contains additional datapoints"
+    assert t0.count_documents({"channel": "TEST_CHANNEL"}) == len(datapoints), (
+        "single-stream channel contains only direct datapoints"
+    )
+    assert t0.count_documents({"channel": "LONG_CHANNEL"}) == 0, (
+        "multiplexed channel contains additional datapoints"
+    )
 
 
 def test_t0_meta_append(
@@ -481,7 +506,7 @@ def test_t0_ttl(
             [
                 IngestDirective(
                     channel="TEST_CHANNEL",
-                    ingest={ # type: ignore[arg-type]
+                    ingest={  # type: ignore[arg-type]
                         "mux": {
                             "unit": "DummyHistoryMuxer",
                             "combine": [
@@ -497,7 +522,9 @@ def test_t0_ttl(
         )
 
     def ingest(datapoints: list[DataPoint]):
-        handler.ingest([dict(dp) for dp in datapoints], [(0, True)], stock_id="stockystock")
+        handler.ingest(
+            [dict(dp) for dp in datapoints], [(0, True)], stock_id="stockystock"
+        )
         assert isinstance(handler.ingester, MongoIngester)
         handler.ingester.updates_buffer.push_updates(force=True)
 
@@ -517,26 +544,24 @@ def test_t0_ttl(
         ).count_documents({}) == 1, f"t{tier} document inserted"
         doc: None | DataPoint | T1Document | T2Document = collection.find_one()
         assert doc is not None
-        assert (
-            get_expire_time(doc) == get_meta_time(doc) + ttl
-        ), f"ttl set on t{tier} document"
+        assert get_expire_time(doc) == get_meta_time(doc) + ttl, (
+            f"ttl set on t{tier} document"
+        )
 
     # ingest remaining datapoints
     ingest(datapoints)
     dp: None | DataPoint = mock_context.db.get_collection("t0").find_one({"id": 0})
     assert dp is not None
-    assert (
-        get_expire_time(dp)
-        > get_meta_time(dp) + ttl
-    ), f"ttl updated for dp {dp['id']}"
+    assert get_expire_time(dp) > get_meta_time(dp) + ttl, (
+        f"ttl updated for dp {dp['id']}"
+    )
     assert len(dp["meta"]) == 1, "no extra meta entries added"
 
     # and again, ensuring that all ttls get updated
     ingest(datapoints)
     for dp in mock_context.db.get_collection("t0").find():
         assert dp is not None
-        assert (
-            get_expire_time(dp)
-            > get_meta_time(dp) + ttl
-        ), f"ttl updated for dp {dp['id']}"
+        assert get_expire_time(dp) > get_meta_time(dp) + ttl, (
+            f"ttl updated for dp {dp['id']}"
+        )
         assert len(dp["meta"]) == 1, "no extra meta entries added"
