@@ -115,9 +115,18 @@ class T2QueueWorker(T2Worker):
 
 					self._current_item = item
 
-					for doc in item["t2"]:
-						with stat_time.labels(self.tier, "process_doc", doc["unit"]).time():
-							self.process_doc(doc, stock_updr, logger)
+					input_docs = item["t2"]
+					# Replace inputs with resolved version from the database.
+					# Doing this here allows process_doc() to find
+					# already-processed docs if it recurse into
+					# load_input_docs() for tied units.
+					item["t2"] = [self._sub_existing_doc(doc) for doc in item["t2"]]
+
+					for input_doc, doc in zip(input_docs, item["t2"], strict=True):
+						if doc is input_doc:
+							# not found in the database; process for the first time
+							with stat_time.labels(self.tier, "process_doc", doc["unit"]).time():
+								self.process_doc(doc, stock_updr, logger)
 					doc_counter += 1
 
 					with ingester.group([item]):
@@ -127,7 +136,10 @@ class T2QueueWorker(T2Worker):
 							ingester.t0.ingest(dp)
 						for t1 in item["t1"]:
 							ingester.t1.ingest(t1)
-						for t2 in item["t2"]:
+						# NB: ingest the input docs as they were before
+						# substitution in order to pick up any requested updates
+						# to meta, channels, tags, expiry, etc.
+						for t2 in input_docs:
 							ingester.t2.ingest(t2)
 
 					# Check possibly defined doc_limit
@@ -147,6 +159,30 @@ class T2QueueWorker(T2Worker):
 				self._current_run_id = None
 
 		return doc_counter
+
+	def _sub_existing_doc(self, doc: T2Document) -> T2Document:
+		"""replace doc with a resolved copy from the database if it exists"""
+		match = {
+			'code': DocumentCode.OK,
+			'stock': doc['stock'],
+			'unit': doc['unit'],
+			'config': doc['config'],
+			'link': doc['link']
+		}
+
+		if 'origin' in doc:
+			match['origin'] = doc['origin']
+
+		db_doc: None | T2Document
+		if db_doc := self.col.find_one(match):
+			# merge the existing doc with the new one for consistency
+			db_doc["meta"] = [*db_doc["meta"], *doc.get("meta", [])]
+			db_doc["body"] = [*db_doc["body"], *doc.get("body", [])]
+			db_doc["tag"] = list(set(db_doc.get("tag", [])).union(doc.get("tag", [])))
+			db_doc["channel"] = list(set(db_doc.get("channel", [])).union(doc.get("channel", [])))
+
+			return db_doc
+		return doc
 
 	def update_doc(self,
 		doc: T2Document,
@@ -203,7 +239,7 @@ class T2QueueWorker(T2Worker):
 			next((d for d in self._current_item["t1"] if d["stock"] == stock and d["link"] == link), None)
 			if self._current_item is not None else None
 		) or super().load_t1(stock, link)
-	
+
 	def load_t2(self, query: dict[str, Any], for_update: bool=False) -> Generator[T2Document]:
 		"""
 		Load T2 documents from database
@@ -237,4 +273,4 @@ class T2QueueWorker(T2Worker):
 						if filter_applies(query, doc):
 							yield doc
 		else:
-			yield from super().load_t2(query, for_update)
+			raise RuntimeError("load_t2 called outside of consume loop")

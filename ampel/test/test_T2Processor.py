@@ -267,6 +267,25 @@ def test_queue_worker(
     assert mock_context.db.get_collection("stock").count_documents({}) == 1
     assert mock_context.db.get_collection("t0").count_documents({}) == 3
     assert mock_context.db.get_collection("t1").count_documents({}) == 1
+    t1_doc = mock_context.db.get_collection("t1").find_one({})
+    assert t1_doc is not None
+    assert len(t1_doc["meta"]) == 1
 
     docs = list(mock_context.db.get_collection("t2").find({"code": DocumentCode.OK}))
     assert len(docs) == 2
+    assert len(docs[0]["body"]) == 1
+    assert len(docs[0]["meta"]) == 2
+
+    with handler.ingester.group():
+        handler.ingest(datapoints, [(0, True)], stock_id="stockystock", jm_extra={"alert": 456})
+    
+    assert t2.run() == 1
+
+    assert mock_context.db.get_collection("t1").count_documents({}) == 1
+    t1_doc = mock_context.db.get_collection("t1").find_one({})
+    assert t1_doc is not None
+    assert len(t1_doc["meta"]) == 2, "meta entry added to t1 doc"
+    docs = list(mock_context.db.get_collection("t2").find({"code": DocumentCode.OK}))
+    assert len(docs) == 2
+    assert len(docs[0]["body"]) == 1, "doc was not re-run"
+    assert len(docs[0]["meta"]) == 3, "meta entry added to t2 doc"
