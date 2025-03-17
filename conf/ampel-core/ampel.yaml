@@ -42,6 +42,7 @@ unit:
 - ampel.ingest.ChainedT0Muxer
 - ampel.mongo.update.MongoIngester
 - ampel.queue.QueueIngester
+- ampel.queue.NullProducer
 
 # Logical units
 - ampel.t1.T1SimpleCombiner
