@@ -40,6 +40,7 @@ unit:
 - ampel.cli.T3BufferExporterUnit
 - ampel.demo.DemoProcessor
 - ampel.ingest.ChainedT0Muxer
+- ampel.ingest.IngestionWorker
 - ampel.mongo.update.MongoIngester
 - ampel.queue.QueueIngester
 - ampel.queue.NullProducer
