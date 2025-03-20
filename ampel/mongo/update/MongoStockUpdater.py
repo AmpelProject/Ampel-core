@@ -27,45 +27,51 @@ from ampel.types import ChannelId, StockId, Tag
 tag_type = get_args(Tag)
 chan_type = get_args(ChannelId)
 
-
-class MongoStockUpdater:
-
-	def __init__(self,
-		ampel_db: AmpelDB, tier: Literal[-1, 0, 1, 2, 3], run_id: int,
-		process_name: str, logger: AmpelLogger, raise_exc: bool = False,
-		bump_updated: bool = True, update_journal: bool = True,
+class BaseStockUpdater:
+	def __init__(self, *, tier: Literal[-1, 0, 1, 2, 3], run_id: int,
+		process_name: str,
 		extra_tag: None | Tag | Sequence[Tag] = None,
-		auto_flush: int = 0
-	) -> None:
-		"""
-		:param raise_exc: raise exception rather than populating 'troubles' collection
-		"""
-
-		self._ampel_db = ampel_db
-		self.col_stock = ampel_db.get_collection('stock')
-		self.run_id = run_id
+	):
 		self.tier = tier
-		self.raise_exc = raise_exc
-		self.update_journal = update_journal
-		self.bump_updated = bump_updated
-		self.auto_flush = auto_flush
+		self.run_id = run_id
 		self.process_name = process_name
 		self.extra_tag = extra_tag
-		self.logger = logger
-		self.reset()
+
+	@staticmethod
+	def include_jtags(jrec: JournalRecord, tag: Tag | Sequence[Tag]):
+		""" Modifies the input JournalRecord dict """
+
+		if tag:
+
+			# journal record also contains tag(s)
+			if 'tag' in jrec:
+
+				# tweak request is about a single tag (not a sequence of tags)
+				if isinstance(tag, tag_type):
+					# journal record contains single tag (not a sequence of tags)
+					if isinstance(jrec['tag'], tag_type):
+						jrec['tag'] = [jrec['tag'], tag]
+					else:
+						jrec['tag'].append(tag) # type: ignore[union-attr]
+
+				# multi-tag tweak request
+				elif isinstance(jrec['tag'], tag_type): # journal record contains single tag (not a sequence of tags)
+					jrec['tag'] = [*jrec['tag'], tag] # type: ignore[list-item]
+				else:
+					jrec['tag'] = jrec['tag'] + tag # type: ignore[operator]
+
+			# journal record contains no tag
+			else:
+				jrec['tag'] = tag
 
 
-	def reset(self) -> None:
-		self._updates: list[UpdateOne | UpdateMany] = []
-		self._one_updates: dict[StockId, UpdateOne] = {}
-		self._multi_updates: dict[StockId, list[UpdateMany]] = {}
-
-
-	def new_journal_record(self,
+	def new_journal_record(self, *,
 		unit: None | int | str = None,
 		channels: None | ChannelId | Sequence[ChannelId] = None,
 		action_code: None | JournalActionCode = None,
 		doc_id: None | ObjectId = None,
+		jattrs: None | JournalAttributes = None,
+		trace_id: None | dict[str, int] = None,
 		now: None | int | float = None
 	) -> JournalRecord:
 
@@ -88,8 +94,53 @@ class MongoStockUpdater:
 
 		if self.extra_tag:
 			ret['tag'] = self.extra_tag
+		
+		if jattrs:
+
+			if jattrs.tag:
+				self.include_jtags(ret, jattrs.tag)
+
+			if jattrs.extra:
+				ret['extra'] = jattrs.extra
+
+			if jattrs.code and jattrs.code > 0:
+				ret['code'] = jattrs.code
+
+		if trace_id:
+			ret['traceid'] = trace_id
 
 		return ret
+
+
+class MongoStockUpdater(BaseStockUpdater):
+
+	def __init__(self,
+		ampel_db: AmpelDB, tier: Literal[-1, 0, 1, 2, 3], run_id: int,
+		process_name: str, logger: AmpelLogger, raise_exc: bool = False,
+		bump_updated: bool = True, update_journal: bool = True,
+		extra_tag: None | Tag | Sequence[Tag] = None,
+		auto_flush: int = 0
+	) -> None:
+		"""
+		:param raise_exc: raise exception rather than populating 'troubles' collection
+		"""
+		super().__init__(tier=tier, run_id=run_id, process_name=process_name,
+		    extra_tag=extra_tag)
+
+		self._ampel_db = ampel_db
+		self.col_stock = ampel_db.get_collection('stock')
+		self.raise_exc = raise_exc
+		self.update_journal = update_journal
+		self.bump_updated = bump_updated
+		self.auto_flush = auto_flush
+		self.logger = logger
+		self.reset()
+
+
+	def reset(self) -> None:
+		self._updates: list[UpdateOne | UpdateMany] = []
+		self._one_updates: dict[StockId, UpdateOne] = {}
+		self._multi_updates: dict[StockId, list[UpdateMany]] = {}
 
 
 	def add_journal_record(self,
@@ -112,21 +163,15 @@ class MongoStockUpdater:
 		it also modifies the "updated" field of stock document(s).
 		"""
 
-		jrec = self.new_journal_record(unit, channel, action_code, doc_id, now)
-
-		if jattrs:
-
-			if jattrs.tag:
-				self.include_jtags(jrec, jattrs.tag)
-
-			if jattrs.extra:
-				jrec['extra'] = jattrs.extra
-
-			if jattrs.code and jattrs.code > 0:
-				jrec['code'] = jattrs.code
-
-		if trace_id:
-			jrec['traceid'] = trace_id
+		jrec = self.new_journal_record(
+			unit=unit,
+			channels=channel,
+			action_code=action_code,
+			doc_id=doc_id,
+			jattrs=jattrs,
+			trace_id=trace_id,
+			now=now,
+		)
 
 		upd: dict[str, Any] = {'$push': {'journal': jrec}}
 
@@ -315,31 +360,3 @@ class MongoStockUpdater:
 
 			# Populate troubles collection
 			report_exception(self._ampel_db, self.logger, exc=e, info=info)
-
-
-	@staticmethod
-	def include_jtags(jrec: JournalRecord, tag: Tag | Sequence[Tag]):
-		""" Modifies the input JournalRecord dict """
-
-		if tag:
-
-			# journal record also contains tag(s)
-			if 'tag' in jrec:
-
-				# tweak request is about a single tag (not a sequence of tags)
-				if isinstance(tag, tag_type):
-					# journal record contains single tag (not a sequence of tags)
-					if isinstance(jrec['tag'], tag_type):
-						jrec['tag'] = [jrec['tag'], tag]
-					else:
-						jrec['tag'].append(tag) # type: ignore[union-attr]
-
-				# multi-tag tweak request
-				elif isinstance(jrec['tag'], tag_type): # journal record contains single tag (not a sequence of tags)
-					jrec['tag'] = [*jrec['tag'], tag] # type: ignore[list-item]
-				else:
-					jrec['tag'] = jrec['tag'] + tag # type: ignore[operator]
-
-			# journal record contains no tag
-			else:
-				jrec['tag'] = tag

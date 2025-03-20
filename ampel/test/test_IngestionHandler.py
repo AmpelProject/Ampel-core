@@ -105,6 +105,8 @@ def get_handler(
         sub_type=AbsIngester,
         logger=logger,
         run_id=run_id,
+        tier=0,
+        process_name="ingest",
         raise_exc=True,
         # need to disable provenance for dynamically registered unit
         _provenance=False,

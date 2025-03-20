@@ -12,11 +12,11 @@ from typing import Any
 from ujson import encode
 
 from ampel.abstract.AbsCompiler import AbsCompiler
-from ampel.abstract.AbsDocIngester import AbsDocIngester
 from ampel.abstract.AbsIdMapper import AbsIdMapper
 from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.content.JournalRecord import JournalRecord
 from ampel.content.StockDocument import StockDocument
+from ampel.protocol.DocIngesterProtocol import DocIngesterProtocol
 from ampel.types import ChannelId, StockId, Tag
 
 
@@ -77,7 +77,7 @@ class StockCompiler(AbsCompiler):
 
 	# Override
 	def commit(self,
-		ingester: AbsDocIngester[StockDocument],
+		ingester: DocIngesterProtocol[StockDocument],
 		now: int | float,
 		**kwargs
 	) -> None:

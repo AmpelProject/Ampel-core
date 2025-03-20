@@ -18,7 +18,6 @@ from ampel.core.EventHandler import EventHandler
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.log import AmpelLogger, LogFlag
 from ampel.model.UnitModel import UnitModel
-from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
 from ampel.queue.AbsConsumer import AbsConsumer
 from ampel.t2.T2Worker import T2Worker
 from ampel.types import (
@@ -70,12 +69,6 @@ class T2QueueWorker(T2Worker):
 				{'$set': {'timestamp': int(time())}}
 			)
 
-		stock_updr = MongoStockUpdater(
-			ampel_db = self.context.db, tier = self.tier, run_id = run_id,
-			process_name = self.process_name, logger = logger,
-			raise_exc = self.raise_exc, extra_tag = self.jtag
-		)
-
 		consumer = self.context.loader.new(self.consumer, unit_type=AbsConsumer)
 
 		# Loop variables
@@ -91,6 +84,8 @@ class T2QueueWorker(T2Worker):
 				self.ingester,
 				context = self.context,
 				run_id = run_id,
+				tier = self.tier,
+				process_name = self.process_name,
 				error_callback = stop_token.set,
 				acknowledge_callback = consumer.acknowledge,
 				logger = logger,
@@ -122,14 +117,14 @@ class T2QueueWorker(T2Worker):
 					# load_input_docs() for tied units.
 					item["t2"] = [self._sub_existing_doc(doc) for doc in item["t2"]]
 
-					for input_doc, doc in zip(input_docs, item["t2"], strict=True):
-						if doc is input_doc:
-							# not found in the database; process for the first time
-							with stat_time.labels(self.tier, "process_doc", doc["unit"]).time():
-								self.process_doc(doc, stock_updr, logger)
-					doc_counter += 1
-
 					with ingester.group([item]):
+						for input_doc, doc in zip(input_docs, item["t2"], strict=True):
+							if doc is input_doc:
+								# not found in the database; process for the first time
+								with stat_time.labels(self.tier, "process_doc", doc["unit"]).time():
+									self.process_doc(doc, ingester, logger)
+						doc_counter += 1
+
 						for stock in item["stock"]:
 							ingester.stock.ingest(stock)
 						for dp in item["t0"]:
@@ -149,7 +144,6 @@ class T2QueueWorker(T2Worker):
 					if garbage_collect:
 						gc.collect()
 			finally:
-				stock_updr.flush()
 				ingester.flush()
 				event_hdlr.add_extra(docs=doc_counter)
 

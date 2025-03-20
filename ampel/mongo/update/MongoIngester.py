@@ -11,12 +11,28 @@ from ampel.content.T1Document import T1Document
 from ampel.content.T2Document import T2Document
 from ampel.model.UnitModel import UnitModel
 from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
+from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
+from ampel.protocol.StockIngesterProtocol import StockIngesterProtocol
+from ampel.types import OneOrMany, Tag
 
+
+class _StockIngester:
+
+    def __init__(self, ingester: AbsDocIngester[StockDocument], updater: MongoStockUpdater) -> None:
+        self.ingester = ingester
+        self.update = updater
+    
+    def ingest(self, doc: StockDocument) -> None:
+        self.ingester.ingest(doc)
 
 class MongoIngester(AbsIngester):
     updates_buffer_size: int = 500
 
-    def __init__(self, **kwargs):
+    #: Tag(s) to add to the stock :class:`~ampel.content.JournalRecord.JournalRecord`
+    #: every time a document is processed
+    jtag: None | OneOrMany[Tag]
+
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
         updates_buffer = DBUpdatesBuffer(
@@ -28,6 +44,13 @@ class MongoIngester(AbsIngester):
             catch_signals=False,  # we do it ourself
             max_size=self.updates_buffer_size,
             raise_exc=self.raise_exc,
+        )
+
+        stock_updater = MongoStockUpdater(
+            ampel_db = self.context.db, tier = self.tier, run_id = self.run_id,
+            process_name = self.process_name, logger = self.logger,
+            raise_exc = self.raise_exc, extra_tag = self.jtag
+
         )
 
         # Create ingesters
@@ -57,10 +80,13 @@ class MongoIngester(AbsIngester):
             updates_buffer=updates_buffer,
         )
 
-        self._stock = AuxUnitRegister.new_unit(
-            model=get_ingester_model("stock"),
-            sub_type=AbsDocIngester[StockDocument],
-            updates_buffer=updates_buffer,
+        self._stock = _StockIngester(
+            AuxUnitRegister.new_unit(
+                model=get_ingester_model("stock"),
+                sub_type=AbsDocIngester[StockDocument],
+                updates_buffer=updates_buffer,
+            ),
+            stock_updater,
         )
 
         updates_buffer.start()
@@ -76,13 +102,16 @@ class MongoIngester(AbsIngester):
             yield
             for message in acknowledge_messages or []:
                 self.updates_buffer.acknowledge_on_push(message)
+            if len(self._stock.update._updates) >= self.updates_buffer_size:  # noqa: SLF001
+                self._stock.update.flush()
 
     def flush(self):
         self.updates_buffer.stop()
         self.updates_buffer.push_updates(force=True)
+        self._stock.update.flush()
 
     @property
-    def stock(self) -> AbsDocIngester[StockDocument]:
+    def stock(self) -> StockIngesterProtocol:
         return self._stock
 
     @property

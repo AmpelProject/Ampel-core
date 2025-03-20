@@ -21,6 +21,7 @@ from pymongo.read_concern import ReadConcern
 from pymongo.write_concern import WriteConcern
 
 from ampel.abstract.AbsEventUnit import AbsEventUnit
+from ampel.abstract.AbsIngester import AbsIngester
 from ampel.abstract.AbsUnitResultAdapter import AbsUnitResultAdapter
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.base.decorator import abstractmethod
@@ -41,7 +42,7 @@ from ampel.metrics.AmpelMetricsRegistry import (
 	TimingCounter,
 )
 from ampel.model.UnitModel import UnitModel
-from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
+from ampel.mongo.update.MongoIngester import MongoIngester
 from ampel.mongo.utils import maybe_match_array, maybe_use_each
 from ampel.types import JDict, OneOrMany, Tag, UBson
 from ampel.util.hash import build_unsafe_dict_id
@@ -187,7 +188,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 	@abstractmethod
 	def process_doc(self,
-		doc: T, stock_updr: MongoStockUpdater, logger: AmpelLogger
+		doc: T, ingester: AbsIngester, logger: AmpelLogger
 	) -> Any:
 		...
 
@@ -244,10 +245,10 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 				{'$set': {'timestamp': int(time())}}
 			)
 
-		stock_updr = MongoStockUpdater(
-			ampel_db = self.context.db, tier = self.tier, run_id = run_id,
+		ingester = MongoIngester(
+			context = self.context, tier = self.tier, run_id = run_id,
 			process_name = self.process_name, logger = logger,
-			raise_exc = self.raise_exc, extra_tag = self.jtag
+			raise_exc = self.raise_exc, jtag = self.jtag
 		)
 
 		# Loop variables
@@ -279,8 +280,11 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 					if logger.verbose > 1:
 						logger.debug(f'T{self.tier} doc to process', extra={'doc': doc})
 
-					with stat_time.labels(self.tier, "process_doc", doc["unit"]).time():
-						self.process_doc(doc, stock_updr, logger)
+					with (
+						stat_time.labels(self.tier, "process_doc", doc["unit"]).time(),
+						ingester.group()
+					):
+						self.process_doc(doc, ingester, logger)
 					doc_counter += 1
 
 					# Check possibly defined doc_limit
@@ -290,7 +294,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 					if garbage_collect:
 						gc.collect()
 			finally:
-				stock_updr.flush()
+				ingester.flush()
 				event_hdlr.add_extra(docs=doc_counter)
 
 				logger.flush()

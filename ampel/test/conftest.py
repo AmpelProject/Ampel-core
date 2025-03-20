@@ -223,6 +223,8 @@ def make_tied_ingestion_handler(
         sub_type = AbsIngester,
         logger = logger,
         run_id = run_id,
+        tier = 0,
+        process_name = "ingest",
         raise_exc = True,
     )
 

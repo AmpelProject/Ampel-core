@@ -16,6 +16,7 @@ from typing import Any, ClassVar, Literal, Union, overload
 from bson import ObjectId
 
 from ampel.abstract.AbsCustomStateT2Unit import AbsCustomStateT2Unit
+from ampel.abstract.AbsIngester import AbsIngester
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.abstract.AbsStateT2Unit import AbsStateT2Unit
 from ampel.abstract.AbsStockT2Unit import AbsStockT2Unit
@@ -39,7 +40,6 @@ from ampel.log import AmpelLogger
 from ampel.log.utils import convert_dollars, report_error, report_exception
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.model.UnitModel import UnitModel
-from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
 from ampel.mongo.utils import maybe_match_array
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import (
@@ -151,7 +151,7 @@ class T2Worker(AbsWorker[T2Document]):
 
 	def process_doc(self,
 		doc: T2Document,
-		stock_updr: MongoStockUpdater,
+		ingester: AbsIngester,
 		logger: AmpelLogger
 	) -> tuple[UBson, int]:
 
@@ -170,14 +170,14 @@ class T2Worker(AbsWorker[T2Document]):
 
 			self._processing_error(
 				logger, doc, None, exception=e, msg='Could not instantiate unit',
-				meta = self.gen_meta(stock_updr.run_id, None, 0)
+				meta = self.gen_meta(ingester.run_id, None, 0)
 			)
 
 			return None, DocumentCode.EXCEPTION
 
 		if (trials := self._get_trials(doc)) <= self.max_try:
 			with stat_time.labels(doc["unit"], "run").time():
-				ret = self.run_t2_unit(t2_unit, doc, logger, stock_updr)
+				ret = self.run_t2_unit(t2_unit, doc, logger, ingester)
 		else:
 			ret = UnitResult(code=DocumentCode.TOO_MANY_TRIALS)
 
@@ -196,7 +196,7 @@ class T2Worker(AbsWorker[T2Document]):
 				({'t2unit': t2_unit._trace_id} if t2_unit._trace_id else {})  # noqa: SLF001
 			)
 
-			jrec = stock_updr.add_journal_record(
+			jrec = ingester.stock.update.add_journal_record(
 				stock = doc['stock'],
 				channel = doc['channel'],
 				doc_id = doc.get('_id'),  # type: ignore[arg-type]
@@ -206,7 +206,7 @@ class T2Worker(AbsWorker[T2Document]):
 
 			# New meta entry (code appended later)
 			meta = self.gen_meta(
-				stock_updr.run_id,
+				ingester.run_id,
 				t2_unit._trace_id,  # noqa: SLF001
 				round(now - before_run, 3),
 				MetaActionCode.BUMP_STOCK_UPD
@@ -274,10 +274,6 @@ class T2Worker(AbsWorker[T2Document]):
 			meta['code'] = code
 			self.update_doc(doc, meta, logger, body=body, tag=tag, code=code)
 
-			# Update stock document
-			if len(stock_updr._updates) >= self.updates_buffer_size:  # noqa: SLF001
-				stock_updr.flush()
-
 		except Exception as e:
 
 			if self.raise_exc:
@@ -285,7 +281,7 @@ class T2Worker(AbsWorker[T2Document]):
 
 			self._processing_error(
 				logger, doc, None, exception=e, msg='An exception occured',
-				meta = self.gen_meta(stock_updr.run_id, t2_unit._trace_id, round(now - before_run, 3))  # noqa: SLF001
+				meta = self.gen_meta(ingester.run_id, t2_unit._trace_id, round(now - before_run, 3))  # noqa: SLF001
 			)
 			code = DocumentCode.EXCEPTION
 
@@ -343,7 +339,7 @@ class T2Worker(AbsWorker[T2Document]):
 
 	# NB: spell out union arg to ensure a common context for the TypeVar T
 	def load_input_docs(self,
-		t2_unit: AbsT2, t2_doc: T2Document, logger: AmpelLogger, stock_updr: MongoStockUpdater
+		t2_unit: AbsT2, t2_doc: T2Document, logger: AmpelLogger, ingester: AbsIngester
 	) -> Union[ # noqa: UP007
 		None,
 		UnitResult,                                              # Error / missing dependency
@@ -474,7 +470,7 @@ class T2Worker(AbsWorker[T2Document]):
 					queries.append(d)
 
 				with stat_time.labels(t2_doc["unit"], "load_tied").time():
-					qres = self.run_tied_queries(queries, t2_doc, stock_updr, logger)
+					qres = self.run_tied_queries(queries, t2_doc, ingester, logger)
 
 				# Dependency missing
 				if isinstance(qres, UnitResult):
@@ -517,7 +513,7 @@ class T2Worker(AbsWorker[T2Document]):
 							self.build_tied_t2_query(t2_unit, tied_model, t2_doc)
 							for tied_model in t2_unit.t2_dependency
 						],
-						t2_doc, stock_updr, logger
+						t2_doc, ingester, logger
 					)
 
 					if isinstance(qres, UnitResult):
@@ -545,7 +541,7 @@ class T2Worker(AbsWorker[T2Document]):
 	def run_tied_queries(self,
 		queries: list[dict[str, Any]],
 		t2_doc: T2Document,
-		stock_updr: MongoStockUpdater,
+		ingester: AbsIngester,
 		logger: AmpelLogger
 	) -> UnitResult | list[T2DocView]:
 
@@ -569,7 +565,7 @@ class T2Worker(AbsWorker[T2Document]):
 					if not dep_t2_doc.get('body'):
 						dep_t2_doc['body'] = []
 
-					body, code = self.process_doc(dep_t2_doc, stock_updr, logger)
+					body, code = self.process_doc(dep_t2_doc, ingester, logger)
 					dep_t2_doc['body'].append(body)  # type: ignore[attr-defined]
 					dep_t2_doc['meta'].append({'code': code, 'tier': 2})  # type: ignore[attr-defined]
 					dep_t2_doc['code'] = code
@@ -696,7 +692,7 @@ class T2Worker(AbsWorker[T2Document]):
 
 
 	def run_t2_unit(self,
-		t2_unit: AbsT2, t2_doc: T2Document, logger: AmpelLogger, stock_updr: MongoStockUpdater,
+		t2_unit: AbsT2, t2_doc: T2Document, logger: AmpelLogger, ingester: AbsIngester,
 	) -> UBson | UnitResult:
 		"""
 		Regarding the possible int return code:
@@ -704,7 +700,7 @@ class T2Worker(AbsWorker[T2Document]):
 		but let's not be too restrictive here
 		"""
 
-		args: Any = self.load_input_docs(t2_unit, t2_doc, logger, stock_updr)
+		args: Any = self.load_input_docs(t2_unit, t2_doc, logger, ingester)
 		if args is None:
 			logger.error("Unable to load information required to run t2 unit")
 			return UnitResult(code=DocumentCode.INTERNAL_ERROR)

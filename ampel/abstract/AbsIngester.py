@@ -1,16 +1,16 @@
 from collections.abc import Callable, Generator, Iterable
 from contextlib import contextmanager
-from typing import Any
+from typing import Any, Literal
 
 from ampel.abstract.AbsDocIngester import AbsDocIngester
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
 from ampel.content.DataPoint import DataPoint
-from ampel.content.StockDocument import StockDocument
 from ampel.content.T1Document import T1Document
 from ampel.content.T2Document import T2Document
 from ampel.core.ContextUnit import ContextUnit
-from ampel.protocol.LoggerProtocol import LoggerProtocol
+from ampel.log.AmpelLogger import AmpelLogger
+from ampel.protocol.StockIngesterProtocol import StockIngesterProtocol
 from ampel.types import Traceless
 
 
@@ -21,7 +21,9 @@ class AbsIngester(AmpelABC, ContextUnit, abstract=True):
     raise_exc: bool = False
 
     run_id: Traceless[int]
-    logger: Traceless[LoggerProtocol]
+    tier: Traceless[Literal[-1, 0, 1, 2, 3]]
+    process_name: Traceless[str]
+    logger: Traceless[AmpelLogger]
 
     @contextmanager
     @abstractmethod
@@ -44,7 +46,7 @@ class AbsIngester(AmpelABC, ContextUnit, abstract=True):
 
     @property
     @abstractmethod
-    def stock(self) -> AbsDocIngester[StockDocument]: ...
+    def stock(self) -> StockIngesterProtocol: ...
 
     @property
     @abstractmethod

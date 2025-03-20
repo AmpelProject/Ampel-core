@@ -9,13 +9,13 @@
 
 from typing import Any, Literal
 
-from ampel.abstract.AbsDocIngester import AbsDocIngester
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.AmpelUnit import AmpelUnit
 from ampel.base.decorator import abstractmethod
 from ampel.content.MetaActivity import MetaActivity
 from ampel.content.MetaRecord import MetaRecord
 from ampel.enum.MetaActionCode import MetaActionCode
+from ampel.protocol.DocIngesterProtocol import DocIngesterProtocol
 from ampel.types import ChannelId, OneOrMany, Tag
 
 # Alias
@@ -56,7 +56,7 @@ class AbsCompiler(AmpelUnit, AmpelABC, abstract=True):
 
 
 	@abstractmethod
-	def commit(self, ingester: AbsDocIngester, now: int | float, **kwargs) -> None:
+	def commit(self, ingester: DocIngesterProtocol, now: int | float, **kwargs) -> None:
 		...
 
 
