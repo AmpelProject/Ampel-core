@@ -47,6 +47,8 @@ class IngestionWorker(AbsEventUnit):
                     self.ingester,
                     context=self.context,
                     run_id=run_id,
+                    tier=-1,
+                    process_name=self.process_name,
                     error_callback=stop_token.set,
                     acknowledge_callback=consumer.acknowledge,
                     logger=logger,
