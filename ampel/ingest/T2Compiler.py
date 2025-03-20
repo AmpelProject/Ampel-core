@@ -11,10 +11,10 @@ import datetime
 from typing import Any, NamedTuple
 
 from ampel.abstract.AbsCompiler import AbsCompiler, ActivityRegister
-from ampel.abstract.AbsDocIngester import AbsDocIngester
 from ampel.content.MetaActivity import MetaActivity
 from ampel.content.T2Document import T2Document
 from ampel.enum.DocumentCode import DocumentCode
+from ampel.protocol.DocIngesterProtocol import DocIngesterProtocol
 from ampel.types import ChannelId, StockId, T2Link, UnitId
 
 
@@ -92,7 +92,7 @@ class T2Compiler(AbsCompiler):
 			self.t2s[k] = T2Compiler.DocInfo({channel}, ttl, {tid: self.new_meta_info(channel, activity, meta_extra)})
 
 
-	def commit(self, ingester: AbsDocIngester[T2Document], now: int | float, **kwargs) -> None:
+	def commit(self, ingester: DocIngesterProtocol[T2Document], now: int | float, **kwargs) -> None:
 
 		for k, v in self.t2s.items():
 

@@ -11,10 +11,10 @@ import datetime
 from typing import Any
 
 from ampel.abstract.AbsCompiler import AbsCompiler
-from ampel.abstract.AbsDocIngester import AbsDocIngester
 from ampel.content.DataPoint import DataPoint
 from ampel.content.MetaRecord import MetaRecord
 from ampel.enum.MetaActionCode import MetaActionCode
+from ampel.protocol.DocIngesterProtocol import DocIngesterProtocol
 from ampel.types import ChannelId, DataPointId
 from ampel.util.collections import try_reduce
 
@@ -68,7 +68,7 @@ class T0Compiler(AbsCompiler):
 					self.retained[dp['id']] = ttl
 
 	# Override
-	def commit(self, ingester: AbsDocIngester[DataPoint], now: int | float, **kwargs) -> None:
+	def commit(self, ingester: DocIngesterProtocol[DataPoint], now: int | float, **kwargs) -> None:
 		"""
 		Note that we let the ingester handle 'ts' and 'updated' values
 		"""

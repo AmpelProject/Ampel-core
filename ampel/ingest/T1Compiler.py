@@ -15,9 +15,9 @@ from typing import Any, NamedTuple
 import xxhash
 
 from ampel.abstract.AbsCompiler import AbsCompiler, ActivityRegister
-from ampel.abstract.AbsDocIngester import AbsDocIngester
 from ampel.content.MetaActivity import MetaActivity
 from ampel.content.T1Document import T1Document
+from ampel.protocol.DocIngesterProtocol import DocIngesterProtocol
 from ampel.types import ChannelId, DataPointId, StockId, UBson, UnitId
 
 
@@ -148,7 +148,7 @@ class T1Compiler(AbsCompiler):
 		return a.link
 
 
-	def commit(self, ingester: AbsDocIngester[T1Document], now: int | float, **kwargs) -> None:
+	def commit(self, ingester: DocIngesterProtocol[T1Document], now: int | float, **kwargs) -> None:
 
 		# t1: (unit, config, stock, dps)
 		# t2: (link, {channels}, body, code, dict[traceid, (ActivityRegister, meta extra)])
