@@ -2,7 +2,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TypeVar
 
-from ampel.base.AmpelABC import AmpelABC
+from ampel.abstract.AbsContextManager import AbsContextManager
 from ampel.base.AmpelUnit import AmpelUnit
 from ampel.base.decorator import abstractmethod
 from ampel.content.DataPoint import DataPoint
@@ -12,7 +12,7 @@ from ampel.content.T2Document import T2Document
 
 _T = TypeVar("_T", StockDocument, DataPoint, T1Document, T2Document)
 
-class AbsProducer(AmpelABC, AmpelUnit, abstract=True):
+class AbsProducer(AbsContextManager, AmpelUnit, abstract=True):
 
     @dataclass
     class Item:
@@ -36,6 +36,3 @@ class AbsProducer(AmpelABC, AmpelUnit, abstract=True):
     def produce(
         self, item: Item, delivery_callback: None | Callable[[], None]
     ) -> None: ...
-
-    @abstractmethod
-    def flush(self) -> None: ...

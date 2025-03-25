@@ -234,22 +234,11 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		event_hdlr.set_tier(self.tier)
 		run_id = event_hdlr.get_run_id()
 
-		logger = AmpelLogger.from_profile(
-			self.context, self.log_profile, run_id,
-			base_flag = getattr(LogFlag, f'T{self.tier}') | LogFlag.CORE | self.base_log_flag
-		)
-
 		if self.send_beacon:
 			self.col_beacon.update_one(
 				{'_id': self.beacon_id},
 				{'$set': {'timestamp': int(time())}}
 			)
-
-		ingester = MongoIngester(
-			context = self.context, tier = self.tier, run_id = run_id,
-			process_name = self.process_name, logger = logger,
-			raise_exc = self.raise_exc, jtag = self.jtag
-		)
 
 		# Loop variables
 		doc_counter = 0
@@ -257,53 +246,63 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		garbage_collect = self.garbage_collect
 		doc_limit = self.doc_limit
 
-		with stop_on_signal(
-			[signal.SIGINT, signal.SIGTERM, signal.SIGQUIT, signal.SIGHUP],
-			logger
-		) as stop_token:
-			try:
-				self._current_run_id = run_id
-				# Process docs until next() returns None (breaks condition below)
-				while not stop_token.is_set():
+		with (
+			AmpelLogger.from_profile(
+				self.context, self.log_profile, run_id,
+				base_flag = getattr(LogFlag, f'T{self.tier}') | LogFlag.CORE | self.base_log_flag
+			) as logger,
+			self._run_until_signal(run_id, logger) as stop_token,
+ 			MongoIngester(
+				context = self.context, tier = self.tier, run_id = run_id,
+				process_name = self.process_name, logger = logger,
+				raise_exc = self.raise_exc, jtag = self.jtag
+			) as ingester,
+		):
+			# Process docs until next() returns None (breaks condition below)
+			while not stop_token.is_set():
 
-					# get t1/t2 document (code is usually NEW or NEW_PRIO), excluding
-					# docs with retry times in the future
-					with stat_time.time() as timer:
-						doc = self.find_one_and_update(self.query, update, stop_token)
-						timer.labels(self.tier, "find_one_and_update", doc["unit"] if doc else None)
+				# get t1/t2 document (code is usually NEW or NEW_PRIO), excluding
+				# docs with retry times in the future
+				with stat_time.time() as timer:
+					doc = self.find_one_and_update(self.query, update, stop_token)
+					timer.labels(self.tier, "find_one_and_update", doc["unit"] if doc else None)
 
-					# No match
-					if doc is None:
-						if not stop_token.is_set():
-							logger.log(LogFlag.SHOUT, "No more docs to process")
-						break
-					if logger.verbose > 1:
-						logger.debug(f'T{self.tier} doc to process', extra={'doc': doc})
+				# No match
+				if doc is None:
+					if not stop_token.is_set():
+						logger.log(LogFlag.SHOUT, "No more docs to process")
+					break
+				if logger.verbose > 1:
+					logger.debug(f'T{self.tier} doc to process', extra={'doc': doc})
 
-					with (
-						stat_time.labels(self.tier, "process_doc", doc["unit"]).time(),
-						ingester.group()
-					):
-						self.process_doc(doc, ingester, logger)
-					doc_counter += 1
+				with (
+					stat_time.labels(self.tier, "process_doc", doc["unit"]).time(),
+					ingester.group()
+				):
+					self.process_doc(doc, ingester, logger)
+				doc_counter += 1
 
-					# Check possibly defined doc_limit
-					if doc_limit and doc_counter >= doc_limit:
-						break
+				# Check possibly defined doc_limit
+				if doc_limit and doc_counter >= doc_limit:
+					break
 
-					if garbage_collect:
-						gc.collect()
-			finally:
-				ingester.flush()
-				event_hdlr.add_extra(docs=doc_counter)
+				if garbage_collect:
+					gc.collect()
 
-				logger.flush()
-				self._instances.clear()
-				self._adapters.clear()
-				self._current_run_id = None
+		event_hdlr.add_extra(docs=doc_counter)
 
 		return doc_counter
 
+	@contextmanager
+	def _run_until_signal(self, run_id: int, logger: AmpelLogger, signals: Sequence[signal.Signals] = (signal.SIGINT, signal.SIGTERM, signal.SIGQUIT, signal.SIGHUP)) -> Generator[Event, None, None]:
+		self._current_run_id = run_id
+		try:
+			with stop_on_signal(signals, logger) as stop_token:
+				yield stop_token
+		finally:
+			self._current_run_id = None
+			self._instances.clear()
+			self._adapters.clear()
 
 	def _processing_error(self,
 		logger: AmpelLogger, doc: T, body: UBson,

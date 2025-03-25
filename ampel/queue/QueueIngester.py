@@ -1,7 +1,7 @@
 from collections.abc import Generator, Iterable, Sequence
 from contextlib import contextmanager
 from functools import partial
-from typing import Any, Literal
+from typing import Any, Literal, Self
 
 from bson import ObjectId
 
@@ -164,6 +164,13 @@ class QueueIngester(AbsIngester):
 
         self._item = AbsProducer.Item.new()
 
+    def __enter__(self) -> "Self":
+        self._producer.__enter__()
+        return super().__enter__()
+
+    def __exit__(self, exc_type, exc_value, traceback) -> bool | None:
+        return self._producer.__exit__(exc_type, exc_value, traceback)
+
     @contextmanager
     def group(self, acknowledge_messages: None | Iterable[Any] = None) -> Generator:
         """
@@ -183,9 +190,6 @@ class QueueIngester(AbsIngester):
         prev = self._item
         self._item = AbsProducer.Item.new()
         return prev
-
-    def flush(self) -> None:
-        self._producer.flush()
 
     def _add_stock(self, doc: StockDocument) -> None:
         self._item.stock.append(doc)

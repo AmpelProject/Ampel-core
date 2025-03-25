@@ -14,5 +14,5 @@ class NullProducer(AbsProducer):
         if delivery_callback:
             delivery_callback()
 
-    def flush(self):
-        pass
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        return None

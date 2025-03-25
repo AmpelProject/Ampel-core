@@ -237,8 +237,8 @@ def test_queue_ingester(
             if delivery_callback:
                 delivery_callback()
 
-        def flush(self):
-            pass
+        def __exit__(self, exc_type, exc_value, traceback) -> None:
+            return
 
     acknowledge_callback = mocker.MagicMock()
 

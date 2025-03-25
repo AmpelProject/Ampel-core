@@ -1,7 +1,7 @@
 from collections.abc import Iterable
 from typing import Generic
 
-from ampel.base.AmpelABC import AmpelABC
+from ampel.abstract.AbsContextManager import AbsContextManager
 from ampel.base.AmpelUnit import AmpelUnit
 from ampel.base.decorator import abstractmethod
 from ampel.types import (
@@ -9,7 +9,7 @@ from ampel.types import (
 )
 
 
-class AbsConsumer(AmpelABC, AmpelUnit, Generic[T], abstract=True):
+class AbsConsumer(AbsContextManager, AmpelUnit, Generic[T], abstract=True):
 
 	@abstractmethod
 	def consume(self) -> None | T:

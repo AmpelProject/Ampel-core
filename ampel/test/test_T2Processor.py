@@ -211,7 +211,7 @@ def test_queue_worker(
         def produce(self, item: AbsProducer.Item, delivery_callback=None):
             items.append(item)
 
-        def flush(self):
+        def __exit__(self, exc_type, exc_val, exc_tb):
             pass
 
     @mock_context.register_unit
@@ -223,6 +223,9 @@ def test_queue_worker(
             return {"stock": item.stock, "t0": item.t0, "t1": item.t1, "t2": item.t2}
 
         def acknowledge(self, docs: Iterable[QueueItem]) -> None:
+            pass
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
             pass
 
     ack = mocker.patch.object(DummyConsumer, "acknowledge")
