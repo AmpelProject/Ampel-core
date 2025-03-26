@@ -41,7 +41,11 @@ class IngestionWorker(AbsEventUnit):
                 [signal.SIGINT, signal.SIGTERM, signal.SIGQUIT, signal.SIGHUP],
                 logger,
             ) as stop_token,
-            self.context.loader.new(self.consumer, unit_type=AbsConsumer) as consumer,
+            self.context.loader.new(
+                self.consumer,
+                stop=stop_token,
+                unit_type=AbsConsumer,
+            ) as consumer,
             self.context.loader.new_context_unit(
                 self.ingester,
                 context=self.context,

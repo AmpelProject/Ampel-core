@@ -75,7 +75,9 @@ class T2QueueWorker(T2Worker):
 			) as logger,
 			self._run_until_signal(run_id, logger) as stop_token,
 			self.context.loader.new(
-				self.consumer, unit_type=AbsConsumer
+				self.consumer,
+				stop=stop_token,
+				unit_type=AbsConsumer,
 			) as consumer,
 			self.context.loader.new_context_unit(
 				self.ingester,
