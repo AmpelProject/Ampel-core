@@ -1,6 +1,6 @@
 from collections.abc import Iterable
 from contextlib import contextmanager
-from typing import Any
+from typing import Any, Self
 
 from ampel.abstract.AbsDocIngester import AbsDocIngester
 from ampel.abstract.AbsIngester import AbsIngester
@@ -89,12 +89,16 @@ class MongoIngester(AbsIngester):
             stock_updater,
         )
 
-        updates_buffer.start()
-
         self.updates_buffer = updates_buffer
 
-    def __del__(self) -> None:
-        self.flush()
+    def __enter__(self) -> "Self":
+        self.updates_buffer.start()
+        return super().__enter__()
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        self.updates_buffer.stop()
+        self.updates_buffer.push_updates(force=True)
+        self._stock.update.flush()
 
     @contextmanager
     def group(self, acknowledge_messages: None | Iterable[Any] = None):
@@ -104,11 +108,6 @@ class MongoIngester(AbsIngester):
                 self.updates_buffer.acknowledge_on_push(message)
             if len(self._stock.update._updates) >= self.updates_buffer_size:  # noqa: SLF001
                 self._stock.update.flush()
-
-    def flush(self):
-        self.updates_buffer.stop()
-        self.updates_buffer.push_updates(force=True)
-        self._stock.update.flush()
 
     @property
     def stock(self) -> StockIngesterProtocol:

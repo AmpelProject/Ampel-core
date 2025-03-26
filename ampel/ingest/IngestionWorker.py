@@ -23,64 +23,64 @@ class IngestionWorker(AbsEventUnit):
     ingester: UnitModel = UnitModel(unit="MongoIngester")
 
     def proceed(self, event_hdlr: EventHandler) -> int:
-        """:returns: number of t2 docs processed"""
+        """:returns: number of messages processed"""
 
         run_id = event_hdlr.get_run_id()
-
-        logger = AmpelLogger.from_profile(
-            self.context,
-            self.log_profile,
-            run_id,
-            base_flag=LogFlag.CORE | self.base_log_flag,
-        )
 
         # Loop variables
         doc_counter = 0
 
-        with stop_on_signal(
-            [signal.SIGINT, signal.SIGTERM, signal.SIGQUIT, signal.SIGHUP], logger
-        ) as stop_token:
-            try:
-                consumer = self.context.loader.new(self.consumer, unit_type=AbsConsumer)
+        with(
+            AmpelLogger.from_profile(
+                self.context,
+                self.log_profile,
+                run_id,
+                base_flag=LogFlag.CORE | self.base_log_flag,
+            ) as logger,
+            stop_on_signal(
+                [signal.SIGINT, signal.SIGTERM, signal.SIGQUIT, signal.SIGHUP],
+                logger,
+            ) as stop_token,
+            self.context.loader.new(
+                self.consumer,
+                stop=stop_token,
+                unit_type=AbsConsumer,
+            ) as consumer,
+            self.context.loader.new_context_unit(
+                self.ingester,
+                context=self.context,
+                run_id=run_id,
+                tier=-1,
+                process_name=self.process_name,
+                error_callback=stop_token.set,
+                acknowledge_callback=consumer.acknowledge,
+                logger=logger,
+                sub_type=AbsIngester,
+            ) as ingester,
+        ):
 
-                ingester = self.context.loader.new_context_unit(
-                    self.ingester,
-                    context=self.context,
-                    run_id=run_id,
-                    tier=-1,
-                    process_name=self.process_name,
-                    error_callback=stop_token.set,
-                    acknowledge_callback=consumer.acknowledge,
-                    logger=logger,
-                    sub_type=AbsIngester,
-                )
+            # Process docs until next() returns None (breaks condition below)
+            while not stop_token.is_set():
+                item: None | QueueItem = consumer.consume()
 
-                # Process docs until next() returns None (breaks condition below)
-                while not stop_token.is_set():
-                    item: None | QueueItem = consumer.consume()
+                # No match
+                if item is None:
+                    if not stop_token.is_set():
+                        logger.log(LogFlag.SHOUT, "No more docs to process")
+                    break
 
-                    # No match
-                    if item is None:
-                        if not stop_token.is_set():
-                            logger.log(LogFlag.SHOUT, "No more docs to process")
-                        break
+                doc_counter += 1
 
-                    doc_counter += 1
+                with ingester.group([item]):
+                    for stock in item["stock"]:
+                        ingester.stock.ingest(stock)
+                    for dp in item["t0"]:
+                        ingester.t0.ingest(dp)
+                    for t1 in item["t1"]:
+                        ingester.t1.ingest(t1)
+                    for t2 in item["t2"]:
+                        ingester.t2.ingest(t2)
 
-                    with ingester.group([item]):
-                        for stock in item["stock"]:
-                            ingester.stock.ingest(stock)
-                        for dp in item["t0"]:
-                            ingester.t0.ingest(dp)
-                        for t1 in item["t1"]:
-                            ingester.t1.ingest(t1)
-                        for t2 in item["t2"]:
-                            ingester.t2.ingest(t2)
-
-            finally:
-                ingester.flush()
-                event_hdlr.add_extra(docs=doc_counter)
-
-                logger.flush()
+        event_hdlr.add_extra(docs=doc_counter)
 
         return doc_counter

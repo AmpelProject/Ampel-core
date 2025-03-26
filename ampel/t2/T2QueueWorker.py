@@ -1,5 +1,4 @@
 import gc
-import signal
 from collections.abc import Generator, Sequence
 from time import time
 from typing import Any, Literal, TypedDict, overload
@@ -8,7 +7,7 @@ from bson import ObjectId
 from mongomock.filtering import filter_applies
 
 from ampel.abstract.AbsIngester import AbsIngester
-from ampel.abstract.AbsWorker import stat_time, stop_on_signal
+from ampel.abstract.AbsWorker import stat_time
 from ampel.content.DataPoint import DataPoint
 from ampel.content.MetaRecord import MetaRecord
 from ampel.content.StockDocument import StockDocument
@@ -58,29 +57,29 @@ class T2QueueWorker(T2Worker):
 		event_hdlr.set_tier(self.tier)
 		run_id = event_hdlr.get_run_id()
 
-		logger = AmpelLogger.from_profile(
-			self.context, self.log_profile, run_id,
-			base_flag = getattr(LogFlag, f'T{self.tier}') | LogFlag.CORE | self.base_log_flag
-		)
-
 		if self.send_beacon:
 			self.col_beacon.update_one(
 				{'_id': self.beacon_id},
 				{'$set': {'timestamp': int(time())}}
 			)
 
-		consumer = self.context.loader.new(self.consumer, unit_type=AbsConsumer)
-
 		# Loop variables
 		doc_counter = 0
 		garbage_collect = self.garbage_collect
 		doc_limit = self.doc_limit
 
-		with stop_on_signal(
-			[signal.SIGINT, signal.SIGTERM, signal.SIGQUIT, signal.SIGHUP],
-			logger
-		) as stop_token:
-			ingester = self.context.loader.new_context_unit(
+		with (
+			AmpelLogger.from_profile(
+				self.context, self.log_profile, run_id,
+				base_flag = getattr(LogFlag, f'T{self.tier}') | LogFlag.CORE | self.base_log_flag
+			) as logger,
+			self._run_until_signal(run_id, logger) as stop_token,
+			self.context.loader.new(
+				self.consumer,
+				stop=stop_token,
+				unit_type=AbsConsumer,
+			) as consumer,
+			self.context.loader.new_context_unit(
 				self.ingester,
 				context = self.context,
 				run_id = run_id,
@@ -90,68 +89,60 @@ class T2QueueWorker(T2Worker):
 				acknowledge_callback = consumer.acknowledge,
 				logger = logger,
 				sub_type = AbsIngester,
-			)
+			) as ingester
+		):
 
-			try:
-				self._current_run_id = run_id
-				# Process docs until next() returns None (breaks condition below)
-				while not stop_token.is_set():
+			# Process docs until next() returns None (breaks condition below)
+			while not stop_token.is_set():
 
-					# get t1/t2 document (code is usually NEW or NEW_PRIO), excluding
-					# docs with retry times in the future
-					with stat_time.labels(self.tier, "consume", None).time():
-						item: None | QueueItem = consumer.consume()
+				# get t1/t2 document (code is usually NEW or NEW_PRIO), excluding
+				# docs with retry times in the future
+				with stat_time.labels(self.tier, "consume", None).time():
+					item: None | QueueItem = consumer.consume()
 
-					# No match
-					if item is None:
-						if not stop_token.is_set():
-							logger.log(LogFlag.SHOUT, "No more docs to process")
-						break
+				# No match
+				if item is None:
+					if not stop_token.is_set():
+						logger.log(LogFlag.SHOUT, "No more docs to process")
+					break
 
-					self._current_item = item
+				self._current_item = item
 
-					input_docs = item["t2"]
-					# Replace inputs with resolved version from the database.
-					# Doing this here allows process_doc() to find
-					# already-processed docs if it recurse into
-					# load_input_docs() for tied units.
-					item["t2"] = [self._sub_existing_doc(doc) for doc in item["t2"]]
+				input_docs = item["t2"]
+				# Replace inputs with resolved version from the database.
+				# Doing this here allows process_doc() to find
+				# already-processed docs if it recurse into
+				# load_input_docs() for tied units.
+				item["t2"] = [self._sub_existing_doc(doc) for doc in item["t2"]]
 
-					with ingester.group([item]):
-						for input_doc, doc in zip(input_docs, item["t2"], strict=True):
-							if doc is input_doc:
-								# not found in the database; process for the first time
-								with stat_time.labels(self.tier, "process_doc", doc["unit"]).time():
-									self.process_doc(doc, ingester, logger)
-						doc_counter += 1
+				with ingester.group([item]):
+					for input_doc, doc in zip(input_docs, item["t2"], strict=True):
+						if doc is input_doc:
+							# not found in the database; process for the first time
+							with stat_time.labels(self.tier, "process_doc", doc["unit"]).time():
+								self.process_doc(doc, ingester, logger)
+					doc_counter += 1
 
-						for stock in item["stock"]:
-							ingester.stock.ingest(stock)
-						for dp in item["t0"]:
-							ingester.t0.ingest(dp)
-						for t1 in item["t1"]:
-							ingester.t1.ingest(t1)
-						# NB: ingest the input docs as they were before
-						# substitution in order to pick up any requested updates
-						# to meta, channels, tags, expiry, etc.
-						for t2 in input_docs:
-							ingester.t2.ingest(t2)
+					for stock in item["stock"]:
+						ingester.stock.ingest(stock)
+					for dp in item["t0"]:
+						ingester.t0.ingest(dp)
+					for t1 in item["t1"]:
+						ingester.t1.ingest(t1)
+					# NB: ingest the input docs as they were before
+					# substitution in order to pick up any requested updates
+					# to meta, channels, tags, expiry, etc.
+					for t2 in input_docs:
+						ingester.t2.ingest(t2)
 
-					# Check possibly defined doc_limit
-					if doc_limit and doc_counter >= doc_limit:
-						break
+				# Check possibly defined doc_limit
+				if doc_limit and doc_counter >= doc_limit:
+					break
 
-					if garbage_collect:
-						gc.collect()
-			finally:
-				ingester.flush()
-				event_hdlr.add_extra(docs=doc_counter)
+				if garbage_collect:
+					gc.collect()
 
-				logger.flush()
-				self._instances.clear()
-				self._adapters.clear()
-				self._current_run_id = None
-
+		event_hdlr.add_extra(docs=doc_counter)
 		return doc_counter
 
 	def _sub_existing_doc(self, doc: T2Document) -> T2Document:

@@ -1,19 +1,21 @@
 from collections.abc import Iterable
+from threading import Event
 from typing import Generic
 
-from ampel.base.AmpelABC import AmpelABC
+from ampel.abstract.AbsContextManager import AbsContextManager
 from ampel.base.AmpelUnit import AmpelUnit
 from ampel.base.decorator import abstractmethod
-from ampel.types import (
-	T,
-)
+from ampel.types import T, Traceless
 
 
-class AbsConsumer(AmpelABC, AmpelUnit, Generic[T], abstract=True):
+class AbsConsumer(AbsContextManager, AmpelUnit, Generic[T], abstract=True):
+
+	#: Event that can be set to break out of consume()
+	stop: Traceless[Event]
 
 	@abstractmethod
 	def consume(self) -> None | T:
-		"""Get a single message from the queue"""
+		"""Get a single message from the queue, returning None if the queue is empty, or stop is set"""
 		...
 	
 	@abstractmethod

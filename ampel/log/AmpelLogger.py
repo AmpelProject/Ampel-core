@@ -14,6 +14,7 @@ from os.path import basename
 from sys import _getframe
 from typing import TYPE_CHECKING, Any
 
+from ampel.abstract.AbsContextManager import AbsContextManager
 from ampel.log.handlers.AmpelStreamHandler import AmpelStreamHandler
 from ampel.log.LightLogRecord import LightLogRecord
 from ampel.log.LogFlag import LogFlag
@@ -36,7 +37,7 @@ DEBUG = LogFlag.DEBUG
 if TYPE_CHECKING:
 	from ampel.core.AmpelContext import AmpelContext
 
-class AmpelLogger:
+class AmpelLogger(AbsContextManager):
 
 	loggers: dict[int | str, 'AmpelLogger'] = {}
 	_counter: int = 0
@@ -137,6 +138,10 @@ class AmpelLogger:
 			self.provenance = False
 
 		self._auto_level()
+
+
+	def __exit__(self, exc_type, exc_value, traceback) -> None:
+		self.flush()
 
 
 	def _auto_level(self):
