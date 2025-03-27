@@ -188,30 +188,38 @@ class AmpelLogger(AbsContextManager):
 
 	def error(self, msg: str | dict[str, Any], *args,
 		exc_info: None | Exception = None,
+		stack_info: bool = False,
+		stacklevel: int = 1,
 		extra: None | dict[str, Any] = None,
 	):
-		self.log(ERROR, msg, *args, exc_info=exc_info, extra=extra)
+		self.log(ERROR, msg, *args, exc_info=exc_info, stack_info=stack_info, stacklevel=stacklevel, extra=extra)
 
 
 	def warn(self, msg: str | dict[str, Any], *args,
+		stack_info: bool = False,
+		stacklevel: int = 1,
 		extra: None | dict[str, Any] = None,
 	):
 		if self.level <= WARNING:
-			self.log(WARNING, msg, *args, extra=extra)
+			self.log(WARNING, msg, *args, stack_info=stack_info, stacklevel=stacklevel, extra=extra)
 
 
 	def info(self, msg: None | str | dict[str, Any], *args,
+		stack_info: bool = False,
+		stacklevel: int = 1,
 		extra: None | dict[str, Any] = None,
 	) -> None:
 		if self.level <= INFO:
-			self.log(INFO, msg, *args, extra=extra)
+			self.log(INFO, msg, *args, stack_info=stack_info, stacklevel=stacklevel, extra=extra)
 
 
 	def debug(self, msg: None | str | dict[str, Any], *args,
+		stack_info: bool = False,
+		stacklevel: int = 1,
 		extra: None | dict[str, Any] = None,
 	):
 		if self.level <= DEBUG:
-			self.log(DEBUG, msg, *args, extra=extra)
+			self.log(DEBUG, msg, *args, stack_info=stack_info, stacklevel=stacklevel, extra=extra)
 
 
 	def handle(self, record: LightLogRecord | logging.LogRecord) -> None:
@@ -228,6 +236,8 @@ class AmpelLogger(AbsContextManager):
 	def log(self,
 		lvl: int, msg: None | str | dict[str, Any], *args,
 		exc_info: None | bool | Exception = None,
+		stack_info: bool = False,
+		stacklevel: int = 1,
 		extra: None | dict[str, Any] = None,
 	):
 
@@ -237,9 +247,9 @@ class AmpelLogger(AbsContextManager):
 		record = LightLogRecord(name=self.name, levelno=lvl | self.base_flag, msg=msg)
 
 		if lvl > WARNING or self.provenance:
-			frame = _getframe(1) # logger.log(...) was called directly
+			frame = _getframe(stacklevel) # logger.log(...) was called directly
 			if frame.f_code.co_filename == self.fname:
-				frame = _getframe(2) # logger.info(...), logger.debug(...) was used
+				frame = _getframe(stacklevel+1) # logger.info(...), logger.debug(...) was used
 			record.__dict__['filename'] = basename(frame.f_code.co_filename)
 			record.__dict__['lineno'] = frame.f_lineno
 
