@@ -282,13 +282,17 @@ class DBUpdatesBuffer(Schedulable):
 		messages = self._messages_to_ack
 		self._new_buffer()
 
-		for col_name in db_ops:
-			if db_ops[col_name]:
-				if self.thread_pool:
-					self.thread_pool.starmap(
-						self.call_bulk_write, ([col_name, db_ops[col_name]], )
-					)
-				else:
+		if self.thread_pool:
+			self.thread_pool.starmap(
+				self.call_bulk_write,
+				(
+					(col_name, db_ops[col_name])
+					for col_name in db_ops if db_ops[col_name]
+				)
+			)
+		else:
+			for col_name in db_ops:
+				if db_ops[col_name]:
 					self.call_bulk_write(col_name, db_ops[col_name])
 
 		if self.acknowledge_callback and messages:
