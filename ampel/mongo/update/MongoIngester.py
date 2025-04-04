@@ -4,6 +4,7 @@ from typing import Any, Self
 
 from ampel.abstract.AbsDocIngester import AbsDocIngester
 from ampel.abstract.AbsIngester import AbsIngester
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.content.DataPoint import DataPoint
 from ampel.content.StockDocument import StockDocument
@@ -25,8 +26,14 @@ class _StockIngester:
     def ingest(self, doc: StockDocument) -> None:
         self.ingester.ingest(doc)
 
+class _UpdatesBufferModel(AmpelBaseModel):
+    max_size: int = 500
+    push_interval: int = 3
+    threads: None | int = None
+
 class MongoIngester(AbsIngester):
-    updates_buffer_size: int = 500
+
+    updates_buffer: _UpdatesBufferModel = _UpdatesBufferModel()
 
     #: Tag(s) to add to the stock :class:`~ampel.content.JournalRecord.JournalRecord`
     #: every time a document is processed
@@ -42,7 +49,9 @@ class MongoIngester(AbsIngester):
             error_callback=self.error_callback,
             acknowledge_callback=self.acknowledge_callback,
             catch_signals=False,  # we do it ourself
-            max_size=self.updates_buffer_size,
+            max_size=self.updates_buffer.max_size,
+            push_interval=self.updates_buffer.push_interval,
+            threads=self.updates_buffer.threads,
             raise_exc=self.raise_exc,
         )
 
@@ -89,24 +98,24 @@ class MongoIngester(AbsIngester):
             stock_updater,
         )
 
-        self.updates_buffer = updates_buffer
+        self._updates_buffer = updates_buffer
 
     def __enter__(self) -> "Self":
-        self.updates_buffer.start()
+        self._updates_buffer.start()
         return super().__enter__()
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
-        self.updates_buffer.stop()
-        self.updates_buffer.push_updates(force=True)
+        self._updates_buffer.stop()
+        self._updates_buffer.push_updates(force=True)
         self._stock.update.flush()
 
     @contextmanager
     def group(self, acknowledge_messages: None | Iterable[Any] = None):
-        with self.updates_buffer.group_updates():
+        with self._updates_buffer.group_updates():
             yield
             for message in acknowledge_messages or []:
-                self.updates_buffer.acknowledge_on_push(message)
-            if len(self._stock.update._updates) >= self.updates_buffer_size:  # noqa: SLF001
+                self._updates_buffer.acknowledge_on_push(message)
+            if len(self._stock.update._updates) >= self.updates_buffer.max_size:  # noqa: SLF001
                 self._stock.update.flush()
 
     @property
