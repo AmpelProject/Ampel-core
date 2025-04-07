@@ -28,7 +28,7 @@ class _StockIngester:
 
 class _UpdatesBufferModel(AmpelBaseModel):
     max_size: int = 500
-    push_interval: int = 3
+    push_interval: float = 3
 
 class MongoIngester(AbsIngester):
 
@@ -113,6 +113,10 @@ class MongoIngester(AbsIngester):
                 self._updates_buffer.acknowledge_on_push(message)
             if len(self._stock.update._updates) >= self.updates_buffer.max_size:  # noqa: SLF001
                 self._stock.update.flush()
+    
+    def flush(self) -> None:
+        self._updates_buffer.push_updates(force=True)
+        self._stock.update.flush()
 
     @property
     def stock(self) -> StockIngesterProtocol:

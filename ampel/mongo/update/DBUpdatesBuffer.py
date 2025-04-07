@@ -88,7 +88,7 @@ class DBUpdatesBuffer:
 		error_callback: None | Callable[[], None] = None,
 		acknowledge_callback: None | Callable[[Iterator[Any]], None] = None,
 		log_doc_ids: None | Iterable[int] = None,
-		push_interval: None | int = 3,
+		push_interval: None | float = 3,
 		max_size: None | int = None,
 		raise_exc: bool = False
 	):
