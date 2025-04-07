@@ -29,7 +29,6 @@ class _StockIngester:
 class _UpdatesBufferModel(AmpelBaseModel):
     max_size: int = 500
     push_interval: int = 3
-    threads: None | int = None
 
 class MongoIngester(AbsIngester):
 
@@ -48,10 +47,8 @@ class MongoIngester(AbsIngester):
             self.logger,
             error_callback=self.error_callback,
             acknowledge_callback=self.acknowledge_callback,
-            catch_signals=False,  # we do it ourself
             max_size=self.updates_buffer.max_size,
             push_interval=self.updates_buffer.push_interval,
-            threads=self.updates_buffer.threads,
             raise_exc=self.raise_exc,
         )
 
@@ -101,12 +98,11 @@ class MongoIngester(AbsIngester):
         self._updates_buffer = updates_buffer
 
     def __enter__(self) -> "Self":
-        self._updates_buffer.start()
+        self._updates_buffer.__enter__()
         return super().__enter__()
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
-        self._updates_buffer.stop()
-        self._updates_buffer.push_updates(force=True)
+        self._updates_buffer.__exit__(exc_type, exc_value, traceback)
         self._stock.update.flush()
 
     @contextmanager

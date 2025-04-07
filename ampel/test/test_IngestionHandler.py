@@ -149,9 +149,9 @@ def test_minimal_directive(
 
     # ingestion is idempotent
     handler.ingest(datapoints, [(0, True)], stock_id="stockystock")
-    handler.ingester.updates_buffer.push_updates()
+    handler.ingester._updates_buffer.push_updates()
     handler.ingest(datapoints, [(0, True)], stock_id="stockystock")
-    handler.ingester.updates_buffer.push_updates()
+    handler.ingester._updates_buffer.push_updates()
 
     stock = dev_context.db.get_collection("stock")
     assert stock.count_documents({}) == 1
@@ -195,7 +195,7 @@ def test_single_source_directive(
     num_states = num_points if retro else 1
 
     handler.ingest(datapoints, [(0, True)], stock_id="stockystock")
-    handler.ingester.updates_buffer.push_updates()
+    handler.ingester._updates_buffer.push_updates()
 
     t0 = dev_context.db.get_collection("t0")
     t1 = dev_context.db.get_collection("t1")
@@ -212,7 +212,7 @@ def test_single_source_directive(
     # test MongoT2Ingester idempotency
     before = t2.find_one_and_update({}, {"$set": {"code": DocumentCode.OK}})
     handler.ingest(datapoints, [(0, True)], stock_id="stockystock")
-    handler.ingester.updates_buffer.push_updates()
+    handler.ingester._updates_buffer.push_updates()
     after = t2.find_one({"_id": before["_id"]})
     assert before["code"] == DocumentCode.NEW
     assert after["code"] == DocumentCode.OK, "code was not overwitten"
@@ -306,7 +306,7 @@ def test_multiplex_directive(
     num_states = num_points if retro else 1
 
     handler.ingest(datapoints, [(0, True)], stock_id="stockystock")
-    handler.ingester.updates_buffer.push_updates()
+    handler.ingester._updates_buffer.push_updates()
 
     t0 = dev_context.db.get_collection("t0")
     t1 = dev_context.db.get_collection("t1")
@@ -347,7 +347,7 @@ def test_multiplex_dispatch(
     num_points = len(datapoints) + 5
 
     handler.ingest(datapoints, [(0, True), (1, True)], stock_id="stockystock")
-    handler.ingester.updates_buffer.push_updates()
+    handler.ingester._updates_buffer.push_updates()
 
     t0 = dev_context.db.get_collection("t0")
     t1 = dev_context.db.get_collection("t1")
@@ -390,7 +390,7 @@ def test_multiplex_elision(
     assert isinstance(handler.ingester, MongoIngester)
 
     handler.ingest(datapoints, [(0, True)], stock_id="stockystock")
-    handler.ingester.updates_buffer.push_updates()
+    handler.ingester._updates_buffer.push_updates()
 
     t0 = dev_context.db.get_collection("t0")
 
@@ -425,7 +425,7 @@ def test_t0_meta_append(
     datapoints[0]["tag"] = tags
     handler.t0_compiler.add(datapoints, "SOME_CHANNEL", None, trace_id=0)
     handler.t0_compiler.commit(handler.ingester.t0, ts)
-    handler.ingester.updates_buffer.push_updates(force=True)
+    handler.ingester._updates_buffer.push_updates(force=True)
 
     doc = mock_context.db.get_collection("t0").find_one({"id": datapoints[0]["id"]})
     assert doc is not None
@@ -456,7 +456,7 @@ def test_duplicate_t0_id(
         assert isinstance(handler.ingester, MongoIngester)
         handler.t0_compiler.add(datapoints, "SOME_CHANNEL", ttl=None, trace_id=0)
         handler.t0_compiler.commit(handler.ingester.t0, 0)
-        handler.ingester.updates_buffer.push_updates(force=True)
+        handler.ingester._updates_buffer.push_updates(force=True)
 
     # populate documents
     run()
@@ -526,7 +526,7 @@ def test_t0_ttl(
             [dict(dp) for dp in datapoints], [(0, True)], stock_id="stockystock"
         )
         assert isinstance(handler.ingester, MongoIngester)
-        handler.ingester.updates_buffer.push_updates(force=True)
+        handler.ingester._updates_buffer.push_updates(force=True)
 
     def get_meta_time(dp: DataPoint | T1Document | T2Document) -> datetime.datetime:
         return datetime.datetime.fromtimestamp(
