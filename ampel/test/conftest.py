@@ -263,7 +263,7 @@ def ingest_tied_t2(integration_context: DevAmpelContext, ampel_logger, request):
     handler.ingest(datapoints, [(0, True)], stock_id="stockystock", jm_extra={"alert": 123})
     assert isinstance(handler.ingester, MongoIngester)
 
-    handler.ingester.updates_buffer.push_updates()
+    handler.ingester._updates_buffer.push_updates()
 
     assert (
         integration_context.db.get_collection("t2").count_documents({"unit": request.param})

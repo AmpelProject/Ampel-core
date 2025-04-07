@@ -9,8 +9,7 @@
 
 from collections.abc import Callable, Generator, Iterable, Iterator, Mapping
 from contextlib import contextmanager
-from multiprocessing.pool import ThreadPool
-from time import time
+from threading import Event, Lock, Thread
 from typing import Any, Literal
 
 from pymongo import InsertOne, UpdateMany, UpdateOne
@@ -18,7 +17,6 @@ from pymongo.collection import Collection
 from pymongo.errors import BulkWriteError
 
 from ampel.core.AmpelDB import AmpelDB, intcol
-from ampel.core.Schedulable import Schedulable
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.utils import convert_dollars, report_error, report_exception
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
@@ -47,7 +45,7 @@ stat_db_time = AmpelMetricsRegistry.histogram(
 	labelnames=("col",)
 )
 
-class DBUpdatesBuffer(Schedulable):
+class DBUpdatesBuffer:
 	"""
 	TODO:
 	* Try to mark transient docs on error
@@ -89,11 +87,9 @@ class DBUpdatesBuffer(Schedulable):
 		logger: AmpelLogger,
 		error_callback: None | Callable[[], None] = None,
 		acknowledge_callback: None | Callable[[Iterator[Any]], None] = None,
-		catch_signals: bool = True,
 		log_doc_ids: None | Iterable[int] = None,
-		push_interval: None | int = 3,
+		push_interval: None | float = 3,
 		max_size: None | int = None,
-		threads: None | int = None,
 		raise_exc: bool = False
 	):
 		"""
@@ -117,7 +113,6 @@ class DBUpdatesBuffer(Schedulable):
 		a multithreading-like effect already occurs without the specific use a threads.
 		"""
 
-		Schedulable.__init__(self, catch_signals=catch_signals)
 		self._new_buffer()
 		self.error_callback = error_callback
 		self.acknowledge_callback = acknowledge_callback
@@ -138,21 +133,14 @@ class DBUpdatesBuffer(Schedulable):
 		self.max_size = max_size
 		self.log_doc_ids = set(log_doc_ids) if log_doc_ids else None
 
-		self._autopush_asap = False
-		self._block_autopush = False
-		self._last_update = time()
+		# wake up update pusher thread
+		self._push = Event()
+		# prevent autopush while we are in the group_updates context
+		self._block_autopush = Lock()
+		# signal update pusher thread to stop
+		self._stop = Event()
 
 		self.push_interval = push_interval
-		if push_interval:
-			self.get_scheduler() \
-				.every(push_interval) \
-				.seconds \
-				.do(self.request_autopush)
-
-			self._job = self.get_scheduler().jobs[0]
-
-		self.thread_pool = ThreadPool(threads) if threads else None
-
 		self.raise_exc = raise_exc
 
 
@@ -165,15 +153,23 @@ class DBUpdatesBuffer(Schedulable):
 		}
 		self._messages_to_ack: list[Any] = []
 
+	def __enter__(self) -> None:
+		"""
+		:raises: RuntimeError if context manager is already running
+		"""
+		self._stop.clear()
+		self._thread = Thread(target=self._task)
+		self._thread.start()
+	
+	def __exit__(self, exc_type: type[BaseException], exc_value: BaseException, traceback: Any) -> None:
+		"""
+		:raises: RuntimeError if context manager is already running
+		"""
+		self._stop.set()
+		self._push.set()
+		self._thread.join()
 
-	def stop(self) -> None:
-
-		super().stop()
-		self.push_updates(force=True)
-
-		if self.thread_pool:
-			self.thread_pool.close()
-			self.thread_pool.join()
+		self.push_updates()
 
 
 	def acknowledge_on_push(self, message: Any) -> None:
@@ -224,72 +220,37 @@ class DBUpdatesBuffer(Schedulable):
 		"""
 		Ensure that updates issued in this context are grouped together
 		"""
-		self._block_autopush = True
-		try:
+		with self._block_autopush:
 			yield
-		finally:
-			self.check_push()
+		self._push.set()
 
 
-	def request_autopush(self) -> None:
+	def _task(self) -> None:
+		def should_push() -> bool:
+			return self.max_size is not None and any(
+				len(v) > self.max_size
+				for v in self.db_ops.values()
+			)
+		while not self._stop.is_set():
+			if (
+				# push interval elapsed; push whatever we have
+				not self._push.wait(self.push_interval)
+				# we have enough updates buffered
+				or should_push()
+			):
+				self._push.clear()
+				self.push_updates(force=True)
 
-		t = time()
-		if self.push_interval is None or t - self._last_update > self.push_interval:
-			if self._block_autopush:
-				self._autopush_asap = True
-			else:
-				self.push_updates()
-
-
-	def check_push(self) -> None:
-		"""
-		Call this method to signal that now is a good time to push updates.
-		Usually called by the AlertConsumer after the processing of an alert.
-		If _autopush_asap is True, it means that self.push_interval has been reached
-		and thus that updates must be pushed.
-		Otherwise, if the updates buffer is capped, its size must be checked.
-		If it is not yet big enough (self.max_size), then self._last_update is updated.
-		By doing that, the regularly scheduled request_autopush() will be delayed as long as the AP processes alerts.
-		"""
-
-		self._block_autopush = False
-
-		if self._autopush_asap:
-			return self.push_updates()
-
-		if self.max_size:
-			for v in self.db_ops.values():
-				if len(v) > self.max_size:
-					return self.push_updates()
-
-		return None
 
 	def push_updates(self, force: bool = False) -> None:
 
-		# Do not push updates in the middle of the processing of an alert
-		if self._block_autopush:
-			if not force:
-				return
-			self._block_autopush = False
-
-		self._last_update = time()
-		if self._autopush_asap:
-			self._autopush_asap = False
-			self._job._schedule_next_run()  # noqa: SLF001
-
-		# Reference instance buffer locally before creating a new one
-		db_ops = self.db_ops
-		messages = self._messages_to_ack
-		self._new_buffer()
+		with self._block_autopush:
+			db_ops, messages = self.db_ops, self._messages_to_ack
+			self._new_buffer()
 
 		for col_name in db_ops:
 			if db_ops[col_name]:
-				if self.thread_pool:
-					self.thread_pool.starmap(
-						self.call_bulk_write, ([col_name, db_ops[col_name]], )
-					)
-				else:
-					self.call_bulk_write(col_name, db_ops[col_name])
+				self.call_bulk_write(col_name, db_ops[col_name])
 
 		if self.acknowledge_callback and messages:
 			try:
