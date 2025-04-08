@@ -8,8 +8,9 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from collections.abc import Callable, Generator, Iterable, Iterator, Mapping
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
-from threading import Event, Lock, Thread
+from threading import Event, Lock
 from typing import Any, Literal
 
 from pymongo import InsertOne, UpdateMany, UpdateOne
@@ -137,8 +138,10 @@ class DBUpdatesBuffer:
 		self._push = Event()
 		# prevent autopush while we are in the group_updates context
 		self._block_autopush = Lock()
+		self._pushing = Lock()
 		# signal update pusher thread to stop
 		self._stop = Event()
+		self._exec = ThreadPoolExecutor()
 
 		self.push_interval = push_interval
 		self.raise_exc = raise_exc
@@ -158,17 +161,22 @@ class DBUpdatesBuffer:
 		:raises: RuntimeError if context manager is already running
 		"""
 		self._stop.clear()
-		self._thread = Thread(target=self._task)
-		self._thread.start()
+		def task():
+			while not self._stop.is_set():
+				self._push.wait(self.push_interval)
+				self._push.clear()
+				self.push_updates(force=True)
+		self._task = self._exec.submit(task)
 	
 	def __exit__(self, exc_type: type[BaseException], exc_value: BaseException, traceback: Any) -> None:
 		"""
 		:raises: RuntimeError if context manager is already running
 		"""
+		# stop updater thread
 		self._stop.set()
 		self._push.set()
-		self._thread.join()
-
+		self._task.result()
+		# push any remaining updates
 		self.push_updates()
 
 
@@ -222,43 +230,45 @@ class DBUpdatesBuffer:
 		"""
 		with self._block_autopush:
 			yield
-		self._push.set()
+			self.check_push()
+		# potentially raise exceptions to main thread
+		if self._task.done():
+			self._task.result()
 
 
-	def _task(self) -> None:
-		def should_push() -> bool:
-			return self.max_size is not None and any(
-				len(v) > self.max_size
-				for v in self.db_ops.values()
-			)
-		while not self._stop.is_set():
-			if (
-				# push interval elapsed; push whatever we have
-				not self._push.wait(self.push_interval)
-				# we have enough updates buffered
-				or should_push()
-			):
-				self._push.clear()
-				self.push_updates(force=True)
+	def check_push(self) -> None:
+		if self.max_size is not None and any(
+			len(v) > self.max_size
+			for v in self.db_ops.values()
+		):
+			# block until the previous buffer is pushed, then signal the thread
+			# to swap and push the new one
+			with self._pushing:
+				self._push.set()
 
 
 	def push_updates(self, force: bool = False) -> None:
 
+		# swap buffers
 		with self._block_autopush:
 			db_ops, messages = self.db_ops, self._messages_to_ack
 			self._new_buffer()
 
-		for col_name in db_ops:
-			if db_ops[col_name]:
-				self.call_bulk_write(col_name, db_ops[col_name])
+		# prevent the new buffer from overfilling before bulk writes complete
+		with self._pushing:
+			for _ in self._exec.map(
+				self.call_bulk_write,
+				*zip(*((col_name, ops) for col_name, ops in db_ops.items() if ops), strict=True)
+			):
+				pass
 
-		if self.acknowledge_callback and messages:
-			try:
-				self.acknowledge_callback(iter(messages))
-			except Exception as exc:
-				if self.raise_exc:
-					raise
-				report_exception(self._ampel_db, self.logger, exc=exc)
+			if self.acknowledge_callback and messages:
+				try:
+					self.acknowledge_callback(iter(messages))
+				except Exception as exc:
+					if self.raise_exc:
+						raise
+					report_exception(self._ampel_db, self.logger, exc=exc)
 
 
 	def call_bulk_write(self, col_name: AmpelMainCol, db_ops: list, *, extra: None | dict = None) -> None:
