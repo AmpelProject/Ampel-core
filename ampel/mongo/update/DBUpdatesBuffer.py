@@ -137,6 +137,7 @@ class DBUpdatesBuffer:
 		self._push = Event()
 		# prevent autopush while we are in the group_updates context
 		self._block_autopush = Lock()
+		self._pushing = Lock()
 		# signal update pusher thread to stop
 		self._stop = Event()
 
@@ -222,43 +223,47 @@ class DBUpdatesBuffer:
 		"""
 		with self._block_autopush:
 			yield
-		self._push.set()
+			self.check_push()
+
+
+	def check_push(self) -> None:
+		if self.max_size is not None and any(
+			len(v) > self.max_size
+			for v in self.db_ops.values()
+		):
+			# block until the previous buffer is pushed, then signal the thread
+			# to swap and push the new one
+			with self._pushing:
+				self._push.set()
 
 
 	def _task(self) -> None:
-		def should_push() -> bool:
-			return self.max_size is not None and any(
-				len(v) > self.max_size
-				for v in self.db_ops.values()
-			)
 		while not self._stop.is_set():
-			if (
-				# push interval elapsed; push whatever we have
-				not self._push.wait(self.push_interval)
-				# we have enough updates buffered
-				or should_push()
-			):
-				self._push.clear()
-				self.push_updates(force=True)
+			self._push.wait(self.push_interval)
+			self._push.clear()
+			self.push_updates(force=True)
 
 
 	def push_updates(self, force: bool = False) -> None:
 
+		# swap buffers
 		with self._block_autopush:
 			db_ops, messages = self.db_ops, self._messages_to_ack
 			self._new_buffer()
 
-		for col_name in db_ops:
-			if db_ops[col_name]:
-				self.call_bulk_write(col_name, db_ops[col_name])
+		# prevent the new buffer from overfilling before bulk writes complete
+		with self._pushing:
+			for col_name in db_ops:
+				if db_ops[col_name]:
+					self.call_bulk_write(col_name, db_ops[col_name])
 
-		if self.acknowledge_callback and messages:
-			try:
-				self.acknowledge_callback(iter(messages))
-			except Exception as exc:
-				if self.raise_exc:
-					raise
-				report_exception(self._ampel_db, self.logger, exc=exc)
+			if self.acknowledge_callback and messages:
+				try:
+					self.acknowledge_callback(iter(messages))
+				except Exception as exc:
+					if self.raise_exc:
+						raise
+					report_exception(self._ampel_db, self.logger, exc=exc)
 
 
 	def call_bulk_write(self, col_name: AmpelMainCol, db_ops: list, *, extra: None | dict = None) -> None:
