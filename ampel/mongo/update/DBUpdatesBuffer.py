@@ -8,8 +8,9 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from collections.abc import Callable, Generator, Iterable, Iterator, Mapping
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
-from threading import Event, Lock, Thread
+from threading import Event, Lock
 from typing import Any, Literal
 
 from pymongo import InsertOne, UpdateMany, UpdateOne
@@ -159,18 +160,27 @@ class DBUpdatesBuffer:
 		:raises: RuntimeError if context manager is already running
 		"""
 		self._stop.clear()
-		self._thread = Thread(target=self._task)
-		self._thread.start()
+		self._exec = ThreadPoolExecutor()
+		def task():
+			while not self._stop.is_set():
+				self._push.wait(self.push_interval)
+				self._push.clear()
+				self.push_updates(force=True)
+		self._task = self._exec.submit(task)
 	
 	def __exit__(self, exc_type: type[BaseException], exc_value: BaseException, traceback: Any) -> None:
 		"""
 		:raises: RuntimeError if context manager is already running
 		"""
+		# stop updater thread
 		self._stop.set()
 		self._push.set()
-		self._thread.join()
-
+		self._task.result()
+		# push any remaining updates
 		self.push_updates()
+		# shut down thread pool
+		self._exec.shutdown()
+
 
 
 	def acknowledge_on_push(self, message: Any) -> None:
@@ -224,6 +234,9 @@ class DBUpdatesBuffer:
 		with self._block_autopush:
 			yield
 			self.check_push()
+		# potentially raise exceptions to main thread
+		if self._task.done():
+			self._task.result()
 
 
 	def check_push(self) -> None:
@@ -237,13 +250,6 @@ class DBUpdatesBuffer:
 				self._push.set()
 
 
-	def _task(self) -> None:
-		while not self._stop.is_set():
-			self._push.wait(self.push_interval)
-			self._push.clear()
-			self.push_updates(force=True)
-
-
 	def push_updates(self, force: bool = False) -> None:
 
 		# swap buffers
@@ -253,9 +259,11 @@ class DBUpdatesBuffer:
 
 		# prevent the new buffer from overfilling before bulk writes complete
 		with self._pushing:
-			for col_name in db_ops:
-				if db_ops[col_name]:
-					self.call_bulk_write(col_name, db_ops[col_name])
+			for _ in self._exec.map(
+				self.call_bulk_write,
+				*zip(*((col_name, ops) for col_name, ops in db_ops.items() if ops), strict=True)
+			):
+				pass
 
 			if self.acknowledge_callback and messages:
 				try:
