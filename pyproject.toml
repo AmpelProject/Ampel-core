@@ -51,7 +51,7 @@ python = "^3.10"
 pymongo = "^4.0"
 schedule = "^1.0.0"
 xxhash = "^3.0.0"
-psutil = "^6.0.0"
+psutil = "^7.0.0"
 prometheus-client = ">=0.16"
 # server
 fastapi = {version = ">=0.95", optional = true}
