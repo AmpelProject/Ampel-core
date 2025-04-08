@@ -141,6 +141,7 @@ class DBUpdatesBuffer:
 		self._pushing = Lock()
 		# signal update pusher thread to stop
 		self._stop = Event()
+		self._exec = ThreadPoolExecutor()
 
 		self.push_interval = push_interval
 		self.raise_exc = raise_exc
@@ -160,7 +161,6 @@ class DBUpdatesBuffer:
 		:raises: RuntimeError if context manager is already running
 		"""
 		self._stop.clear()
-		self._exec = ThreadPoolExecutor()
 		def task():
 			while not self._stop.is_set():
 				self._push.wait(self.push_interval)
@@ -178,9 +178,6 @@ class DBUpdatesBuffer:
 		self._task.result()
 		# push any remaining updates
 		self.push_updates()
-		# shut down thread pool
-		self._exec.shutdown()
-
 
 
 	def acknowledge_on_push(self, message: Any) -> None:
