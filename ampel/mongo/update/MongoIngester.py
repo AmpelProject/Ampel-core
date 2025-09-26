@@ -1,9 +1,7 @@
 from collections.abc import Iterable
 from contextlib import contextmanager
-from typing import Any, Self
+from typing import Any
 
-from ampel.abstract.AbsDocIngester import AbsDocIngester
-from ampel.abstract.AbsIngester import AbsIngester
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.content.DataPoint import DataPoint
@@ -11,27 +9,33 @@ from ampel.content.StockDocument import StockDocument
 from ampel.content.T1Document import T1Document
 from ampel.content.T2Document import T2Document
 from ampel.model.UnitModel import UnitModel
+from ampel.types import OneOrMany, Tag
+from typing_extensions import Self
+
+from ampel.abstract.AbsDocIngester import AbsDocIngester
+from ampel.abstract.AbsIngester import AbsIngester
 from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
 from ampel.protocol.StockIngesterProtocol import StockIngesterProtocol
-from ampel.types import OneOrMany, Tag
 
 
 class _StockIngester:
-
-    def __init__(self, ingester: AbsDocIngester[StockDocument], updater: MongoStockUpdater) -> None:
+    def __init__(
+        self, ingester: AbsDocIngester[StockDocument], updater: MongoStockUpdater
+    ) -> None:
         self.ingester = ingester
         self.update = updater
-    
+
     def ingest(self, doc: StockDocument) -> None:
         self.ingester.ingest(doc)
+
 
 class _UpdatesBufferModel(AmpelBaseModel):
     max_size: int = 500
     push_interval: float = 3
 
-class MongoIngester(AbsIngester):
 
+class MongoIngester(AbsIngester):
     updates_buffer: _UpdatesBufferModel = _UpdatesBufferModel()
 
     #: Tag(s) to add to the stock :class:`~ampel.content.JournalRecord.JournalRecord`
@@ -53,10 +57,13 @@ class MongoIngester(AbsIngester):
         )
 
         stock_updater = MongoStockUpdater(
-            ampel_db = self.context.db, tier = self.tier, run_id = self.run_id,
-            process_name = self.process_name, logger = self.logger,
-            raise_exc = self.raise_exc, extra_tag = self.jtag
-
+            ampel_db=self.context.db,
+            tier=self.tier,
+            run_id=self.run_id,
+            process_name=self.process_name,
+            logger=self.logger,
+            raise_exc=self.raise_exc,
+            extra_tag=self.jtag,
         )
 
         # Create ingesters
@@ -113,7 +120,7 @@ class MongoIngester(AbsIngester):
                 self._updates_buffer.acknowledge_on_push(message)
             if len(self._stock.update._updates) >= self.updates_buffer.max_size:  # noqa: SLF001
                 self._stock.update.flush()
-    
+
     def flush(self) -> None:
         self._updates_buffer.push_updates(force=True)
         self._stock.update.flush()
