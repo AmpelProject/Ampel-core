@@ -382,7 +382,7 @@ class ChainedIngestionHandler:
 					t1_compute_unit = self._t1_compute_units_cache[i]
 				else:
 					t1_compute_unit = self.context.loader.new_logical_unit(
-						model = t1_combine,
+						model = t1_combine.compute,
 						logger = buf_logger,
 						sub_type = AbsT1ComputeUnit
 					)
