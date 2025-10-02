@@ -368,7 +368,10 @@ class ChainedIngestionHandler:
 
 			t1b.compute = T1ComputeBlock()
 			t1b.compute.unit_name = t1_combine.compute.unit
-			t1b.compute.config = t1_combine.compute.config
+			if isinstance(t1_combine.compute.config, int):
+				t1b.compute.config = t1_combine.compute.config
+			else:
+				raise ValueError("Integer expected for t1_combine.compute.config")
 
 			# On the fly t1 computation requested
 			if isinstance(t1_combine, T1CombineComputeNow):
