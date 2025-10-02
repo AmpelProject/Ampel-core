@@ -1,7 +1,8 @@
 from collections.abc import Generator, Iterable, Sequence
 from contextlib import contextmanager
 from functools import partial
-from typing import Any, Literal, Self
+from typing import Any, Literal
+from typing_extensions import Self
 
 from bson import ObjectId
 
