@@ -1,8 +1,12 @@
 from collections.abc import Generator, Iterable, Sequence
 from contextlib import contextmanager
 from functools import partial
-from typing import Any, Literal
+from typing import Any, Literal, Self
 
+from bson import ObjectId
+
+from ampel.abstract.AbsDocIngester import AbsDocIngester
+from ampel.abstract.AbsIngester import AbsIngester
 from ampel.content.DataPoint import DataPoint
 from ampel.content.JournalRecord import JournalRecord
 from ampel.content.StockDocument import StockDocument
@@ -10,19 +14,13 @@ from ampel.content.T1Document import T1Document
 from ampel.content.T2Document import T2Document
 from ampel.enum.JournalActionCode import JournalActionCode
 from ampel.model.UnitModel import UnitModel
-from ampel.struct.JournalAttributes import JournalAttributes
-from ampel.types import ChannelId, StockId, Tag
-from bson import ObjectId
-from typing_extensions import Self
-
-from ampel.abstract.AbsDocIngester import AbsDocIngester
-from ampel.abstract.AbsIngester import AbsIngester
 from ampel.mongo.update.MongoStockUpdater import BaseStockUpdater
 from ampel.protocol.StockIngesterProtocol import StockIngesterProtocol
 from ampel.queue.AbsProducer import AbsProducer
+from ampel.struct.JournalAttributes import JournalAttributes
+from ampel.types import ChannelId, StockId, Tag
 
 # ruff: noqa: SLF001
-
 
 class QueueIngester(AbsIngester):
     producer: UnitModel
@@ -36,12 +34,14 @@ class QueueIngester(AbsIngester):
             process_name: str,
             extra_tag: None | Tag | Sequence[Tag] = None,
             bump_updated: bool = True,
+
         ) -> None:
             super().__init__(
                 tier=tier, run_id=run_id, process_name=process_name, extra_tag=extra_tag
             )
             self.queue = queue
             self.bump_updated = bump_updated
+
 
         def add_journal_record(
             self,
@@ -71,13 +71,7 @@ class QueueIngester(AbsIngester):
 
             names = {name} if isinstance(name, str) else set(name) if name else None
             tags = {tag} if isinstance(tag, Tag) else set(tag) if tag else None
-            channels = (
-                [channel]
-                if isinstance(channel, ChannelId)
-                else channel
-                if channel
-                else []
-            )
+            channels = [channel] if isinstance(channel, ChannelId) else channel if channel else []
 
             for doc in self._match_stocks(
                 {stock} if isinstance(stock, StockId) else set(stock)
@@ -87,7 +81,7 @@ class QueueIngester(AbsIngester):
                     doc["name"] = list(names.union(doc.get("name", [])))
                 if tags:
                     doc["tag"] = list(tags.union(doc.get("tag", [])))
-
+                
                 if self.bump_updated:
                     for chan in ("any", *channels):
                         self._update_ts(doc, chan, jrec["ts"])

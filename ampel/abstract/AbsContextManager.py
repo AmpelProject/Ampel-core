@@ -1,8 +1,9 @@
+
 from types import TracebackType
+from typing import Self
 
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
-from typing_extensions import Self
 
 
 class AbsContextManager(AmpelABC, abstract=True):
@@ -14,9 +15,5 @@ class AbsContextManager(AmpelABC, abstract=True):
         return self
 
     @abstractmethod
-    def __exit__(
-        self,
-        exc_type: type[BaseException],
-        exc_val: BaseException,
-        exc_tb: TracebackType,
-    ) -> None | bool: ...
+    def __exit__(self, exc_type: type[BaseException], exc_val: BaseException, exc_tb: TracebackType) -> None | bool:
+        ...
