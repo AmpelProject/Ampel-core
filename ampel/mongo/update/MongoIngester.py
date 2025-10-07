@@ -1,6 +1,7 @@
 from collections.abc import Iterable
 from contextlib import contextmanager
 from typing import Any
+
 from typing_extensions import Self
 
 from ampel.abstract.AbsDocIngester import AbsDocIngester

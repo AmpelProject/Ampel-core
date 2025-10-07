@@ -1,5 +1,6 @@
 
 from types import TracebackType
+
 from typing_extensions import Self
 
 from ampel.base.AmpelABC import AmpelABC
