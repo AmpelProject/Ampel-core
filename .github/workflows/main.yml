@@ -16,7 +16,7 @@ on:
 
 jobs:
   ci:
-    uses: AmpelProject/Ampel-interface/.github/workflows/ci.yml@e880b6e4cc9827cb4a85a06d00cb36738d9dda93 # ci-py12-v3
+    uses: AmpelProject/Ampel-interface/.github/workflows/ci.yml@e880b6e4cc9827cb4a85a06d00cb36738d9dda93 # ci-py12-v9
     secrets: inherit
     with:
       mongo: true
