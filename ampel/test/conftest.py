@@ -17,7 +17,7 @@ from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.ingest.ChainedIngestionHandler import ChainedIngestionHandler
 from ampel.ingest.StockCompiler import StockCompiler
 from ampel.ingest.T2Compiler import T2Compiler
-from ampel.log.AmpelLogger import AmpelLogger
+from ampel.log.AmpelLogger import DEBUG, AmpelLogger
 from ampel.model.ingest.CompilerOptions import CompilerOptions
 from ampel.model.ingest.IngestBody import IngestBody
 from ampel.model.ingest.IngestDirective import IngestDirective
@@ -120,7 +120,7 @@ def dev_context(request):
 
 @pytest.fixture
 def ampel_logger():
-    return AmpelLogger.get_logger()
+    return AmpelLogger.get_logger(console=dict(level=DEBUG))
 
 
 @pytest.fixture
