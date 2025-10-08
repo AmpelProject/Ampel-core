@@ -109,6 +109,7 @@ filterwarnings = [
 ]
 
 [tool.mypy]
+packages = ["ampel"]
 namespace_packages = true
 show_error_codes = true
 warn_unused_ignores = true

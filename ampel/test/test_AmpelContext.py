@@ -1,5 +1,7 @@
 import copy
 
+import pytest
+
 from ampel.config.alter.HashT2Config import HashT2Config
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.dev.DevAmpelContext import DevAmpelContext
@@ -19,7 +21,7 @@ def test_load_old_configids(mock_context: DevAmpelContext, ampel_logger):
         loader=mock_context.loader,
     )
 
-    HashT2Config().alter(
+    altered = HashT2Config().alter(
         mock_context,
         dict(
             directives=[
@@ -39,19 +41,23 @@ def test_load_old_configids(mock_context: DevAmpelContext, ampel_logger):
         ampel_logger
     )
 
+    hashed_unit_config = altered['directives'][0]['ingest']['combine'][0]['state_t2'][0]['config']
+    assert isinstance(hashed_unit_config, int)
+
     post_register_context = DevAmpelContext(
         config=AmpelConfig(copy.deepcopy(pre_register_context.config.get())),
         db=mock_context.db,
         loader=mock_context.loader,
     )
-    assert isinstance(
-        pre_register_confid := pre_register_context.config.get("confid", dict), dict
-    )
-    assert len(pre_register_confid) == 0, "config not present before registration"
+    # config was not present before registration
+    with pytest.raises(ValueError, match=r"Config with id .* not found"):
+        pre_register_context.config.get_conf_id(hashed_unit_config)
 
-    assert isinstance(confid := mock_context.config.get("confid", dict), dict)
-    assert len(confid) == 1, "config present after registration"
-    assert next(iter(confid.values())) == unit_config
+    # config is present after registration in the context where it was registered
+    unit_config_from_confid = mock_context.config.get_conf_id(hashed_unit_config)
+    assert unit_config_from_confid == unit_config
+
+    # also in an unrelated context instantiated after registration
     assert (
-        post_register_context.config.get("confid", dict) == confid
+        post_register_context.config.get_conf_id(hashed_unit_config) == unit_config
     ), "unregistered configs loaded from database"

@@ -237,7 +237,7 @@ class ProcessMorpher:
 		walk_and_process_dict(
 			arg = target or self.process["processor"]["config"]["directives"],
 			callback = self._gather_t2_config_callback,
-			match = ['point_t2', 'stock_t2', 'state_t2', 't2_dependency'],
+			match = ['point_t2', 'stock_t2', 'state_t2', 't2_dependency', 'compute', 'combine'],
 			conf_dicts = conf_dicts
 		)
 
@@ -312,8 +312,14 @@ class ProcessMorpher:
 			self.logger.info(f"# path: {path}.{k}")
 
 		if d[k]:
-			for i, el in enumerate(d[k]):
+			if isinstance(v := d[k], dict):
 				if self.verbose > 1:
-					self.logger.info(f"# path: {path}.{k}.{i}")
-					self.logger.info(el)
-				kwargs['conf_dicts'][f"{path}.{k}.{i}"] = el
+					self.logger.info(f"# path: {path}.{k}")
+					self.logger.info(v)
+				kwargs["conf_dicts"][f"{path}.{k}"] = v
+			if isinstance(v, list):
+				for i, el in enumerate(d[k]):
+					if self.verbose > 1:
+						self.logger.info(f"# path: {path}.{k}.{i}")
+						self.logger.info(el)
+					kwargs['conf_dicts'][f"{path}.{k}.{i}"] = el

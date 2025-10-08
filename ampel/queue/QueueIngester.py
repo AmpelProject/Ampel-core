@@ -1,9 +1,10 @@
 from collections.abc import Generator, Iterable, Sequence
 from contextlib import contextmanager
 from functools import partial
-from typing import Any, Literal, Self
+from typing import Any, Literal
 
 from bson import ObjectId
+from typing_extensions import Self
 
 from ampel.abstract.AbsDocIngester import AbsDocIngester
 from ampel.abstract.AbsIngester import AbsIngester
