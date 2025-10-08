@@ -67,7 +67,14 @@ sjcl = {version = "^0.2.1", optional = true}
 mongomock = {version = "^4.3", optional = true}
 
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.extras]
+server = ["fastapi", "uvicorn", "setproctitle"]
+slack = ["slack_sdk"]
+encrypted-secrets = ["sjcl"]
+transform = ["yq"]
+queue = ["mongomock"]
+
+[tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"
 pytest-cov = "^6.0.0"
 mypy = "^1.13.0"
@@ -77,15 +84,6 @@ mongomock = "*"
 httpx = "^0.28.0"
 types-setuptools = "^65.1.0"
 types-PyYAML = "^6.0.12"
-
-[tool.poetry.extras]
-server = ["fastapi", "uvicorn", "setproctitle"]
-slack = ["slack_sdk"]
-encrypted-secrets = ["sjcl"]
-transform = ["yq"]
-queue = ["mongomock"]
-
-[tool.poetry.group.dev.dependencies]
 types-requests = "^2.28.11.15"
 types-ujson = "^5.10.0.20240515"
 matplotlib = "^3.9.0"
