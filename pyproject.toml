@@ -71,7 +71,7 @@ mongomock = {version = "^4.3", optional = true}
 pytest = "^8.3.3"
 pytest-cov = "^6.0.0"
 mypy = "^1.13.0"
-pytest-asyncio = "^0.25.0"
+pytest-asyncio = "^0.26.0"
 pytest-mock = "^3.14.0"
 mongomock = "*"
 httpx = "^0.28.0"
