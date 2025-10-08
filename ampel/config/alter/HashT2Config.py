@@ -21,7 +21,7 @@ class HashT2Config(AbsConfigUpdater):
 
 	def alter(self, context: AmpelContext, content: dict[str, Any], logger: AmpelLogger) -> dict[str, Any]:
 
-		pm = ProcessMorpher(process={}, logger=logger, proc_name='<off-config>')
+		pm = ProcessMorpher(process={}, logger=logger, verbose=bool(logger.verbose), proc_name='<off-config>')
 		cc = T02ConfigCollector(conf_section="confid")
 		# Note: *process* templating could be possible there as well, add if ever needed
 		ac = context.config._config  # noqa: SLF001
