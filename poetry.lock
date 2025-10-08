@@ -56,22 +56,6 @@ test = ["anyio[trio]", "coverage[toml] (>=7)", "exceptiongroup (>=1.2.0)", "hypo
 trio = ["trio (>=0.26.1)"]
 
 [[package]]
-name = "argcomplete"
-version = "3.5.3"
-description = "Bash tab completion for argparse"
-optional = true
-python-versions = ">=3.8"
-groups = ["main"]
-markers = "extra == \"transform\""
-files = [
-    {file = "argcomplete-3.5.3-py3-none-any.whl", hash = "sha256:2ab2c4a215c59fd6caaff41a869480a23e8f6a5f910b266c1808037f4e375b61"},
-    {file = "argcomplete-3.5.3.tar.gz", hash = "sha256:c12bf50eded8aebb298c7b7da7a5ff3ee24dffd9f5281867dfe1424b58c55392"},
-]
-
-[package.extras]
-test = ["coverage", "mypy", "pexpect", "ruff", "wheel"]
-
-[[package]]
 name = "backports-asyncio-runner"
 version = "1.2.0"
 description = "Backport of asyncio.Runner, a context manager that controls event loop life cycle."
@@ -1082,19 +1066,6 @@ files = [
 ]
 
 [[package]]
-name = "tomlkit"
-version = "0.13.2"
-description = "Style preserving TOML library"
-optional = true
-python-versions = ">=3.8"
-groups = ["main"]
-markers = "extra == \"transform\""
-files = [
-    {file = "tomlkit-0.13.2-py3-none-any.whl", hash = "sha256:7a974427f6e119197f670fbbbeae7bef749a6c14e793db934baefc1b5f03efde"},
-    {file = "tomlkit-0.13.2.tar.gz", hash = "sha256:fff5fe59a87295b278abd31bec92c15d9bc4a06885ab12bcea52c71119392e79"},
-]
-
-[[package]]
 name = "types-docutils"
 version = "0.21.0.20241128"
 description = "Typing stubs for docutils"
@@ -1291,19 +1262,6 @@ socks = ["pysocks (>=1.5.6,!=1.5.7,<2.0)"]
 zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
-name = "xmltodict"
-version = "0.14.2"
-description = "Makes working with XML feel like you are working with JSON"
-optional = true
-python-versions = ">=3.6"
-groups = ["main"]
-markers = "extra == \"transform\""
-files = [
-    {file = "xmltodict-0.14.2-py2.py3-none-any.whl", hash = "sha256:20cc7d723ed729276e808f26fb6b3599f786cbc37e06c65e192ba77c40f20aac"},
-    {file = "xmltodict-0.14.2.tar.gz", hash = "sha256:201e7c28bb210e374999d1dde6382923ab0ed1a8a5faeece48ab525b7810a553"},
-]
-
-[[package]]
 name = "xxhash"
 version = "3.6.0"
 description = "Python binding for xxHash"
@@ -1453,34 +1411,11 @@ files = [
     {file = "xxhash-3.6.0.tar.gz", hash = "sha256:f0162a78b13a0d7617b2845b90c763339d1f1d82bb04a4b07f4ab535cc5e05d6"},
 ]
 
-[[package]]
-name = "yq"
-version = "3.4.3"
-description = "Command-line YAML/XML processor - jq wrapper for YAML/XML documents"
-optional = true
-python-versions = ">=3.8"
-groups = ["main"]
-markers = "extra == \"transform\""
-files = [
-    {file = "yq-3.4.3-py3-none-any.whl", hash = "sha256:547e34bc3caacce83665fd3429bf7c85f8e8b6b9aaee3f953db1ad716ff3434d"},
-    {file = "yq-3.4.3.tar.gz", hash = "sha256:ba586a1a6f30cf705b2f92206712df2281cd320280210e7b7b80adcb8f256e3b"},
-]
-
-[package.dependencies]
-argcomplete = ">=1.8.1"
-PyYAML = ">=5.3.1"
-tomlkit = ">=0.11.6"
-xmltodict = ">=0.11.0"
-
-[package.extras]
-tests = ["build", "coverage", "mypy", "ruff", "wheel"]
-
 [extras]
 encrypted-secrets = ["sjcl"]
 queue = ["mongomock"]
-transform = ["yq"]
 
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10"
-content-hash = "54fa2ba802a71befc1f2ae82d050d05b5bba6227bf71017351048b750d2cd185"
+content-hash = "f6be0a051e6da91053bf8210241e3101edb3593dddc1b0365c3f1817c397b18b"
