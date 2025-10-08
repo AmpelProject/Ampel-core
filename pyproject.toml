@@ -76,9 +76,9 @@ queue = ["mongomock"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"
-pytest-cov = "^6.0.0"
+pytest-cov = "^7.0.0"
 mypy = "^1.13.0"
-pytest-asyncio = "^0.25.0"
+pytest-asyncio = "^1.0.0"
 pytest-mock = "^3.14.0"
 mongomock = "*"
 httpx = "^0.28.0"
