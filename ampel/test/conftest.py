@@ -6,6 +6,7 @@ from pathlib import Path, PosixPath
 from typing import Any
 
 import mongomock
+import mongomock.collection
 import pymongo
 import pytest
 
@@ -78,6 +79,13 @@ def _patch_mongo(monkeypatch):
     monkeypatch.setattr("ampel.core.AmpelDB.MongoClient", mongomock.MongoClient)
     # ignore codec_options in DataLoader
     monkeypatch.setattr("mongomock.codec_options.is_supported", lambda *args: None)
+    # work around https://github.com/mongomock/mongomock/issues/912
+    add_update = mongomock.collection.BulkOperationBuilder.add_update
+    def _add_update(self, *args, sort=None, **kwargs):
+        if sort is not None:
+            raise NotImplementedError("sort not implemented in mongomock")
+        return add_update(self, *args, **kwargs)
+    monkeypatch.setattr("mongomock.collection.BulkOperationBuilder.add_update", _add_update)
 
 
 @pytest.fixture(scope="session")
