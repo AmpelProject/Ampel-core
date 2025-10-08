@@ -177,7 +177,7 @@ class JobCommand(AbsCoreCommand):
 			try:
 				import matplotlib as mpl
 				mpl.use('Agg')
-			except Exception:
+			except ImportError:
 				pass
 
 		if args['no_breakpoint']:
