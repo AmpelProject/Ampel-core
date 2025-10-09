@@ -79,7 +79,7 @@ def txt_export(
 				if human_times:
 					convert_timestamps(el)
 				if logger:
-					logger.info(f"Writing content (id: {el['id']})")
+					logger.info(f"Writing content (id: {el['id']!r})")
 				fd.write(func(el))
 
 				if getch and fgetch():
