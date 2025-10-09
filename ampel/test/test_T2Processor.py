@@ -264,7 +264,7 @@ def test_queue_worker(
     acks_iter = ack.call_args[0][0]
     assert isinstance(acks_iter, Iterable)
     acks = list(acks_iter)
-    assert len(acks)
+    assert acks
     assert acks[0]["stock"][0]["stock"] == "stockystock"
 
     assert mock_context.db.get_collection("stock").count_documents({}) == 1

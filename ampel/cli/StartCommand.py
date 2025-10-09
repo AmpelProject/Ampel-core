@@ -8,6 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import asyncio
+import contextlib
 import logging
 import signal
 from argparse import ArgumentParser
@@ -19,10 +20,12 @@ from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
 from ampel.cli.MaybeIntAction import MaybeIntAction
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.core.AmpelController import AmpelController
+from ampel.core.UnitLoader import UnitLoader
 
 #from ampel.log.AmpelLogger import AmpelLogger
 #from ampel.log.LogFlag import LogFlag
 from ampel.secret.AmpelVault import AmpelVault
+from ampel.secret.DictSecretProvider import DictSecretProvider
 
 # Help parameter descriptions
 h = {
@@ -75,7 +78,6 @@ class ScheduleCommand(AbsCLIOperation):
 		config = AmpelConfig.load(args['config'])
 
 		if (secrets_file := args['secrets']):
-			from ampel.secret.DictSecretProvider import DictSecretProvider
 			secrets = DictSecretProvider.load(secrets_file)
 
 		self.el_capitan = AmpelController(
@@ -147,14 +149,11 @@ class ScheduleCommand(AbsCLIOperation):
 
 			secrets = None
 			if self.args['secrets']:
-				from ampel.secret.DictSecretProvider import DictSecretProvider
 				secrets = DictSecretProvider.load(self.args['secrets'])
 
 			if self.args['skip_validation']:
-				import contextlib
 				pyctx: Any = contextlib.nullcontext
 			else:
-				from ampel.core.UnitLoader import UnitLoader
 				loader = UnitLoader(
 					config,
 					db=None,

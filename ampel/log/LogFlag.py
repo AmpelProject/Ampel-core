@@ -10,7 +10,6 @@
 from enum import IntFlag
 
 
-# flake8: noqa: E221
 class LogFlag(IntFlag):
 	"""
 	Flag used for each log entry stored in the DB.

@@ -57,7 +57,7 @@ class T0Compiler(AbsCompiler):
 			if dpid in r:
 				r[dpid][1].add(channel)
 				if ttl is not None and ((prev := r[dpid][2]) is None or ttl > prev):
-					r[dpid] = r[dpid][:2] + (ttl,) + r[dpid][3:]
+					r[dpid] = (*r[dpid][:2], ttl, *r[dpid][3:])
 			else:
 				r[dpid] = dp, {channel}, ttl, trace_id, extra
 

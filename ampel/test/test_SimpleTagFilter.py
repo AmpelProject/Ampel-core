@@ -22,7 +22,7 @@ from ampel.model.UnitModel import UnitModel
 )
 def test_SimpleTagFilter(mock_context, filter, count):
     dp = DPSelection(filter=filter)
-    filterer, sorter, slicer = dp.tools()
+    filterer = dp.tools()[0]
     if filter is None:
         assert filterer is None
     else:

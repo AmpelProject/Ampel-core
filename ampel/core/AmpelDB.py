@@ -294,7 +294,7 @@ class AmpelDB(AmpelUnit):
 
 		if logger is None:
 			# Avoid cyclic import error
-			from ampel.log.AmpelLogger import AmpelLogger
+			from ampel.log.AmpelLogger import AmpelLogger  # noqa: PLC0415
 			logger = AmpelLogger.get_logger()
 
 		try:
@@ -434,7 +434,7 @@ class AmpelDB(AmpelUnit):
 				db.drop_collection(f"{col_prefix}_{el}")
 
 			if logger and logger.verbose > 1:
-				from ampel.util.pretty import prettyjson
+				from ampel.util.pretty import prettyjson  # noqa: PLC0415
 				logger.info(f"Collection {el} aggregation pipeline:")
 				for line in prettyjson(agg).split("\n"):
 					logger.info(line)

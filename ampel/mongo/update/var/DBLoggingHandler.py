@@ -10,6 +10,7 @@
 import socket
 import struct
 from logging import LogRecord
+from traceback import format_exc
 from typing import TYPE_CHECKING
 
 from bson import ObjectId
@@ -20,9 +21,11 @@ from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.AmpelLoggingError import AmpelLoggingError
 from ampel.log.LightLogRecord import LightLogRecord
 from ampel.log.LogFlag import LogFlag
+from ampel.log.LoggingErrorReporter import LoggingErrorReporter
 from ampel.log.utils import log_exception, report_exception
 from ampel.util.collections import try_reduce
 from ampel.util.mappings import compare_dict_values
+from ampel.util.pretty import prettyjson
 
 if TYPE_CHECKING:
 	from ampel.core.AmpelDB import AmpelDB
@@ -208,7 +211,6 @@ class DBLoggingHandler(AmpelUnit):
 			logger.error("DB log flushing error, un-flushed (json) logs below.")
 			logger.error("*" * 52)
 
-			from ampel.util.pretty import prettyjson
 			for d in self.log_dicts:
 				logger.error(prettyjson(d))
 			logger.error("#" * 52)
@@ -252,7 +254,6 @@ class DBLoggingHandler(AmpelUnit):
 				raise AmpelLoggingError from None
 
 		except Exception as e:
-			from ampel.log.LoggingErrorReporter import LoggingErrorReporter
 			LoggingErrorReporter.report(self, e)
 			# If we can no longer keep track of what Ampel is doing,
 			# better raise Exception to stop processing
@@ -273,7 +274,7 @@ class DBLoggingHandler(AmpelUnit):
 
 		try:
 
-			from ampel.log.utils import (
+			from ampel.log.utils import (  # noqa: PLC0415
 				convert_dollars,
 				get_tier_from_log_flags,
 				log_exception,
@@ -332,7 +333,6 @@ class DBLoggingHandler(AmpelUnit):
 		except Exception:
 
 			try:
-				from traceback import format_exc
 				self._ampel_db.get_collection('trouble').insert_one(
 					{
 						'location': 'DBLoggingHandler',
@@ -341,13 +341,15 @@ class DBLoggingHandler(AmpelUnit):
 					}
 				)
 			except Exception as another_exc:
-				from ampel.log.AmpelLogger import AmpelLogger
+				from ampel.log.AmpelLogger import AmpelLogger  # noqa: PLC0415
 				log_exception(
 					AmpelLogger.get_logger(),
 					another_exc
 				)
 
-			from ampel.log.LoggingErrorReporter import LoggingErrorReporter
+			from ampel.log.LoggingErrorReporter import (  # noqa: PLC0415
+				LoggingErrorReporter,
+			)
 			LoggingErrorReporter.report(self, bwe, bwe.details)
 
 			return True

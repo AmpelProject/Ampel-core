@@ -6,7 +6,7 @@
 # Date:                16.05.2020
 # Last Modified Date:  04.03.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
-
+from os import rename
 from os.path import isdir, isfile
 from pathlib import Path
 from struct import calcsize
@@ -294,7 +294,6 @@ class AmpelRegister(AmpelUnit):
 		fh.close()
 		self.file_index = header.get('findex', 0) + 1
 
-		from os import rename
 		target_file_path = f"{fh.name}.{self.file_index}"
 
 		# we might handle this rather than raising an error in the future

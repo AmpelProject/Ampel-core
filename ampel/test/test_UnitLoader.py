@@ -14,6 +14,7 @@ from ampel.secret.AmpelVault import AmpelVault
 from ampel.secret.DictSecretProvider import DictSecretProvider
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.secret.Secret import Secret
+from ampel.test.dummy import DummyUnitResultAdapter
 
 
 @pytest.fixture
@@ -310,7 +311,7 @@ def test_unit_validation(dev_context: DevAmpelContext):
         UnitModel(unit="T3Processor", config=t3_config)
 
         t3_config["supply"]["config"]["select"]["unit"] = "NotActuallyAUnit" # type: ignore[index]
-        with pytest.raises(TypeError, match=".*Ampel unit not found: NotActuallyAUnit.*"):
+        with pytest.raises(TypeError, match=r".*Ampel unit not found: NotActuallyAUnit.*"):
             UnitModel(unit="T3Processor", config=t3_config)
 
 
@@ -345,7 +346,6 @@ def test_secret_validation(secret_context: DevAmpelContext):
 
 
 def test_result_adapter_trace(mock_context: DevAmpelContext):
-    from ampel.test.dummy import DummyUnitResultAdapter
 
     mock_context.register_unit(DummyUnitResultAdapter)
     model = UnitModel(unit="DummyUnitResultAdapter")

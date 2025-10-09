@@ -18,6 +18,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import traceback
 from argparse import ArgumentParser
 from collections.abc import Sequence
 from contextlib import suppress
@@ -33,6 +34,7 @@ from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
 from ampel.cli.config import get_user_data_config_path
+from ampel.cli.ConfigCommand import ConfigCommand
 from ampel.cli.MaybeIntAction import MaybeIntAction
 from ampel.cli.utils import _maybe_int
 from ampel.core.AmpelContext import AmpelContext
@@ -165,7 +167,7 @@ class JobCommand(AbsCoreCommand):
 				kwargs['processes'] = 1
 				return multiprocessing.dummy.Pool(**kwargs)
 			"""
-			import multiprocessing
+			import multiprocessing  # noqa: PLC0415
 			multiprocessing.__dict__['Pool'] = MockPool
 			if (
 				not args['no_agg'] and
@@ -175,7 +177,7 @@ class JobCommand(AbsCoreCommand):
 
 		if not args['no_agg']:
 			try:
-				import matplotlib as mpl
+				import matplotlib as mpl  # noqa: PLC0415
 				mpl.use('Agg')
 			except ImportError:
 				pass
@@ -253,7 +255,7 @@ class JobCommand(AbsCoreCommand):
 			return
 
 		if args.get('edit') == 'parsed':
-			fd, fname = tempfile.mkstemp(suffix='.yml')
+			_, fname = tempfile.mkstemp(suffix='.yml')
 			# Seems fd does not work with yaml.dump(), unsure why
 			with open(fname, "w") as f:
 				yaml.dump(
@@ -334,7 +336,6 @@ class JobCommand(AbsCoreCommand):
 			not os.path.exists(get_user_data_config_path()) and
 			yes_no('Config seems to be missing, build and install')
 		):
-			from ampel.cli.ConfigCommand import ConfigCommand
 			cc = ConfigCommand()
 			a, ua = cc.get_parser('install').parse_known_args()
 			cc.run(vars(a), ua, sub_op = 'install')
@@ -381,7 +382,6 @@ class JobCommand(AbsCoreCommand):
 							f'rebuild and install new config'
 						)
 					):
-						from ampel.cli.ConfigCommand import ConfigCommand
 						cc = ConfigCommand()
 						a, ua = cc.get_parser('install').parse_known_args()
 						cc.run(vars(a), ua, sub_op = 'install')
@@ -415,7 +415,7 @@ class JobCommand(AbsCoreCommand):
 		job_dict = self.get_job_dict(job, jtasks)
 
 		if args.get('edit') == 'model':
-			fd, fname = tempfile.mkstemp(suffix='.yml')
+			_, fname = tempfile.mkstemp(suffix='.yml')
 			# Seems fd does not work with yaml.dump(), unsure why
 			with open(fname, "w") as f:
 				yaml.dump(job_dict, f, sort_keys=False, default_flow_style=None)
@@ -726,7 +726,6 @@ def run_mp_process(
 		)
 
 	except Exception as e:
-		import traceback
 		se = str(e)
 		result_queue.put(
 			'\n' + '#'*len(se) + '\n' + str(e) + '\n' + '#'*len(se) + '\n' +

@@ -81,8 +81,8 @@ class AmpelContext:
 		"""
 
 		# Avoid cyclic import issues
-		from ampel.core.UnitLoader import UnitLoader # noqa
-		from ampel.core.AmpelDB import AmpelDB
+		from ampel.core.AmpelDB import AmpelDB  # noqa: PLC0415
+		from ampel.core.UnitLoader import UnitLoader  # noqa: PLC0415
 
 		alconf = AmpelConfig(config) if isinstance(config, dict) else AmpelConfig.load(config)
 		if vault is None:
@@ -94,7 +94,7 @@ class AmpelContext:
 
 		if pwds:
 			# AESecretProvider is optional
-			from ampel.secret.AESecretProvider import AESecretProvider
+			from ampel.secret.AESecretProvider import AESecretProvider  # noqa: PLC0415
 			vault.providers.append(
 				AESecretProvider(pwds)
 			)
@@ -131,7 +131,9 @@ class AmpelContext:
 				pwds = [l.strip() for l in f.readlines()]
 
 		# Import here to avoid cyclic import error
-		from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
+		from ampel.config.builder.DistConfigBuilder import (  # noqa: PLC0415
+			DistConfigBuilder,
+		)
 		cb = DistConfigBuilder(options=DisplayOptions(verbose=verbose))
 		cb.load_distributions()
 

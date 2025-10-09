@@ -23,6 +23,7 @@ from ampel.config.ScheduleEvaluator import ScheduleEvaluator
 from ampel.core.AmpelContext import AmpelContext
 from ampel.core.AmpelDB import AmpelDB
 from ampel.core.UnitLoader import UnitLoader
+from ampel.log.AmpelLogger import AmpelLogger
 from ampel.model.ProcessModel import ProcessModel
 from ampel.secret.AmpelVault import AmpelVault
 from ampel.util import concurrent
@@ -165,7 +166,6 @@ class DefaultProcessController(AbsProcessController):
 				if not appointment:
 					continue
 				if appointment == "super":
-					from ampel.log.AmpelLogger import AmpelLogger
 					AmpelLogger.get_logger().error("DefaultProcessController does not handle the schedule value 'super'")
 					continue
 				job = (
@@ -299,9 +299,9 @@ class DefaultProcessController(AbsProcessController):
 		pm = ProcessModel(**p)
 
 		try:
-			import setproctitle
+			import setproctitle  # noqa: PLC0415
 			setproctitle.setproctitle(f"ampel.t{pm.tier}.{pm.name}")
-		except Exception:
+		except ImportError:
 			...
 
 		# Create new context with frozen config

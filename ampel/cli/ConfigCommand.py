@@ -28,6 +28,8 @@ from ampel.config.builder.DisplayOptions import DisplayOptions
 from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
 from ampel.core.AmpelContext import AmpelContext
 from ampel.log.AmpelLogger import DEBUG, INFO, AmpelLogger
+from ampel.model.ChannelModel import ChannelModel
+from ampel.model.ProcessModel import ProcessModel
 from ampel.secret.AmpelVault import AmpelVault
 from ampel.secret.DictSecretProvider import DictSecretProvider
 from ampel.secret.PotemkinSecretProvider import PotemkinSecretProvider
@@ -187,9 +189,6 @@ class ConfigCommand(AbsCoreCommand):
 
 	@classmethod
 	def _validate(cls, config_file: TextIO, secrets: None | TextIO = None) -> None:
-
-		from ampel.model.ChannelModel import ChannelModel
-		from ampel.model.ProcessModel import ProcessModel
 
 		ctx = AmpelContext.load(
 			cls._load_dict(config_file),
