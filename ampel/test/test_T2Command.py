@@ -86,7 +86,7 @@ def test_multi_integer_flags(ampel_cli_opts, check_mongo_auth, mocker: MockerFix
 
     mock_run = mocker.patch("ampel.cli.T2Command.T2Command.run")
 
-    run("ampel t2 reset -code -5 -7 -2006".split())
+    run(["ampel", "t2", "reset", "-code", "-5", "-7", "-2006"])
 
     assert mock_run.called
     args, unknown_args, sub_op = mock_run.call_args[0]

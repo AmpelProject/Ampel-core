@@ -18,8 +18,6 @@ from ampel.util.mappings import compare_dict_values
 
 levels = {1: 'DEBUG', 2: 'VERBOSE', 4: 'INFO', 8: 'SHOUT', 16: 'WARNING', 32: 'ERROR'}
 
-# flake8: noqa: E101
-# ruff: noqa: PLE0237
 class AmpelStreamHandler:
 	"""
 	:param int aggregate_interval: logs with similar attributes (log level, ...) are aggregated
