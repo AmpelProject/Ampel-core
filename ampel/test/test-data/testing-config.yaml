@@ -231,17 +231,6 @@ unit:
     distrib: ampel-core
     file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
     version: 0.8.0a1
-  AmpelExceptionPublisher:
-    fqn: ampel.ops.AmpelExceptionPublisher
-    base:
-    - AmpelExceptionPublisher
-    - AbsOpsUnit
-    - ContextUnit
-    distrib: ampel-core
-    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
-    version: 0.8.0a1
-    env:
-      idna: '3.2'
   SimpleT2BasedSupplier:
     fqn: ampel.t3.supply.SimpleT2BasedSupplier
     base:

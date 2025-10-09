@@ -1253,22 +1253,6 @@ files = [
 pycryptodome = "*"
 
 [[package]]
-name = "slack-sdk"
-version = "3.37.0"
-description = "The Slack API Platform SDK for Python"
-optional = true
-python-versions = ">=3.7"
-groups = ["main"]
-markers = "extra == \"slack\""
-files = [
-    {file = "slack_sdk-3.37.0-py2.py3-none-any.whl", hash = "sha256:e108a0836eafda74d8a95e76c12c2bcb010e645d504d8497451e4c7ebb229c87"},
-    {file = "slack_sdk-3.37.0.tar.gz", hash = "sha256:242d6cffbd9e843af807487ff04853189b812081aeaa22f90a8f159f20220ed9"},
-]
-
-[package.extras]
-optional = ["SQLAlchemy (>=1.4,<3)", "aiodns (>1.0)", "aiohttp (>=3.7.3,<4)", "boto3 (<=2)", "websocket-client (>=1,<2)", "websockets (>=9.1,<16)"]
-
-[[package]]
 name = "sniffio"
 version = "1.3.1"
 description = "Sniff out which async library your code is running under"
@@ -1987,10 +1971,9 @@ tests = ["build", "coverage", "mypy", "ruff", "wheel"]
 encrypted-secrets = ["sjcl"]
 queue = ["mongomock"]
 server = ["fastapi", "setproctitle", "uvicorn"]
-slack = ["slack-sdk"]
 transform = ["yq"]
 
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10"
-content-hash = "5af07704effcd3a9186353aa43a4d2558b5f7d5104abc855501f755188da76b2"
+content-hash = "b6fa75e46301a62696825dbca730189488425418498aca83ff1c8b5119e031e2"

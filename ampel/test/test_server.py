@@ -107,20 +107,6 @@ async def test_db_metrics(test_client, dev_context):
                 },
             },
         ),
-        (
-            "ops",
-            {
-                "name": "ExceptionPublisher",
-                "version": 0,
-                "active": True,
-                "tier": None,
-                "schedule": ["every(10).minutes"],
-                "processor": {
-                    "unit": "OpsProcessor",
-                    "config": {"execute": {"unit": "AmpelExceptionPublisher"}},
-                },
-            },
-        ),
     ],
 )
 @pytest.mark.asyncio
