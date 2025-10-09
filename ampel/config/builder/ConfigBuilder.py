@@ -9,14 +9,17 @@
 
 import datetime
 import getpass
+import hashlib
 import importlib
 import importlib.metadata
 import json
 import os
+import pathlib
 import re
 import subprocess
 import sys
 from collections.abc import Iterable
+from importlib import import_module
 from multiprocessing import Pool
 from typing import Any
 
@@ -380,7 +383,7 @@ class ConfigBuilder:
 
 		# Optionaly decrypt aes encrypted config entries
 		if pwds:
-			from ampel.secret.AESecretProvider import AESecretProvider
+			from ampel.secret.AESecretProvider import AESecretProvider  # noqa: PLC0415
 
 			self.logger.info('Resolving AES secrets')
 			sp = AESecretProvider(pwds)
@@ -481,7 +484,6 @@ class ConfigBuilder:
 
 		if config_validator:
 
-			from importlib import import_module
 			validator = getattr(
 				import_module("ampel.config.builder." + config_validator),
 				config_validator
@@ -490,13 +492,11 @@ class ConfigBuilder:
 
 		if save:
 
-			import pathlib
 			path = pathlib.Path(save if isinstance(save, str) else 'ampel_conf.yaml')
 			with open(path, 'w') as file:
 				yaml.dump(d, file, sort_keys=False)
 
 			if sign:
-				import hashlib
 				h = hashlib.blake2b(path.read_bytes()).hexdigest()[:sign]
 				path = path.rename(path.with_stem(f"{path.stem}_{h}"))
 

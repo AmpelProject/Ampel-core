@@ -17,14 +17,14 @@ from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.core.AmpelDB import AmpelDB
 from ampel.secret.AmpelVault import AmpelVault
+from ampel.secret.DictSecretProvider import DictSecretProvider
+from ampel.secret.DirSecretProvider import DirSecretProvider
 from ampel.util.collections import check_seq_inner_type
 
 
 def get_vault(args: dict[str, Any]) -> None | AmpelVault:
 	vault = None
 	if args.get('secrets'):
-		from ampel.secret.DictSecretProvider import DictSecretProvider
-		from ampel.secret.DirSecretProvider import DirSecretProvider
 		if os.path.isdir(args['secrets']):
 			provider: AbsSecretProvider = DirSecretProvider(args['secrets'])
 		else:

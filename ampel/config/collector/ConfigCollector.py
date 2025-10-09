@@ -7,6 +7,7 @@
 # Last Modified Date:  03.03.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+from string import Template
 from typing import Any, Literal
 
 from ampel.config.builder.DisplayOptions import DisplayOptions
@@ -61,7 +62,6 @@ class ConfigCollector(dict):
 		section_detail: None | str = None
 	) -> None:
 
-		from string import Template
 		t = Template(
 			'Duplicated $what definition: "$conf_key"\n' +
 			'Previously set by $prev\n' +

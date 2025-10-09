@@ -50,14 +50,14 @@ class AbsProcessController(AmpelABC, AmpelUnit, abstract=True):
 		log_profile: str = "default",
 		**kwargs
 	):
-		from ampel.core.AmpelContext import AmpelContext
+		from ampel.core.AmpelContext import AmpelContext  # noqa: PLC0415
 		if config_file_path:
 			context = AmpelContext.load(config_file_path)
 		else:
 			context = AmpelContext.build(freeze_config=False)
 
 		# Avoid circular imports
-		from ampel.core.AmpelController import AmpelController
+		from ampel.core.AmpelController import AmpelController  # noqa: PLC0415
 		proc_models = AmpelController.get_processes(
 			context.config, tier=tier, match=match, exclude=exclude, controllers=[cls.__name__],
 			logger=AmpelLogger.from_profile(context, log_profile)

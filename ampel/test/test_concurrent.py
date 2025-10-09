@@ -9,7 +9,10 @@ from contextlib import asynccontextmanager, suppress
 import pytest
 from prometheus_client.openmetrics.exposition import generate_latest
 
-from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
+from ampel.metrics.AmpelMetricsRegistry import (
+    AmpelMetricsRegistry,
+    MultiProcessCollector,
+)
 from ampel.metrics.AmpelProcessCollector import AmpelProcessCollector
 from ampel.metrics.prometheus import mmap_dict
 from ampel.util.concurrent import _Process, process
@@ -151,7 +154,6 @@ def prometheus_multiproc_dir(monkeypatch, tmpdir):
     """
     Ensure that Prometheus multiprocessing mode is enabled
     """
-    from ampel.metrics.AmpelMetricsRegistry import MultiProcessCollector
 
     monkeypatch.setenv("PROMETHEUS_MULTIPROC_DIR", str(tmpdir))
     r = AmpelMetricsRegistry.registry()

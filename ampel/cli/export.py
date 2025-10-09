@@ -8,6 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import sys
+import traceback
 from collections.abc import Generator
 from datetime import datetime
 from io import BufferedWriter, TextIOWrapper
@@ -167,8 +168,6 @@ def convert_timestamps(ab: AmpelBuffer) -> None:
 					dsi(t2meta, 'ts', ufts(t2meta['ts']).isoformat()) # type: ignore[arg-type]
 
 	except Exception:
-		import sys
-		import traceback
 		traceback.print_exc()
 		print(ab)
 		sys.exit("Exception occured")

@@ -13,6 +13,8 @@ import traceback
 from collections.abc import Generator
 from datetime import datetime, timezone
 from math import log2
+from sys import exc_info
+from traceback import format_exc
 from typing import overload
 
 from bson import ObjectId
@@ -102,9 +104,6 @@ def report_exception(
 	in the document inserted into Ampel_troubles
 	"""
 
-	from sys import exc_info
-	from traceback import format_exc
-
 	# Don't create report for executions canceled manually
 	if exc_info()[0] is KeyboardInterrupt:
 		return
@@ -154,7 +153,7 @@ def report_error(
 	exception_counter.inc()
 
 	# Get filename and line number using inspect
-	import inspect
+	import inspect  # noqa: PLC0415
 	frame, filename, line_number, function_name, lines, index = inspect.stack()[1]
 
 	trouble: dict[str, None | int | str | ObjectId] = {

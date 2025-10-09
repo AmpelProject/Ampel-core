@@ -63,7 +63,7 @@ def prometheus_setup_worker(labels: None | dict[str,str] = None) -> None:
     done before any metrics are instantiated.
     """
     if labels is not None:
-        from prometheus_client import values
+        from prometheus_client import values  # noqa: PLC0415
 
         def mmap_key(metric_name: str, name: str, labelnames: list[str], labelvalues: list[str], help_text: str) -> str:
             return mmap_dict.mmap_key(

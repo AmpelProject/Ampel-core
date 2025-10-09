@@ -8,7 +8,10 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import asyncio
+import logging
 import re
+import signal
+from argparse import ArgumentParser
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Literal
 
@@ -18,6 +21,7 @@ from ampel.core.UnitLoader import UnitLoader
 from ampel.log.AmpelLogger import DEBUG, VERBOSE, AmpelLogger
 from ampel.model.ProcessModel import ProcessModel
 from ampel.secret.AmpelVault import AmpelVault
+from ampel.secret.DictSecretProvider import DictSecretProvider
 from ampel.util.hash import build_unsafe_dict_id
 
 if TYPE_CHECKING:
@@ -226,12 +230,6 @@ class AmpelController:
 
 	@classmethod
 	def main(cls, args: None | list[str] = None) -> None:
-
-		import logging
-		import signal
-		from argparse import ArgumentParser
-
-		from ampel.secret.DictSecretProvider import DictSecretProvider
 
 		logging.basicConfig(level="INFO")
 

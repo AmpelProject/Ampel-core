@@ -76,7 +76,9 @@ class AmpelLogger(AbsContextManager):
 
 		if "db" in handlers:
 			# avoid circular import
-			from ampel.mongo.update.var.DBLoggingHandler import DBLoggingHandler
+			from ampel.mongo.update.var.DBLoggingHandler import (  # noqa: PLC0415
+				DBLoggingHandler,
+			)
 
 			if run_id is None:
 				raise ValueError("Parameter 'run_id' is required when log_profile requires db logging handler")
@@ -173,7 +175,9 @@ class AmpelLogger(AbsContextManager):
 
 	def get_db_logging_handler(self) -> 'None | DBLoggingHandler':
 		# avoid circular import
-		from ampel.mongo.update.var.DBLoggingHandler import DBLoggingHandler
+		from ampel.mongo.update.var.DBLoggingHandler import (  # noqa: PLC0415
+			DBLoggingHandler,
+		)
 		for el in self.handlers:
 			if isinstance(el, DBLoggingHandler):
 				return el

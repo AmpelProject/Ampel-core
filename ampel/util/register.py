@@ -104,17 +104,17 @@ def get_inner_file_handle(
 		mode = 'rb'
 
 	if fh.name.endswith('gz'):
-		from gzip import GzipFile
+		from gzip import GzipFile  # noqa: PLC0415
 		if logger: logger.log(VERBOSE, f"New GzipFile from {fh.name} (mode {mode})") # noqa: E701
 		return GzipFile(fileobj=fh, mode=mode) # type: ignore[return-value]
 
 	if fh.name.endswith('bz2'):
-		from bz2 import BZ2File
+		from bz2 import BZ2File  # noqa: PLC0415
 		if logger: logger.log(VERBOSE, f"New BZ2File from {fh.name} (mode {mode})") # noqa: E701
 		return BZ2File(fh, mode=mode) # type: ignore[call-overload]
 
 	if fh.name.endswith('xz'):
-		from lzma import LZMAFile
+		from lzma import LZMAFile  # noqa: PLC0415
 		if logger: logger.log(VERBOSE, f"New LZMAFile from {fh.name} (mode {mode})") # noqa: E701
 		return LZMAFile(fh, mode=mode) # type: ignore[return-value]
 
@@ -276,8 +276,8 @@ def rescale_header(
 	header: None | dict[str, Any] = None
 ) -> None:
 
-	from mmap import ACCESS_WRITE, mmap
-	from os import remove, rename
+	from mmap import ACCESS_WRITE, mmap  # noqa: PLC0415
+	from os import remove, rename  # noqa: PLC0415
 
 	logger = AmpelLogger.get_logger()
 	with open(file_path, "r+b") as f1:

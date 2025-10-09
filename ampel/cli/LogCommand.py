@@ -7,9 +7,13 @@
 # Last Modified Date:  27.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+import time
 from argparse import ArgumentParser
 from collections.abc import Sequence
+from datetime import datetime, timezone
 from typing import Any
+
+from bson.objectid import ObjectId
 
 from ampel.abstract.AbsIdMapper import AbsIdMapper
 from ampel.base.AuxUnitRegister import AuxUnitRegister
@@ -211,10 +215,6 @@ class LogCommand(AbsCoreCommand):
 		mcrit = matcher.get_match_criteria()
 
 		if sub_op == 'tail':
-			import time
-			from datetime import datetime, timezone
-
-			from bson.objectid import ObjectId
 			mcrit['_id'] = {'$gte': ObjectId.from_datetime(datetime.now(tz=timezone.utc))}
 			ld.datetime_key = 'date'
 			loader.datetime_key = 'date'

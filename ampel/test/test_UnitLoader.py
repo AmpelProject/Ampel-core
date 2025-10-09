@@ -14,6 +14,7 @@ from ampel.secret.AmpelVault import AmpelVault
 from ampel.secret.DictSecretProvider import DictSecretProvider
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.secret.Secret import Secret
+from ampel.test.dummy import DummyUnitResultAdapter
 
 
 @pytest.fixture
@@ -345,7 +346,6 @@ def test_secret_validation(secret_context: DevAmpelContext):
 
 
 def test_result_adapter_trace(mock_context: DevAmpelContext):
-    from ampel.test.dummy import DummyUnitResultAdapter
 
     mock_context.register_unit(DummyUnitResultAdapter)
     model = UnitModel(unit="DummyUnitResultAdapter")

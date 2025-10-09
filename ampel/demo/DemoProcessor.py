@@ -7,6 +7,8 @@
 # Last Modified Date:  01.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+import time
+from random import randint
 from typing import Any
 
 from ampel.abstract.AbsEventUnit import AbsEventUnit
@@ -23,8 +25,6 @@ class DemoProcessor(AbsEventUnit):
 
 	def proceed(self, event_hdlr: EventHandler) -> Any:
 
-		import time
-		from random import randint
 		self.parameter_b = randint(3, 10)
 		time.sleep(self.parameter_b)
 

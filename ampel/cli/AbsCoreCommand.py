@@ -10,6 +10,7 @@
 import json
 import os
 import re
+import sys
 from collections.abc import Iterator, Sequence
 from typing import Any, Literal, TypeVar
 
@@ -33,9 +34,7 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 	def __init__(self):
 		self.parsers = {}
 		try:
-			import sys
-
-			import IPython
+			import IPython  # noqa: PLC0415
 			sys.breakpointhook = IPython.embed
 		except Exception:
 			pass
