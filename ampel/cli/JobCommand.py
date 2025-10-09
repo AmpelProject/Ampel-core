@@ -255,7 +255,7 @@ class JobCommand(AbsCoreCommand):
 			return
 
 		if args.get('edit') == 'parsed':
-			fd, fname = tempfile.mkstemp(suffix='.yml')
+			_, fname = tempfile.mkstemp(suffix='.yml')
 			# Seems fd does not work with yaml.dump(), unsure why
 			with open(fname, "w") as f:
 				yaml.dump(
@@ -415,7 +415,7 @@ class JobCommand(AbsCoreCommand):
 		job_dict = self.get_job_dict(job, jtasks)
 
 		if args.get('edit') == 'model':
-			fd, fname = tempfile.mkstemp(suffix='.yml')
+			_, fname = tempfile.mkstemp(suffix='.yml')
 			# Seems fd does not work with yaml.dump(), unsure why
 			with open(fname, "w") as f:
 				yaml.dump(job_dict, f, sort_keys=False, default_flow_style=None)

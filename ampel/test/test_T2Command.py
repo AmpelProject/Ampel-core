@@ -89,6 +89,6 @@ def test_multi_integer_flags(ampel_cli_opts, check_mongo_auth, mocker: MockerFix
     run(["ampel", "t2", "reset", "-code", "-5", "-7", "-2006"])
 
     assert mock_run.called
-    args, unknown_args, sub_op = mock_run.call_args[0]
+    args, unknown_args, _ = mock_run.call_args[0]
     assert not unknown_args, "no unhandled arguments"
     assert args["code"] == [-5, -7, -2006], "all codes assigned to correct option"

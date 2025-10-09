@@ -311,7 +311,7 @@ def test_unit_validation(dev_context: DevAmpelContext):
         UnitModel(unit="T3Processor", config=t3_config)
 
         t3_config["supply"]["config"]["select"]["unit"] = "NotActuallyAUnit" # type: ignore[index]
-        with pytest.raises(TypeError, match=".*Ampel unit not found: NotActuallyAUnit.*"):
+        with pytest.raises(TypeError, match=r".*Ampel unit not found: NotActuallyAUnit.*"):
             UnitModel(unit="T3Processor", config=t3_config)
 
 

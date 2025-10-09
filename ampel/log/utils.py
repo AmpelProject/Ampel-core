@@ -154,7 +154,7 @@ def report_error(
 
 	# Get filename and line number using inspect
 	import inspect  # noqa: PLC0415
-	frame, filename, line_number, function_name, lines, index = inspect.stack()[1]
+	_, filename, line_number, _, _, _ = inspect.stack()[1]
 
 	trouble: dict[str, None | int | str | ObjectId] = {
 		'_id': ObjectId(),
