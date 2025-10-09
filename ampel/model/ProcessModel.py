@@ -31,7 +31,6 @@ class ProcessModel(AmpelBaseModel):
 	isolate: bool = True
 	multiplier: int = 1
 	log: None | str
-	controller: UnitModel = UnitModel(unit='DefaultProcessController')
 	processor: UnitModel
 
 

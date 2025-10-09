@@ -45,7 +45,6 @@ def test_hash_t2_config(config_collector, config, hashed_config, ampel_logger):
         {
             "active": True,
             "channel": "HU_RANDOM",
-            "controller": {"unit": "ZTFAlertStreamController"},
             "distrib": "ampel-hu-astro",
             "name": "HU_RANDOM|T0|ztf_uw_private",
             "processor": {

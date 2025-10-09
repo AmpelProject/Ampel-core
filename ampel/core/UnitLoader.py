@@ -367,14 +367,11 @@ class UnitLoader:
 	@contextmanager
 	def validate_unit_models(self) -> Iterator[None]:
 		""" Enable validation for UnitModel instances """
-		from ampel.abstract.AbsProcessController import (  # noqa: PLC0415
-			AbsProcessController,
-		)
 
 		@staticmethod # type: ignore[misc]
 		def validate_unit(value: UnitModel) -> UnitModel:
 			Unit = self.get_class_by_name(value.unit)
-			if issubclass(Unit, AmpelUnit) and not issubclass(Unit, AbsProcessController):
+			if issubclass(Unit, AmpelUnit):
 				Unit.validate(self.get_init_config(value.config, value.override))
 			return value
 

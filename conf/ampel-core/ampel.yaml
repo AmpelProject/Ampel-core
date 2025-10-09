@@ -7,8 +7,6 @@ mongo:
     t3: MongoT3Ingester
 
 unit:
-# Controller units
-- ampel.core.DefaultProcessController
 
 # Context units
 - ampel.ops.OpsProcessor

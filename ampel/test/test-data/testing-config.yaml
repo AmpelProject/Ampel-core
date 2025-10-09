@@ -186,14 +186,6 @@ channel:
     members: null
     policy: []
 unit:
-  DefaultProcessController:
-    fqn: ampel.core.DefaultProcessController
-    base:
-    - DefaultProcessController
-    - AbsProcessController
-    distrib: ampel-core
-    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
-    version: 0.8.0a1
   DemoProcessor:
     fqn: ampel.demo.DemoProcessor
     base:
