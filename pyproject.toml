@@ -29,7 +29,6 @@ include = [
 ]
 
 [tool.poetry.scripts]
-ampel-controller = 'ampel.core.AmpelController:AmpelController.main'
 ampel = 'ampel.cli.main:main'
 
 [tool.poetry.plugins.cli]
@@ -40,7 +39,6 @@ ampel = 'ampel.cli.main:main'
 'view_Select,_load_and_save_fresh_"ampel_views"' = 'ampel.cli.ViewCommand'
 'db_Initialize,_dump,_delete_specific_databases_or_collections' = 'ampel.cli.DBCommand'
 'config_Build_or_update_config._Fetch_or_append_config_elements' = 'ampel.cli.ConfigCommand'
-#'start_Run_ampel_continuously._Processes_are_scheduled_according_to_config' = 'ampel.cli.StartCommand'
 't2_Match_and_either_reset_or_view_raw_t2_documents' = 'ampel.cli.T2Command'
 'buffer_Match_and_view_or_save_ampel_buffers' = 'ampel.cli.BufferCommand'
 'event_Show_events_information' = 'ampel.cli.EventCommand'
@@ -53,14 +51,6 @@ schedule = "^1.0.0"
 xxhash = "^3.0.0"
 psutil = "^7.0.0"
 prometheus-client = ">=0.16"
-# server
-fastapi = {version = ">=0.95", optional = true}
-uvicorn = {version = ">=0.21.1", optional = true, extras = ["standard"]}
-setproctitle = {version = "^1.3.3", optional = true}
-# slack reporting
-slack-sdk = {version = "^3.18.1", optional = true}
-# transform
-yq = {version = "^3.0.0", optional = true}
 # encrypted-secrets
 sjcl = {version = "^0.2.1", optional = true}
 # queue
@@ -68,10 +58,7 @@ mongomock = {version = "^4.3", optional = true}
 
 
 [tool.poetry.extras]
-server = ["fastapi", "uvicorn", "setproctitle"]
-slack = ["slack_sdk"]
 encrypted-secrets = ["sjcl"]
-transform = ["yq"]
 queue = ["mongomock"]
 
 [tool.poetry.group.dev.dependencies]

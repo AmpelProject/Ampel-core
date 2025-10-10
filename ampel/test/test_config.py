@@ -95,34 +95,6 @@ def test_ConfigChecker(testing_config, monkeypatch):
         checker.validate()
 
 
-@pytest.mark.parametrize("doc", [{"bignumber": 1 << 57}, {1: 2}])
-def test_transform_config(doc, tmpdir):
-    """Transform preserves objects that are not representable in JSON"""
-    infile = Path(tmpdir / "in.yaml")
-    outfile = Path(tmpdir / "out.yaml")
-    with infile.open("w") as f:
-        yaml.dump(doc, f)
-    assert (
-        run(
-            [
-                "ampel",
-                "config",
-                "transform",
-                "--file",
-                str(infile),
-                "--out",
-                str(outfile),
-                "--filter",
-                ".",
-            ]
-        )
-        is None
-    )
-    with outfile.open() as f:
-        transformed_doc = yaml.safe_load(f)
-    assert transformed_doc == doc
-
-
 @pytest.mark.parametrize(
     ("patch", "result"),
     [({}, None), ({"channel.LONG_CHANNEL.purge": {}}, ValidationError)],

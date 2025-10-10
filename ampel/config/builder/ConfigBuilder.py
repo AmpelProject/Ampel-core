@@ -467,7 +467,7 @@ class ConfigBuilder:
 		# Cosmetic: sort units first by category, then alphabetically
 		u = d['unit']
 		d['unit'] = {}
-		for el in ("AbsProcessController", "AbsEventUnit", "ContextUnit", "LogicalUnit"):
+		for el in ("AbsEventUnit", "ContextUnit", "LogicalUnit"):
 			dd = {k: u[k] for k in sorted(u.keys()) if el in u[k]['base']}
 			d['unit'] |= dd
 			for k in dd:

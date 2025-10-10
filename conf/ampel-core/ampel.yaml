@@ -7,11 +7,8 @@ mongo:
     t3: MongoT3Ingester
 
 unit:
-# Controller units
-- ampel.core.DefaultProcessController
 
 # Context units
-- ampel.ops.AmpelExceptionPublisher
 - ampel.ops.OpsProcessor
 - ampel.t2.T2Worker
 - ampel.t2.T2QueueWorker
@@ -108,12 +105,3 @@ process:
     schedule: every(5).minutes
     processor:
       unit: T2Worker
-
-  - name: ExceptionPublisher
-    tier: null
-    schedule: every(10).minutes
-    processor:
-      unit: OpsProcessor
-      config:
-        execute:
-          unit: AmpelExceptionPublisher

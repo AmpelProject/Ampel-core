@@ -7,13 +7,10 @@
 # Last Modified Date:  19.12.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import json
 import os
 import shutil
-import subprocess
 from argparse import ArgumentParser, FileType
 from collections.abc import Iterable, Mapping, Sequence
-from io import StringIO, UnsupportedOperation
 from pathlib import Path
 from time import time
 from typing import Any, TextIO
@@ -41,7 +38,6 @@ hlp = {
 	'show': 'Show config / config path',
 	'install': 'Build and install new config as default config for current system ' +
 		'(conda envs supported).\n Option "-config" of other CLI operations becomes then optional',
-	'transform': 'Transform specified config file using jq parameters',
 	'validate': 'Validate all unit configurations defined a specified config file',
 	'file': 'Path to an ampel config file to be installed (generation step won\'t occur)',
 	# Optional
@@ -71,7 +67,7 @@ class ConfigCommand(AbsCoreCommand):
 
 	@staticmethod
 	def get_sub_ops() -> list[str]:
-		return ['install', 'build', 'show', 'transform', 'validate']
+		return ['install', 'build', 'show', 'validate']
 
 
 	# Implement
@@ -123,11 +119,8 @@ class ConfigCommand(AbsCoreCommand):
 		builder.opt('stop-on-errors', 'build|install', default=2, type=int)
 		builder.opt('distributions', 'build|install', nargs="+", default=["pyampel-", "ampel-"])
 		builder.opt('exclude-distributions', 'build|install', nargs="+", default=[])
-		builder.opt('file', 'install|validate|transform', type=FileType('r'))
-		builder.opt('secrets', 'validate|transform', type=FileType('r'))
-		builder.opt('out', 'transform', type=FileType('a'))
-		builder.opt('filter', 'transform')
-		builder.opt('validate', 'transform', action='store_true')
+		builder.opt('file', 'install|validate', type=FileType('r'))
+		builder.opt('secrets', 'validate', type=FileType('r'))
 
 		# Example
 		builder.example('build', '-install')
@@ -292,40 +285,6 @@ class ConfigCommand(AbsCoreCommand):
 				else:
 					for l in f.readlines():
 						print(l, end='')
-
-		elif sub_op == 'transform':
-
-			try:
-				with Path(args['filter']).open() as f:
-					jq_args = [f.read()]
-			except (FileNotFoundError, IsADirectoryError):
-				jq_args = [args['filter']]
-
-			# Use a custom transformation to losslessly round-trip from YAML to JSON,
-			# in particular:
-			# - wrap large ints to prevent truncation to double precision
-			# - preserve non-string keys
-			input_json = json.dumps(self._to_strict_json(yaml.safe_load(args['file'])))
-			config = json.loads(
-				subprocess.check_output(['jq', *jq_args], input=input_json.encode()),
-				object_hook=self._from_strict_json,
-			)
-			args['file'].close()
-
-			with StringIO() as output_yaml:
-				yaml.dump(config, output_yaml, sort_keys=False)
-				if args['validate']:
-					output_yaml.seek(0)
-					self._validate(output_yaml, args['secrets'])
-				output_yaml.seek(0)
-				# truncate now, in case writing back to the input file
-				try:
-					args['out'].seek(0)
-					args['out'].truncate()
-				except UnsupportedOperation:
-					...
-				args['out'].write(output_yaml.read())
-				args['out'].close()
 
 		elif sub_op == 'validate':
 			try:
