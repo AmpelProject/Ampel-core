@@ -4,14 +4,20 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                24.07.2022
-# Last Modified Date:  24.09.2022
+# Last Modified Date:  08.06.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import multiprocessing.pool
+
 import os
-import pdb
 import sys
+import pdb
 import traceback
+import multiprocessing.pool
+from cProfile import Profile
+from pstats import Stats
+
+from ampel.cli.utils import _maybe_int
+
 
 """
 Usage:
@@ -91,6 +97,28 @@ def trace_prints():
 def stop_trace_prints():
 	original_stdout.flush()
 	sys.stdout = original_stdout
+
+
+def start_profiling() -> Profile:
+	cprofile = Profile()
+	cprofile.enable()
+	return cprofile
+
+
+def report_stats(
+	cprofile: Profile,
+	option: str | int | bool,
+	suffix: str | None = None
+) -> None:
+
+	cprofile.disable()
+	if isinstance(_maybe_int(option), int):
+		stats = Stats(cprofile)
+		stats.sort_stats('tottime').print_stats(option)
+	elif isinstance(option, str):
+		cprofile.dump_stats(f'{option}{suffix}.cprof')
+	elif option is True:
+		cprofile.print_stats('tottime')
 
 
 mp_breakpoint = ForkedPdb().set_trace
