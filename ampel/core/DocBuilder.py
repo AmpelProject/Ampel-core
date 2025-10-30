@@ -9,6 +9,7 @@
 
 from datetime import datetime, timezone
 from typing import Literal, TypeVar
+from importlib import import_module
 
 from ampel.abstract.AbsUnitResultAdapter import AbsUnitResultAdapter
 from ampel.base.AmpelUnit import AmpelUnit
@@ -60,12 +61,14 @@ class DocBuilder(ContextUnit):
 			config_id not in self.adapters or
 			self.adapters[config_id].run_id != event_hdlr.get_run_id()
 		):
-			unit_instance = self.context.loader.new_context_unit(
-				model = model,
-				context = self.context,
-				run_id = event_hdlr.get_run_id(),
-				sub_type = AbsUnitResultAdapter,
-			)
+			unit_instance = getattr(
+				import_module(f"ampel.core.adapter.{model.unit}"),
+				model.unit
+			)(context=self.context, run_id=event_hdlr.get_run_id())
+
+			if not isinstance(unit_instance, AbsUnitResultAdapter):
+				raise ValueError("Please provide a valid adapter")
+
 			self.adapters[config_id] = unit_instance
 
 		return self.adapters[config_id]
