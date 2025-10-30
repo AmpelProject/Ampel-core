@@ -144,6 +144,9 @@ select = [
     "RUF",
 ]
 ignore = [
+	"E401", # Multiple imports on one line
+	"I001", # Import block is un-sorted or un-formatted
+	"SIM102", # Use a single `if` statement instead of nested `if` statements
     "E741", # ambiguous variable name
     "UP009", # UTF-8 encoding declaration is unnecessary
     "PLR09", # too many (arguments|branches)
