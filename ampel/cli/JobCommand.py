@@ -4,31 +4,20 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  05.04.2023
+# Last Modified Date:  07.06.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import filecmp
-import importlib
-import importlib.metadata
-import io
-import os
-import platform
-import shutil
-import signal
-import subprocess
-import sys
-import tempfile
-import traceback
-from argparse import ArgumentParser
-from collections.abc import Sequence
-from contextlib import suppress
-from multiprocessing import Process, Queue
-from time import sleep, time
-from typing import Any
 
-import psutil
-import ujson
-import yaml
+import importlib, importlib.metadata
+import sys, io, os, platform, filecmp, shutil, signal
+import subprocess, tempfile, traceback, ujson, yaml, psutil
+
+from typing import Any
+from collections.abc import Sequence
+from multiprocessing import Queue, Process
+from contextlib import suppress
+from argparse import ArgumentParser
+from time import time, sleep
 
 from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
@@ -42,11 +31,13 @@ from ampel.core.EventHandler import EventHandler
 from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogFlag import LogFlag
+
 from ampel.model.job.JobModel import JobModel
 from ampel.model.job.JobTaskModel import JobTaskModel
 from ampel.model.UnitModel import UnitModel
+
 from ampel.util.collections import try_reduce
-from ampel.util.debug import MockPool
+from ampel.util.debug import MockPool, report_stats, start_profiling
 from ampel.util.distrib import get_dist_names
 from ampel.util.freeze import recursive_freeze
 from ampel.util.getch import yes_no
@@ -106,6 +97,7 @@ class JobCommand(AbsCoreCommand):
 					'"parsed": edit (possibly aggregated) schema after parsing by the yaml interpreter\n' +
 					'"model": edit job model after templating (if applicable). Only task-related changes will be taken into account',
 			'keep-edits': 'do not remove edited job schemas from temp dir',
+			'profiling': 'profile code using cProfile. Required number defines the number of most time-consuming entries (tottime) to return',
 			'fzf': 'choose schema file using fzf (linux/max only, fzf command line utility must be installed)',
 			'task': 'only execute task(s) with provided index(es) [starting with 0].\n' +
 					'Value "last" is supported. Ignored if -interactive is used',
@@ -138,6 +130,7 @@ class JobCommand(AbsCoreCommand):
 		parser.opt('show-plots-cmd', action='store_true')
 		parser.opt('secrets', type=str)
 		parser.opt('wait-pid', type=int, default=0)
+		parser.opt('profiling', type=str)
 		parser.opt('print-schema', action='store_true')
 		parser.opt('print-schema-after', action='store_true')
 		parser.opt('stdin', action='store_true')
@@ -446,7 +439,10 @@ class JobCommand(AbsCoreCommand):
 		)
 
 		# Heavy lifting happens here
-		run_ids = self.run_tasks(ctx, job, jtasks, schema_descr, logger)
+		run_ids = self.run_tasks(
+			ctx, job, jtasks, schema_descr, logger,
+			profiling = _maybe_int(args.get('profiling'))
+		)
 
 		feedback = f"Job processed (db: {job.mongo.prefix}"
 		if len(run_ids) == 1:
@@ -496,7 +492,8 @@ class JobCommand(AbsCoreCommand):
 		job: JobModel,
 		jtasks: list[dict[str, Any]],
 		schema_descr: str,
-		logger: AmpelLogger
+		logger: AmpelLogger,
+		profiling: None | str | int | bool = None
 	) -> list[int]:
 
 		run_ids = []
@@ -563,7 +560,14 @@ class JobCommand(AbsCoreCommand):
 					extra = {'task': i}
 				)
 
+				if profiling:
+					cprofile = start_profiling()
+
 				x = proc.run(event_hdlr)
+
+				if profiling:
+					report_stats(cprofile, profiling, f'.task{i+1}')
+
 				if event_hdlr.run_id:
 					run_ids.append(event_hdlr.run_id)
 
