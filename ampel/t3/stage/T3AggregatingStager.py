@@ -4,22 +4,25 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                08.12.2021
-# Last Modified Date:  04.04.2023
+# Last Modified Date:  08.06.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from collections.abc import Generator, Sequence
 from time import time
 from typing import Any
+from collections.abc import Generator, Sequence
 
 from ampel.base.AmpelBaseModel import AmpelBaseModel
-from ampel.content.MetaRecord import MetaRecord
-from ampel.content.T3Document import T3Document
-from ampel.struct.AmpelBuffer import AmpelBuffer
-from ampel.struct.T3Store import T3Store
-from ampel.t3.stage.T3SequentialStager import T3SequentialStager
 from ampel.types import OneOrMany, UBson
-from ampel.util.mappings import get_by_json_path
+from ampel.t3.stage.T3SequentialStager import T3SequentialStager
+from ampel.struct.T3Store import T3Store
+from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.view.T3DocView import T3DocView
+from ampel.content.T3Document import T3Document
+from ampel.content.MetaRecord import MetaRecord
+
+from ampel.util.mappings import get_by_json_path
+from ampel.util.debug import report_stats, start_profiling
+from ampel.cli.utils import _maybe_int
 
 
 class TargetModel(AmpelBaseModel):
@@ -93,6 +96,8 @@ class T3AggregatingStager(T3SequentialStager):
 
 	#: Only applies to doc output
 	split_tiers: bool = False
+
+	profiling: int | str | None | bool = None
 
 	t0: None | OneOrMany[TargetModel]
 	t1: None | OneOrMany[TargetModel]
@@ -180,15 +185,23 @@ class T3AggregatingStager(T3SequentialStager):
 			t3s.add_view(T3DocView.of(t3d, self.context.config))
 
 		for i, t3_unit in enumerate(self.units):
+
 			ts = time()
 			self.logger.info(f"Processing run block {i}", extra={'unit': t3_unit.__class__.__name__})
-			if (
-				(t3_ret := t3_unit.process(self.empty_gen(), t3s)) and
-				(x := self.handle_t3_result(t3_unit, t3_ret, t3s, None, ts))
-			):
-				if self.propagate:
-					t3s.add_view(T3DocView.of(x, self.context.config))
-				yield x
+
+			if self.profiling:
+				cprofile = start_profiling()
+
+			t3_ret = t3_unit.process(self.empty_gen(), t3s)
+
+			if self.profiling:
+				report_stats(cprofile, self.profiling, f'.{t3_unit.__class__.__name__}.{i+1}')
+
+			if t3_ret:
+				if (x := self.handle_t3_result(t3_unit, t3_ret, t3s, None, ts)):
+					if self.propagate:
+						t3s.add_view(T3DocView.of(x, self.context.config))
+					yield x
 
 		return None
 
@@ -208,7 +221,7 @@ class T3AggregatingStager(T3SequentialStager):
 			{k: {s: v} for k, v in d.items()} if self.split_tiers else d,
 			t3s,
 			time(),
-			[int(el) for el in d]
+			[_maybe_int(el) for el in d]
 		)
 
 
