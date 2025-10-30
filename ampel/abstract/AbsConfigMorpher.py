@@ -24,4 +24,4 @@ class AbsConfigMorpher(AmpelABC, AmpelBaseModel, abstract=True):
 
 	@abstractmethod
 	def morph(self, ampel_config: dict[str, Any], logger: AmpelLogger) -> dict[str, Any]:
-		...
+		raise NotImplementedError

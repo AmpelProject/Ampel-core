@@ -26,4 +26,4 @@ class AbsT4ControlUnit(ContextUnit, AmpelABC, abstract=True):
 	
 	@abstractmethod
 	def do(self) -> Generator[T4Document, None, None]:
-		...
+		raise NotImplementedError

@@ -19,4 +19,4 @@ class AbsT3Projector(AmpelABC, AmpelUnit, abstract=True):
 
 	@abstractmethod
 	def project(self, seq: Iterable[AmpelBuffer]) -> Sequence[AmpelBuffer]:
-		...
+		raise NotImplementedError

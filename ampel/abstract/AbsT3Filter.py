@@ -19,4 +19,4 @@ class AbsT3Filter(AmpelUnit, AmpelABC, abstract=True):
 
 	@abstractmethod
 	def filter(self, abufs: Iterable[AmpelBuffer]) -> Sequence[AmpelBuffer]:
-		...
+		raise NotImplementedError

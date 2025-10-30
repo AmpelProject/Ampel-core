@@ -20,4 +20,4 @@ class AbsUnitResultAdapter(ContextUnit, AmpelABC, abstract=True):
 
 	@abstractmethod
 	def handle(self, ur: UnitResult) -> UnitResult:
-		...
+		raise NotImplementedError

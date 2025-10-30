@@ -24,4 +24,4 @@ class AbsConfigUpdater(AmpelABC, abstract=True):
 
 	@abstractmethod
 	def alter(self, context: AmpelContext, target: dict[str, Any], logger: AmpelLogger) -> dict[str, Any]:
-		...
+		raise NotImplementedError

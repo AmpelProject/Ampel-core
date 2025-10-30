@@ -25,7 +25,7 @@ class AbsChannelTemplate(AmpelABC, ChannelModel, abstract=True):
 
 	@abstractmethod
 	def get_processes(self, logger: AmpelLogger, first_pass_config: FirstPassConfig) -> list[dict[str, Any]]:
-		...
+		raise NotImplementedError
 
 	def transfer_channel_parameters(self, process: dict[str, Any]) -> dict[str, Any]:
 		"""

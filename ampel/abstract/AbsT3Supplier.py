@@ -28,4 +28,4 @@ class AbsT3Supplier(Generic[T], AmpelABC, ContextUnit, abstract=True):
 
 	@abstractmethod
 	def supply(self, t3s: T3Store) -> T:
-		...
+		raise NotImplementedError

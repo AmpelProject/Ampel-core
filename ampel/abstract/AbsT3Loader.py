@@ -69,4 +69,4 @@ class AbsT3Loader(AmpelABC, ContextUnit, abstract=True):
 		stock_ids: StockId | Iterator[StockId] | StrictIterable[StockId]
 	) -> Iterable[AmpelBuffer]:
 		""" Load documents (collection Ampel_data) for the selected stocks """
-		...
+		raise NotImplementedError

@@ -50,3 +50,4 @@ class AbsT0Muxer(AmpelABC, ContextUnit, abstract=True):
 		- If projections are used by subclass (for optimization purposes),
 		  not all the datapoints may contain the same information (some might be missing non-projected keys)
 		"""
+		raise NotImplementedError
