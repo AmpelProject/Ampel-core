@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File:                Ampel-core/ampel/model/db/ShortIndexModel.py
+# File:                Ampel-core/ampel/mongo/model/ShortIndexModel.py
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                16.04.2020
-# Last Modified Date:  16.04.2020
+# Last Modified Date:  30.10.2025
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any
+from typing import Any, Dict # noqa: UP035
 
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.mongo.model.FieldModel import FieldModel
@@ -16,9 +16,9 @@ from ampel.mongo.model.FieldModel import FieldModel
 class ShortIndexModel(AmpelBaseModel):
 
 	field: str
-	args: None | dict = None
+	args: None | Dict[str, Any] = None # noqa: UP006
 
-	def dict(self, **kwargs) -> dict[str, Any]:
+	def dict(self, **kwargs) ->  Dict[str, Any]: # noqa: UP006
 		if self.args:
 			return {
 				"index": [(self.field, 1)],
