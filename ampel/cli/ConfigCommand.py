@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                17.07.2021
-# Last Modified Date:  19.12.2022
+# Last Modified Date:  30.10.2025
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import os
@@ -34,10 +34,10 @@ from ampel.util.pretty import out_stack, prettyjson
 
 hlp = {
 	'build': 'Generate a new ampel config based on information' +
-		'\n from the currently installed ampel repositories',
+		'\nfrom the currently installed ampel repositories',
 	'show': 'Show config / config path',
 	'install': 'Build and install new config as default config for current system ' +
-		'(conda envs supported).\n Option "-config" of other CLI operations becomes then optional',
+		'(conda envs supported).\nOption "-config" of other CLI operations becomes then optional',
 	'validate': 'Validate all unit configurations defined a specified config file',
 	'file': 'Path to an ampel config file to be installed (generation step won\'t occur)',
 	# Optional
@@ -52,12 +52,12 @@ hlp = {
 		'- 1: ignore errors in first_pass_config only (will stop on morphing/scoping/template errors)\n' +
 		'- 0: ignore all errors',
 	'distributions': 'Ampel packages to consider. If unspecified, gather all installed ampel distributions',
-	'verbose': 'verbose',
-	'ext-resource': 'path to resource config file (yaml) to be integrated into the final ampel config',
+	'verbose': 'Verbose',
+	'ext-resource': 'Path to resource config file (yaml) to be integrated into the final ampel config',
 	'hide-module-not-found-errors': 'Hide ModuleNotFoundError exception stacks',
 	'hide-stderr': 'Hide stderr messages arising during imports (from healpix for ex.)',
-	'ignore-channels': 'ignore channel definitions',
-	'ignore-processes': 'ignore process definitions',
+	'ignore-channels': 'Ignore channel definitions',
+	'ignore-processes': 'Ignore process definitions',
 	'no-provenance': 'Do not retrieve and save unit module dependency information\n(speeds up config building process at the detriment of traceability)'
 }
 
