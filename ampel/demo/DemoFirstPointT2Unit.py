@@ -8,6 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
+from typing import ClassVar
 
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.content.DataPoint import DataPoint
@@ -17,7 +18,7 @@ from ampel.types import UBson
 
 class DemoFirstPointT2Unit(AbsPointT2Unit):
 
-	ingest = {'filter': 'PPSFilter', 'sort': 'jd', 'select': 'first'}
+	ingest: ClassVar[dict[str, str]] = {'filter': 'PPSFilter', 'sort': 'jd', 'select': 'first'}
 	chatty: bool = False
 
 	def process(self, datapoint: DataPoint) -> UBson | UnitResult:
