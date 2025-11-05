@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any, Literal
 from bson import ObjectId
 
 from ampel.enum.EventCode import EventCode
+from ampel.protocol.LoggerProtocol import LoggerProtocol
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.AmpelLoggingError import AmpelLoggingError
 from ampel.log.utils import report_exception
@@ -97,7 +98,7 @@ class EventHandler:
 		return self.run_id
 
 
-	def add_extra(self, overwrite: bool = False, logger: None | AmpelLogger = None, **extra) -> None:
+	def add_extra(self, overwrite: bool = False, logger: None | LoggerProtocol = None, **extra) -> None:
 		for k, v in extra.items():
 			if (k in self.extra or k in self.dkeys) and not overwrite:
 				if logger:
