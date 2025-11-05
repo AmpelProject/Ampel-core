@@ -1,3 +1,12 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# File:                Ampel-core/ampel/t2/T2QueueWorker.py
+# License:             BSD-3-Clause
+# Author:              jvs
+# Date:                unspecified
+# Last Modified Date:  unspecified
+# Last Modified By:    jvs
+
 import gc
 from collections.abc import Generator, Sequence
 from time import time
