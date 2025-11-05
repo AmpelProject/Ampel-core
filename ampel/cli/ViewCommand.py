@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  27.08.2022
+# Last Modified Date:  05.11.2025
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from argparse import ArgumentParser
@@ -116,37 +116,33 @@ class ViewCommand(AbsStockCommand, AbsLoadCommand):
 			template = 'compact_t3',
 			base_log_flag = LogFlag.MANUAL_RUN,
 			log_profile = 'console_debug' if args.get('debug') else 'console_info',
-			execute = [
-				{
-					'supply': {
-						'unit': 'T3DefaultBufferSupplier',
-						'config': {
-							'select': self.build_select_model(args),
-							'load': self.build_load_model(args)
-						}
-					},
-					'stage': {
-						'unit': 'T3ProjectingStager',
-						'config': {
-							'keep_buffers': True, # quick n dirty
-							'directives': [
-								T3ProjectionDirective(
-									project=UnitModel(
-										unit='T3ChannelProjector',
-										config = {'channel': args['channel']}
-									),
-									execute=[
-										UnitModel(
-											unit='T3BufferExporterUnit',
-											config=conf
-										)
-									],
-								),
-							],
-						}
-					}
+			supply = UnitModel(
+				unit = 'T3DefaultBufferSupplier',
+				config = {
+					'select': self.build_select_model(args),
+					'load': self.build_load_model(args)
 				}
-			]
+			),
+			stage = UnitModel(
+				unit = 'T3ProjectingStager',
+				config = {
+					'keep_buffers': True, # quick n dirty
+					'directives': [
+						T3ProjectionDirective(
+							project=UnitModel(
+								unit='T3ChannelProjector',
+								config = {'channel': args['channel']}
+							),
+							execute=[
+								UnitModel(
+									unit='T3BufferExporterUnit',
+									config=conf
+								)
+							],
+						),
+					],
+				}
+			)
 		)
 
 		t3p.run()
