@@ -493,6 +493,7 @@ class ConfigBuilder:
 		if save:
 
 			path = pathlib.Path(save if isinstance(save, str) else 'ampel_conf.yaml')
+			path.parent.mkdir(parents=True, exist_ok=True)
 			with open(path, 'w') as file:
 				yaml.dump(d, file, sort_keys=False)
 
