@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                25.03.2021
-# Last Modified Date:  27.08.2022
+# Last Modified Date:  03.11.2025
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import sys
@@ -19,6 +19,7 @@ from ampel.cli.ArgParserBuilder import ArgParserBuilder
 from ampel.cli.utils import maybe_load_idmapper
 from ampel.core.AmpelContext import AmpelContext
 from ampel.log.LogFlag import LogFlag
+from ampel.model.UnitModel import UnitModel
 from ampel.t3.T3Processor import T3Processor
 
 hlp = {
@@ -118,21 +119,17 @@ class BufferCommand(AbsStockCommand, AbsLoadCommand):
 			template = 'compact_t3',
 			base_log_flag = LogFlag.MANUAL_RUN,
 			log_profile = 'console_debug' if args.get('debug') else 'console_info',
-			execute = [
-				{
-					'supply': {
-						'unit': 'T3DefaultBufferSupplier',
-						'config': {
-							'select': self.build_select_model(args),
-							'load': self.build_load_model(args)
-						}
-					},
-					'stage': {
-						'unit': 'T3BufferExporterStager',
-						'config': conf
-					}
+			supply = UnitModel(
+				unit = 'T3DefaultBufferSupplier',
+				config = {
+					'select': self.build_select_model(args),
+					'load': self.build_load_model(args)
 				}
-			]
+			),
+			stage = UnitModel(
+				unit = 'T3BufferExporterStager',
+				config = conf
+			)
 		)
 
 		t3p.run()
