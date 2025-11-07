@@ -8,16 +8,15 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 
-import os
-import sys
-import pdb
-import traceback
 import multiprocessing.pool
+import os
+import pdb
+import sys
+import traceback
 from cProfile import Profile
 from pstats import Stats
 
 from ampel.cli.utils import _maybe_int
-
 
 """
 Usage:

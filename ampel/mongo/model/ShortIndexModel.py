@@ -7,7 +7,7 @@
 # Last Modified Date:  30.10.2025
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any, Dict # noqa: UP035
+from typing import Any, Dict  # noqa: UP035
 
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.mongo.model.FieldModel import FieldModel

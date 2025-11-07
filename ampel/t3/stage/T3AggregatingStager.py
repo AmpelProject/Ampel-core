@@ -7,22 +7,21 @@
 # Last Modified Date:  08.06.2023
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+from collections.abc import Generator, Sequence
 from time import time
 from typing import Any
-from collections.abc import Generator, Sequence
 
 from ampel.base.AmpelBaseModel import AmpelBaseModel
-from ampel.types import OneOrMany, UBson
-from ampel.t3.stage.T3SequentialStager import T3SequentialStager
-from ampel.struct.T3Store import T3Store
-from ampel.struct.AmpelBuffer import AmpelBuffer
-from ampel.view.T3DocView import T3DocView
-from ampel.content.T3Document import T3Document
-from ampel.content.MetaRecord import MetaRecord
-
-from ampel.util.mappings import get_by_json_path
-from ampel.util.debug import report_stats, start_profiling
 from ampel.cli.utils import _maybe_int
+from ampel.content.MetaRecord import MetaRecord
+from ampel.content.T3Document import T3Document
+from ampel.struct.AmpelBuffer import AmpelBuffer
+from ampel.struct.T3Store import T3Store
+from ampel.t3.stage.T3SequentialStager import T3SequentialStager
+from ampel.types import OneOrMany, UBson
+from ampel.util.debug import report_stats, start_profiling
+from ampel.util.mappings import get_by_json_path
+from ampel.view.T3DocView import T3DocView
 
 
 class TargetModel(AmpelBaseModel):
