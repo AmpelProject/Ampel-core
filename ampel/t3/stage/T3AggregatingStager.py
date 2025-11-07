@@ -196,7 +196,7 @@ class T3AggregatingStager(T3SequentialStager):
 			if self.profiling:
 				report_stats(cprofile, self.profiling, f'.{t3_unit.__class__.__name__}.{i+1}')
 
-			if t3_ret:
+			if t3_ret:  # noqa: SIM102
 				if (x := self.handle_t3_result(t3_unit, t3_ret, t3s, None, ts)):
 					if self.propagate:
 						t3s.add_view(T3DocView.of(x, self.context.config))
