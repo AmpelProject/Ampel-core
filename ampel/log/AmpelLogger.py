@@ -51,7 +51,7 @@ class AmpelLogger(AbsContextManager):
 		**kwargs
 	) -> 'AmpelLogger':
 		"""
-		Creates or returns an instance of :obj:`AmpelLogger <ampel.log.AmpelLogger>`
+		Create or return an instance of :obj:`AmpelLogger <ampel.log.AmpelLogger>`
 		that is registered in static dict 'loggers' using the provided name as key.
 		If a logger with the given name already exists, the existing logger instance is returned.
 		If name is None, unique (int) name will be generated
@@ -74,10 +74,18 @@ class AmpelLogger(AbsContextManager):
 
 	@staticmethod
 	def from_profile(context: 'AmpelContext', profile: str, run_id: None | int = None, **kwargs) -> 'AmpelLogger':
+		"""
+		Create and return a new AmpelLogger instance configured from a named profile.
+		This method always returns a fresh logger instance, using the provided context and profile name.
+		It supports optional AmpelLogger customization via keyword arguments
+
+		Returns:
+		- A new AmpelLogger instance configured according to the specified profile
+		"""
 
 		profile_dict = context.config.get(f'logging.{profile}', dict, raise_exc=True)
 		# "console": False ensures DBLoggingHandler is inserted first
-		logger = AmpelLogger.get_logger(**(kwargs | {"console": False, 'name': profile}))
+		logger = AmpelLogger.get_logger(**(kwargs | {"console": False, 'name': None}))
 
 		if "db" in profile_dict:
 			# avoid circular import
