@@ -40,7 +40,6 @@ from ampel.mongo.view.MongoOneView import MongoOneView
 from ampel.mongo.view.MongoOrView import MongoOrView
 from ampel.secret.AmpelVault import AmpelVault
 from ampel.types import ChannelId
-from ampel.util.collections import try_reduce
 
 intcol = {'t0': 0, 't1': 1, 't2': 2, 't3': 3, 'stock': 4}
 
@@ -218,8 +217,17 @@ class AmpelDB(AmpelUnit):
 
 		if 'w' in mode and col_name not in db.list_collection_names():
 			try:
+				db_creation_feedback = db.name in AmpelLogger.loggers
+				logger = AmpelLogger.get_logger(db.name, console={'aggregate_interval': 2})
+				if not db_creation_feedback:
+					nodes = getattr(db.client, 'nodes', None)
+					if isinstance(nodes, (set, frozenset)):
+						dbinfo = ", ".join(f"{host}:{port}" for host, port in nodes)
+					else:
+						dbinfo = "mocked-client"
+					logger.info(f"Creating database '{db.name}' on {dbinfo}")
 				self.create_ampel_collection(
-					self.col_config[col_name], db_config.name, role
+					self.col_config[col_name], db_config.name, role, logger
 				)
 			except CollectionInvalid:
 				# raised when collection was created concurrently
@@ -282,7 +290,7 @@ class AmpelDB(AmpelUnit):
 		col_config: AmpelColModel,
 		db_name: str,
 		role: str,
-		logger: 'None | AmpelLogger' = None
+		logger: 'AmpelLogger | None' = None
 	) -> Collection:
 		"""
 		:param resource_name: name of the AmpelConfig resource (resource.mongo) to be fed to MongoClient()
@@ -291,18 +299,9 @@ class AmpelDB(AmpelUnit):
 		"""
 
 		db = self._get_pymongo_db(db_name, role=role)
-
 		if logger is None:
-			# Avoid cyclic import error
-			from ampel.log.AmpelLogger import AmpelLogger  # noqa: PLC0415
-			logger = AmpelLogger.get_logger()
-
-		try:
-			dbinfo = "[" + str(try_reduce(list(db.client.nodes))) + "]"
-		except Exception:
-			dbinfo = ""
-
-		logger.info(f"Creating {db.name} -> {col_config.name} {dbinfo}")
+			logger = AmpelLogger.get_logger(db_name)
+		logger.info(f"Creating collection '{col_config.name}'")
 		col = db.create_collection(col_config.name, **col_config.args)
 
 		"""
@@ -365,8 +364,31 @@ class AmpelDB(AmpelUnit):
 		logger: 'AmpelLogger'
 	) -> None:
 		idx_params = index_data.dict(exclude_unset=True)
-		logger.info(f"  Creating index for {col.database.name}.{col.name}: {idx_params}")
+		logger.info(f" {self._format_index(idx_params)}")
 		col.create_index(idx_params['index'], **idx_params.get('args', {}))
+
+
+	def _format_index(self, idx_params: dict) -> str:
+
+		fields = idx_params.get("index")
+		if not fields:
+			return "<no fields>"
+
+		if isinstance(fields, tuple) and isinstance(fields[0], str):
+			fields = [fields]
+		elif isinstance(fields, tuple):
+			fields = list(fields)
+
+		if len(fields) == 1:
+			field_str = f"'{fields[0][0]}'"
+		else:
+			field_str = "(" + ", ".join(f"'{name}'" for name, _ in fields) + ")"
+
+		args = idx_params.get("args", {})
+		if args:
+			args_str = ", ".join(f"{k}={v}" for k, v in args.items())
+			return f"Creating index on {field_str} with {args_str}"
+		return f"Creating index on {field_str}"
 
 
 	def create_one_view(self,
