@@ -156,6 +156,9 @@ class DataLoader:
 				if directive.resolve_config:
 					for el in res:
 						dict.__setitem__(el, 'config', self.ctx.config.get_conf_id(el['config']))
+						if "t2_dependency" in (config_dict := el["config"]):
+							for t2conf in config_dict["t2_dependency"]:
+								dict.__setitem__(t2conf, 'config', self.ctx.config.get_conf_id(t2conf['config']))
 
 				inc(len(res))
 
