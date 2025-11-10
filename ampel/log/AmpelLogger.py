@@ -45,7 +45,11 @@ class AmpelLogger(AbsContextManager):
 
 
 	@classmethod
-	def get_logger(cls, name: None | int | str = None, force_refresh: bool = False, **kwargs) -> 'AmpelLogger':
+	def get_logger(cls,
+		name: None | int | str = 'default',
+		force_refresh: bool = False,
+		**kwargs
+	) -> 'AmpelLogger':
 		"""
 		Creates or returns an instance of :obj:`AmpelLogger <ampel.log.AmpelLogger>`
 		that is registered in static dict 'loggers' using the provided name as key.
@@ -71,25 +75,24 @@ class AmpelLogger(AbsContextManager):
 	@staticmethod
 	def from_profile(context: 'AmpelContext', profile: str, run_id: None | int = None, **kwargs) -> 'AmpelLogger':
 
-		handlers = context.config.get(f'logging.{profile}', dict, raise_exc=True)
-		logger = AmpelLogger.get_logger(console=False, **kwargs)
+		profile_dict = context.config.get(f'logging.{profile}', dict, raise_exc=True)
+		# "console": False ensures DBLoggingHandler is inserted first
+		logger = AmpelLogger.get_logger(**(kwargs | {"console": False, 'name': profile}))
 
-		if "db" in handlers:
+		if "db" in profile_dict:
 			# avoid circular import
-			from ampel.mongo.update.var.DBLoggingHandler import (  # noqa: PLC0415
-				DBLoggingHandler,
-			)
+			from ampel.mongo.update.var.DBLoggingHandler import DBLoggingHandler # noqa: PLC0415
 
 			if run_id is None:
 				raise ValueError("Parameter 'run_id' is required when log_profile requires db logging handler")
 
 			logger.addHandler(
-				DBLoggingHandler(context.db, run_id, **handlers['db'])
+				DBLoggingHandler(context.db, run_id, **profile_dict['db'])
 			)
 
-		if "console" in handlers:
+		if "console" in profile_dict:
 			logger.addHandler(
-				AmpelStreamHandler(**handlers['console'])
+				AmpelStreamHandler(**profile_dict['console'])
 			)
 
 		return logger
