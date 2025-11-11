@@ -16,15 +16,28 @@ from typing import Any
 import yaml
 
 from ampel.config.builder.ConfigBuilder import ConfigBuilder
-from ampel.log import SHOUT, VERBOSE
-from ampel.util.distrib import PathLike, PathList, get_dist_names, get_files
-
+from ampel.config.builder.DisplayOptions import DisplayOptions
+from ampel.log.AmpelLogger import SHOUT, VERBOSE, AmpelLogger
+from ampel.util.distrib import PathLike, PathList, get_dist_names, \
+	get_files, get_classes_info_from_dist, get_classes_ancestry
 
 class DistConfigBuilder(ConfigBuilder):
 	"""
 	Subclass of ConfigLoader allowing to automatically detect and load
 	various configuration files contained in ampel sub-packages installed with pip
 	"""
+
+	def __init__(self,
+		options: DisplayOptions,
+		logger: None | AmpelLogger = None,
+		ignore_exc: list[str] | None = None
+	) -> None:
+		super().__init__(options, logger, ignore_exc)
+		self.units_parent: dict[str, list[str]] = {}
+		self.units_ancestry: dict[str, list[str]] = {}
+		self.discover_distrib_units('ampel-interface') # populates self.units_parent
+		self.visited = {'ampel-interface'}
+
 
 	def load_distributions(self,
 		prefixes: Sequence[str] = ("pyampel-", "ampel-"),
@@ -42,7 +55,7 @@ class DistConfigBuilder(ConfigBuilder):
 		dist_names = get_dist_names(prefixes)
 
 		if dist_names:
-			self.logger.log(SHOUT, f"Detected ampel components: '{dist_names}'")
+			self.logger.log(SHOUT, f"Detected ampel components: {', '.join(repr(name) for name in dist_names)}")
 
 		if exclude:
 			for i in range(len(exclude)):
@@ -56,19 +69,21 @@ class DistConfigBuilder(ConfigBuilder):
 				self.logger.log(VERBOSE, "Excluding distribution '{dist_name}' as requested")
 				continue
 
-			s = f"Checking distribution '{dist_name}'"
+			s = f"Scanning distribution '{dist_name}'"
 			self.logger.log(VERBOSE, s)
-			self.logger.log(VERBOSE, "="*len(s))
 
 			for conf_dir in conf_dirs:
 				for ext in exts:
 					self.load_distrib(dist_name, conf_dir, ext, raise_exc=raise_exc)
 
+			self.add_distrib_units(dist_name)
+
 			if self.verbose:
-				self.logger.log(VERBOSE, f"Done checking distribution '{dist_name}'")
+				self.logger.log(VERBOSE, f"Done scanning distribution '{dist_name}'")
 
 		if self.verbose:
-			self.logger.log(VERBOSE, "Done loading distributions")
+			self.logger.break_aggregation()
+			self.logger.log(VERBOSE, f"Done scanning distributions {', '.join(repr(name) for name in dist_names)}")
 
 
 	def load_distrib(self,
@@ -85,10 +100,14 @@ class DistConfigBuilder(ConfigBuilder):
 			distrib = metadata.distribution(dist_name)
 			all_conf_files = get_files(dist_name, conf_dir, re.compile(rf".*\.{ext}$"))
 
+			"""
 			if all_conf_files and self.verbose:
-				self.logger.log(VERBOSE, "Following conf files will be parsed:")
+				suffix = "s" if len(all_conf_files) > 1 else ""
+				self.logger.log(VERBOSE, f"Parsing following config file{suffix}:")
 				for el in all_conf_files:
 					self.logger.log(VERBOSE, el.as_posix())
+				self.logger.break_aggregation()
+			"""
 
 			if ampel_conf := self.get_conf_file(all_conf_files, f"ampel.{ext}"):
 				self.load_conf_using_func(
@@ -126,17 +145,71 @@ class DistConfigBuilder(ConfigBuilder):
 				self.load_conf_using_func(distrib, template_conf, self.register_templates)
 
 			if all_conf_files:
-				self.logger.info(f"Not all conf files were loaded from distribution '{distrib.name}'")
-				self.logger.info(f"Unprocessed conf files: {all_conf_files}")
+				self.logger.info(f"Not all config files were loaded from distribution '{distrib.name}'")
+				suffix = "s" if len(all_conf_files) > 1 else ""
+				self.logger.info(f"Unprocessed config file{suffix}: {all_conf_files}")
+
+			self.add_distrib_units(dist_name)
 
 		except Exception as e:
 			if raise_exc:
 				raise
 			self.error = True
 			self.logger.error(
-				f"Error occured while loading configuration files from the distribution '{dist_name}'",
+				f"Error occured while loading configurations from distribution '{dist_name}'",
 				exc_info=e
 			)
+
+
+	def add_distrib_units(self, dist_name: str) -> None:
+
+		if dist_name in self.visited:
+			return
+
+		self.visited.add(dist_name)
+
+		units = self.discover_distrib_units(dist_name)
+
+		if self.verbose and units:
+			self.logger.log(VERBOSE, "Discovered unit" + "s:" if len(units) > 1 else ":")
+			for el in units:
+				self.logger.log(VERBOSE, f"{el}")
+
+		self.first_pass_config['unit'].add(
+			["ampel." + k.split("ampel/")[1].replace("/", ".").removesuffix(".py") for k in units],
+			dist_name, metadata.distribution(dist_name).version, list(units.keys())
+		)
+
+
+	def discover_distrib_units(self,
+		dist_name: str,
+		required_parents: Sequence[str] = ['AmpelABC'],
+		exclude_parents: Sequence[str] = (
+			'Secret', 'AbsCLIOperation', 'ConfigCollector',
+			'AbsForwardConfigCollector', 'NonDiscoverableUnit'
+		)
+	) -> dict[str, list[str]]:
+		"""
+		Discover and filters unit classes from a distribution.
+		Updates internal parents and ancestry maps
+		"""
+		dist_classes_info = get_classes_info_from_dist(dist_name)
+		self.units_parent |= dist_classes_info
+
+		get_classes_ancestry(
+			self.units_parent,
+			self.units_ancestry,
+			required_parents = required_parents,
+			exclude_parents = exclude_parents
+		)
+
+		"""
+		for k in dist_classes_info:
+			if k in self.units_ancestry:
+				print(k, self.units_ancestry[k])
+		"""
+
+		return {k: dist_classes_info[k] for k in dist_classes_info if k in self.units_ancestry}
 
 
 	def register_tier_conf(self,
@@ -167,9 +240,7 @@ class DistConfigBuilder(ConfigBuilder):
 		try:
 
 			if self.verbose:
-				self.logger.log(VERBOSE,
-					f"Loading {file_rel_path} from distribution '{distrib.name}'"
-				)
+				self.logger.log(VERBOSE, f"Reading {file_rel_path}")
 
 			# NB: read both YAML and JSON (which is a subset of YAML)
 			content = yaml.safe_load(file_rel_path.read_text())
