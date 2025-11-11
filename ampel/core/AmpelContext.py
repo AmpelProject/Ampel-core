@@ -4,9 +4,10 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                18.02.2020
-# Last Modified Date:  09.01.2022
+# Last Modified Date:  11.11.2025
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+import uuid
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -48,6 +49,7 @@ class AmpelContext:
 		self.admin_msg = admin_msg
 		self.resource = resource
 		self.run_time_aliases: dict[str, Any] = {}
+		self.uuid = uuid.uuid4()
 		
 		# try to register aux units globally
 		try:
