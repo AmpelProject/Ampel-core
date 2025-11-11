@@ -7,11 +7,14 @@
 # Last Modified Date:  23.04.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import os, re, importlib, json
-from typing import TypeAlias
+import importlib
+import json
+import os
+import re
 from collections.abc import Generator, MutableSequence, Sequence
 from importlib import metadata
 from pathlib import Path
+from typing import TypeAlias
 
 # NB: PackagePath implements read_text(), but is not a subclass of Path
 PathLike: TypeAlias = Path | metadata.PackagePath

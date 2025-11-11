@@ -13,10 +13,10 @@ from typing import TYPE_CHECKING, Any, Literal
 from bson import ObjectId
 
 from ampel.enum.EventCode import EventCode
-from ampel.protocol.LoggerProtocol import LoggerProtocol
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.AmpelLoggingError import AmpelLoggingError
 from ampel.log.utils import report_exception
+from ampel.protocol.LoggerProtocol import LoggerProtocol
 from ampel.struct.Resource import Resource
 
 if TYPE_CHECKING:

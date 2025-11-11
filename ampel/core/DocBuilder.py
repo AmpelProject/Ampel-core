@@ -8,8 +8,8 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from datetime import datetime, timezone
-from typing import Literal, TypeVar
 from importlib import import_module
+from typing import Literal, TypeVar
 
 from ampel.abstract.AbsUnitResultAdapter import AbsUnitResultAdapter
 from ampel.base.AmpelUnit import AmpelUnit
