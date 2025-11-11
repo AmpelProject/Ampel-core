@@ -4,8 +4,8 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                13.01.2018
-# Last Modified Date:  04.04.2023
-# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
+# Last Modified Date:  11.11.2025
+# Last Modified By:    JannisNe
 
 from collections.abc import Iterable, Iterator
 from typing import Literal
@@ -155,7 +155,7 @@ class DataLoader:
 				# whether to replace init config integer hash with 'resolved' config dict
 				if directive.resolve_config:
 					for el in res:
-						dict.__setitem__(el, 'config', self.ctx.config.get_conf_id(el['config']))
+						self.resolve_unit_config(el)
 
 				inc(len(res))
 
@@ -185,3 +185,34 @@ class DataLoader:
 			logger.info(s)
 
 		return register.values()
+
+
+	def resolve_unit_config(self, conf: dict) -> None:
+		"""
+		Resolve configuration references within a unit config dictionary.
+
+		This function replaces integer-based config references with their resolved
+		dictionary form using the context's config registry. If the config contains
+		a ``t2_dependency`` field, the function will recursively resolve each dependent
+		configuration as well.
+
+		:param conf: A unit configuration dictionary containing a ``config`` key,
+		which may include nested ``t2_dependency`` entries.
+
+		:return: None
+
+		:side effect: Mutates the input dictionary in place
+
+		Note: The second part of this code may be offloaded via override
+		if `ampel-chained-t2` eventually materializes.
+		"""
+
+		# Resolve config if it's an integer
+		if 'config' in conf and isinstance(conf['config'], int):
+			dict.__setitem__(conf, 'config', self.ctx.config.get_conf_id(conf['config']))
+
+		# check for nested t2_dependencies
+		config_dict = conf.get('config')
+		if isinstance(config_dict, dict) and "t2_dependency" in config_dict:
+			for dep in config_dict["t2_dependency"]:
+				self.resolve_unit_config(dep)
