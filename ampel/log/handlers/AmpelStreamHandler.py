@@ -82,7 +82,7 @@ class AmpelStreamHandler:
 		self.dummy_record = LightLogRecord(name='dummy', levelno=1<<10, msg=None)
 		self.prev_record: LightLogRecord = self.dummy_record
 		if "%H" in datefmt:
-			raise ValueError()
+			raise ValueError("Unexpected date format, please check/rebuild your config")
 		self.datefmt = datefmt
 		self.timefmt = timefmt
 		self.prefix = prefix
