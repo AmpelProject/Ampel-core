@@ -6,67 +6,6 @@ mongo:
     t2: MongoT2Ingester
     t3: MongoT3Ingester
 
-unit:
-
-# Context units
-- ampel.ops.OpsProcessor
-- ampel.t2.T2Worker
-- ampel.t2.T2QueueWorker
-- ampel.t3.T3Processor
-- ampel.t3.include.session.T3SessionLastRunTime
-- ampel.t3.include.session.T3SessionAlertsNumber
-- ampel.t3.supply.T3DefaultBufferSupplier
-- ampel.t3.supply.SimpleT2BasedSupplier
-- ampel.t3.supply.select.T3StockSelector
-- ampel.t3.supply.select.T3FilteringStockSelector
-- ampel.t3.supply.load.T3SimpleDataLoader
-- ampel.t3.supply.load.T3LatestStateDataLoader
-- ampel.t3.supply.complement.T3RandIntAppender
-- ampel.t3.supply.complement.T3ExtJournalAppender
-- ampel.t3.supply.complement.T3LogsAppender
-- ampel.t3.stage.T3SimpleStager
-- ampel.t3.stage.T3ProjectingStager
-- ampel.t3.stage.T3ChannelStager
-- ampel.t3.stage.T3AdaptativeStager
-- ampel.t3.stage.T3AggregatingStager
-- ampel.t3.stage.T3SequentialStager
-- ampel.t3.stage.T3DistributiveStager
-- ampel.t4.T4Processor
-- ampel.t4.T4RunTimeContextUpdater
-- ampel.cli.T3BufferExporterStager
-- ampel.cli.T3BufferExporterUnit
-- ampel.demo.DemoProcessor
-- ampel.ingest.ChainedT0Muxer
-- ampel.ingest.IngestionWorker
-- ampel.mongo.update.MongoIngester
-- ampel.queue.QueueIngester
-- ampel.queue.NullProducer
-
-# Logical units
-- ampel.t1.T1SimpleCombiner
-- ampel.t1.T1SimpleRetroCombiner
-- ampel.demo.DemoPointT2Unit
-- ampel.demo.DemoFirstPointT2Unit
-- ampel.demo.DemoT3Unit
-- ampel.demo.DemoT4RunTimeAliasGenerator
-- ampel.t3.unit.T3LogAggregatedStocks
-- ampel.dev.NoShaper
-
-# Aux units
-- ampel.aux.SimpleTagFilter
-- ampel.aux.filter.SimpleDictArrayFilter
-- ampel.aux.filter.FlatDictArrayFilter
-- ampel.t3.stage.project.T3ChannelProjector
-- ampel.t3.stage.filter.T3AmpelBufferFilter
-- ampel.mongo.update.MongoStockIngester
-- ampel.mongo.update.MongoT0Ingester
-- ampel.mongo.update.MongoT1Ingester
-- ampel.mongo.update.MongoT2Ingester
-- ampel.mongo.update.MongoT3Ingester
-
-# Ops units
-- ampel.mongo.purge.MongoStockDeleter
-
 alias:
   t3:
     '%TRANSIENT':
