@@ -14,15 +14,14 @@ from os.path import basename
 from sys import _getframe
 from typing import TYPE_CHECKING, Any
 
+from ampel.types import ChannelId
 from ampel.abstract.AbsContextManager import AbsContextManager
 from ampel.log.handlers.AmpelStreamHandler import AmpelStreamHandler
 from ampel.log.LightLogRecord import LightLogRecord
 from ampel.log.LogFlag import LogFlag
-from ampel.protocol.LoggingHandlerProtocol import (
-	AggregatingLoggingHandlerProtocol,
-	LoggingHandlerProtocol,
-)
-from ampel.types import ChannelId
+from ampel.protocol.LoggingHandlerProtocol import AggregatingLoggingHandlerProtocol, LoggingHandlerProtocol
+from ampel.util.hash import build_unsafe_dict_id
+
 
 if TYPE_CHECKING:
 	from ampel.mongo.update.var.DBLoggingHandler import DBLoggingHandler
@@ -66,28 +65,51 @@ class AmpelLogger(AbsContextManager):
 			cls._counter += 1
 			name = cls._counter
 
-		if name not in AmpelLogger.loggers or force_refresh:
-			AmpelLogger.loggers[name] = AmpelLogger(name=name, **kwargs)
+		if name not in cls.loggers or force_refresh:
+			cls.loggers[name] = AmpelLogger(name=name, **kwargs)
 
-		return AmpelLogger.loggers[name]
+		return cls.loggers[name]
 
 
-	@staticmethod
-	def from_profile(context: 'AmpelContext', profile: str, run_id: None | int = None, **kwargs) -> 'AmpelLogger':
+	@classmethod
+	def from_profile(cls,
+		context: 'AmpelContext', profile: str, run_id: None | int = None, **kwargs
+	) -> 'AmpelLogger':
 		"""
-		Create and return a new AmpelLogger instance configured from a named profile.
-		This method always returns a fresh logger instance, using the provided context and profile name.
-		It supports optional AmpelLogger customization via keyword arguments
+		Creates and returns an AmpelLogger instance configured from a named logging profile.
+
+		If no logger exists with the same combination of profile name, run ID, context UUID,
+		and additional keyword arguments, a new logger is created and configured.
+		Otherwise, a previously created logger with matching parameters
+		is returned from the internal cache.
+
+		The logger is configured based on the specified profile from the ampel configuration.
+		Depending on the profile, it may include handlers such as DBLoggingHandler (requires run_id)
+		and AmpelStreamHandler for console output.
+
+		Parameters:
+		- context (AmpelContext): Provides access to configuration and database connections.
+		- profile (str): Name of the logging profile to load from config.
+		- run_id (int | None): Required if the profile includes a DB logging handler.
+		- **kwargs: Additional keyword arguments passed to the logger constructor.
 
 		Returns:
-		- A new AmpelLogger instance configured according to the specified profile
+		- AmpelLogger: A logger instance configured according to the specified profile.
+
+		Raises:
+		- ValueError: If the profile requires a DBLoggingHandler and no run_id is provided.
 		"""
 
-		profile_dict = context.config.get(f'logging.{profile}', dict, raise_exc=True)
-		# "console": False ensures DBLoggingHandler is inserted first
-		logger = AmpelLogger.get_logger(**(kwargs | {"console": False, 'name': None}))
+		logger_label = f"{profile}_{run_id}_{build_unsafe_dict_id(kwargs)}_{context.uuid}"
+		if logger_label in cls.loggers:
+			return cls.get_logger(logger_label, **kwargs)
 
+		# Note: "console": False ensures DBLoggingHandler is inserted first
+		logger = cls.get_logger(**(kwargs | {"console": False, 'name': logger_label}))
+
+		profile_dict = context.config.get(f'logging.{profile}', dict, raise_exc=True)
 		if "db" in profile_dict:
+
 			# avoid circular import
 			from ampel.mongo.update.var.DBLoggingHandler import DBLoggingHandler # noqa: PLC0415
 
