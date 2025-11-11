@@ -38,9 +38,7 @@ class ProcessConfigCollector(AbsDictConfigCollector):
 				arg['tier'] = None
 
 		if self.verbose:
-			self.logger.log(
-				VERBOSE, f"Adding {self.tier} process: '{proc_name}' from {register_file}"
-			)
+			self.logger.log(VERBOSE, f"Adding {self.tier} process: '{proc_name}'")
 
 		if not self.check_duplicates(
 			proc_name, dist_name, version, register_file,
