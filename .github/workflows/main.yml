@@ -6,13 +6,19 @@ on:
       - master
       - renovate/*
       - dev/*
+      - feature/*
+      - fix/*
+      - refactor/*
     tags:
       - v*
   pull_request:
     branches:
       - master
-      - dev/*
       - stable/*
+      - dev/*
+      - feature/*
+      - fix/*
+      - refactor/*
 
 jobs:
   ci:
