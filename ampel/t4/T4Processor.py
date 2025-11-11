@@ -77,7 +77,7 @@ class T4Processor(AbsEventUnit, DocBuilder):
 						continue
 
 					t4ds: Sequence[T4Document] = [
-						self.craft_doc(event_hdlr, t4_unit, ret1, ts, doc_type=T4Document)
+						self.craft_doc(self.context, event_hdlr, t4_unit, ret1, ts, doc_type=T4Document)
 					]
 
 				elif isinstance(t4_unit, AbsT4ControlUnit):
