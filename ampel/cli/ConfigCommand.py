@@ -4,12 +4,12 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                17.07.2021
-# Last Modified Date:  30.10.2025
+# Last Modified Date:  11.11.2025
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import os
 import shutil
-from argparse import ArgumentParser, FileType
+from argparse import ArgumentParser
 from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
 from time import time
@@ -119,8 +119,8 @@ class ConfigCommand(AbsCoreCommand):
 		builder.opt('stop-on-errors', 'build|install', default=2, type=int)
 		builder.opt('distributions', 'build|install', nargs="+", default=["pyampel-", "ampel-"])
 		builder.opt('exclude-distributions', 'build|install', nargs="+", default=[])
-		builder.opt('file', 'install|validate', type=FileType('r'))
-		builder.opt('secrets', 'validate', type=FileType('r'))
+		builder.opt('file', 'install|validate', type=str)
+		builder.opt('secrets', 'validate', type=str)
 
 		# Example
 		builder.example('build', '-install')
@@ -181,15 +181,20 @@ class ConfigCommand(AbsCoreCommand):
 
 
 	@classmethod
-	def _validate(cls, config_file: TextIO, secrets: None | TextIO = None) -> None:
+	def _validate(cls, config_file: str, secrets: None | str = None) -> None:
+
+		with open(config_file) as cf:
+			config_data = cls._load_dict(cf)
+
+		secret_provider: DictSecretProvider | PotemkinSecretProvider
+		if secrets is not None:
+			with open(secrets) as sf:
+				secret_provider = DictSecretProvider(cls._load_dict(sf))
+		else:
+			secret_provider = PotemkinSecretProvider()
 
 		ctx = AmpelContext.load(
-			cls._load_dict(config_file),
-			vault=AmpelVault(providers=[(
-				DictSecretProvider(cls._load_dict(secrets))
-				if secrets is not None
-				else PotemkinSecretProvider()
-			)]),
+			config_data, vault = AmpelVault(providers=[secret_provider]),
 		)
 
 		with ctx.loader.validate_unit_models():
@@ -234,6 +239,7 @@ class ConfigCommand(AbsCoreCommand):
 				raise_exc=args['stop_on_errors'] != 0,
 				exclude=args['exclude_distributions']
 			)
+
 			cb.build_config(
 				stop_on_errors = args['stop_on_errors'],
 				skip_default_processes=True,
@@ -256,8 +262,10 @@ class ConfigCommand(AbsCoreCommand):
 		elif sub_op == 'install':
 
 			std_conf = Path(get_user_data_config_path())
+
 			if not std_conf.parent.exists():
 				std_conf.parent.mkdir(parents=True)
+
 			if args['file'] and os.path.exists(args['file']):
 				shutil.copy(args['file'], std_conf)
 				logger.info(f'{args["file"]} successfully set as standard config ({std_conf})')
@@ -270,12 +278,15 @@ class ConfigCommand(AbsCoreCommand):
 		elif sub_op == 'show':
 
 			conf_path = get_user_data_config_path()
+
 			if args['path']:
 				print(conf_path)
 				return
+
 			if not os.path.exists(conf_path):
 				logger.info(f'Config with path {conf_path} not found')
 				return
+
 			with open(conf_path) as f:
 				if args['json']:
 					if args['pretty']:
@@ -287,7 +298,4 @@ class ConfigCommand(AbsCoreCommand):
 						print(l, end='')
 
 		elif sub_op == 'validate':
-			try:
-				self._validate(args['file'], args['secrets'])
-			finally:
-				args['file'].close()
+			self._validate(args['file'], args['secrets'])
