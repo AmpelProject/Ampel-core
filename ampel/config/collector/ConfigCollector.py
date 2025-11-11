@@ -18,10 +18,11 @@ class ConfigCollector(dict):
 
 	def __init__(self,
 		conf_section: str,
-		options: None | DisplayOptions = None,
-		content: None | dict = None,
-		logger: None | AmpelLogger = None,
-		tier: None | Literal[0, 1, 2, 3, "ops"] = None
+		options: DisplayOptions | None = None,
+		content: dict | None = None,
+		logger: AmpelLogger | None = None,
+		tier: Literal[0, 1, 2, 3, "ops"] | None = None,
+		ignore_exc: list[str] | None = None
 	) -> None:
 
 		super().__init__(**content if content else {})
@@ -31,6 +32,7 @@ class ConfigCollector(dict):
 		self.conf_section = conf_section
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
 		self.tier = f'T{tier}' if tier is not None else 'general'
+		self.ignore_exc = ignore_exc
 
 		if self.options.debug:
 			self.logger.info(
@@ -64,12 +66,12 @@ class ConfigCollector(dict):
 
 		t = Template(
 			'Duplicated $what definition: "$conf_key"\n' +
-			'Previously set by $prev\n' +
-			'Redefined by $new'
+			' Previously defined by $prev\n' +
+			' Redefined by $new'
 		)
 
-		prev = self.distrib_hint(prev_dist, prev_file, False)
-		new = self.distrib_hint(new_dist, new_file, False)
+		prev = self.distrib_hint(prev_dist, prev_file)
+		new = self.distrib_hint(new_dist, new_file)
 
 		self.error(
 			t.substitute(
@@ -84,24 +86,21 @@ class ConfigCollector(dict):
 	@staticmethod
 	def distrib_hint(
 		distrib: None | str = None,
-		file_register: None | str = None,
-		parenthesis: bool = True
+		file_register: None | str = None
 	) -> str:
 		""" Adds distribution name if available """
 
 		ret = ''
 
 		if file_register:
-			if parenthesis:
-				ret += '('
-			ret += f'conf file: {file_register}'
+			ret += file_register
 
 		if distrib:
 			if ret:
-				return f'{ret} from distribution: {distrib}{")" if parenthesis else ""}'
-			return f'(distribution: {distrib})' if parenthesis else f'distribution: {distrib}'
+				return f'{ret} ({distrib})'
+			return f'({distrib})'
 
 		if ret:
-			return f'{ret})' if parenthesis else ret
+			return f'{ret})'
 
 		return ret
