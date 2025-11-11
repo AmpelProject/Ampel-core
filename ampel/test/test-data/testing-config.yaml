@@ -81,16 +81,13 @@ logging:
   default:
     console:
       std_stream: stdout
-      datefmt: '%Y-%m-%d %H:%M:%S'
+      datefmt: '%Y-%m-%d '
+      timefmt: '%H:%M:%S '
       level: 1024
       aggregate_interval: 1.0
       density: default
-      terminator: '
-
-        '
-      log_sep: '
-
-        '
+      terminator: "\n"
+      log_sep: "\n"
       prefix: null
       provenance: true
     db:
