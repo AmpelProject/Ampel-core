@@ -51,6 +51,7 @@ schedule = "^1.0.0"
 xxhash = "^3.0.0"
 psutil = "^7.0.0"
 prometheus-client = ">=0.16"
+rich = "*"
 # encrypted-secrets
 sjcl = {version = "^0.2.1", optional = true}
 # queue

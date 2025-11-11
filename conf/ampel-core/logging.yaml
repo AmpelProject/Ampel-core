@@ -1,18 +1,21 @@
 default:
   console:
     std_stream: stdout
-    datefmt: '%Y-%m-%d %H:%M:%S'
+    datefmt: '%Y-%m-%d '
+    timefmt: '%H:%M:%S '
     level: 1024
     aggregate_interval: 1.0
     density: default
-    terminator: '
-
-      '
-    log_sep: '
-
-      '
+    terminator: "\n"
+    log_sep: "\n"
     prefix: null
     provenance: true
+    color: true
+    cdate: 'cornflower_blue'
+    ctime: 'light_sea_green'
+    cfile: 'salmon1'
+    cline: 'rosy_brown'
+    clvl: 'grey53'
   db:
     level: 1024
 

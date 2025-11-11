@@ -24,7 +24,7 @@ package_data = {
 
 install_requires = [
 	'PyYAML', 'prometheus-client', 'psutil', 'pydantic>=1.9', 'pymongo',
-	'schedule', 'sjcl', 'slackclient', 'yq', 'ujson', 'appdirs'
+	'schedule', 'sjcl', 'slackclient', 'yq', 'ujson', 'platformdirs', 'rich'
 ]
 
 extras_require = {

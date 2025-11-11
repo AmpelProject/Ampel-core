@@ -4,8 +4,8 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                27.09.2018
-# Last Modified Date:  20.04.2022
-# Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
+# Last Modified Date:  11.11.2025
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import logging
 import sys
@@ -166,9 +166,10 @@ class AmpelLogger(AbsContextManager):
 		self.fname = _getframe().f_code.co_filename
 
 		if console:
-			self.addHandler(
-				AmpelStreamHandler() if console is True else AmpelStreamHandler(**console)
-			)
+			shargs: dict[str, Any] = {"color": False} if (base_flag and LogFlag.UNIT in base_flag) else {}
+			if isinstance(console, dict):
+				shargs |= console
+			self.addHandler(AmpelStreamHandler(**shargs))
 		else:
 			self.provenance = False
 

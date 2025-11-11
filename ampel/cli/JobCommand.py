@@ -83,6 +83,7 @@ class JobCommand(AbsCoreCommand):
 			#'verbose': 'increases verbosity',
 			'config': 'path to an ampel config file (yaml/json)',
 			'schema': 'path to YAML job file (multiple files will be aggregated)',
+			'no-color': 'produce plain text output without colors',
 			'secrets': 'path to a YAML secrets store in sops format',
 			'keep-db': 'do not reset databases even if so requested by job file',
 			'reset-db': 'reset databases even if not requested by job file',
@@ -115,6 +116,7 @@ class JobCommand(AbsCoreCommand):
 		parser.opt('task', action=MaybeIntAction, nargs='+')
 		parser.opt('interactive', action='store_true')
 		parser.opt('debug', action='store_true')
+		parser.opt('no-color', action='store_true')
 		parser.opt('edit', nargs='?', default=None, const='raw')
 		parser.opt('keep-edits', action='store_true')
 		parser.opt('fzf', action='store_true')
