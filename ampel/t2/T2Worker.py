@@ -219,7 +219,9 @@ class T2Worker(AbsWorker[T2Document]):
 			if isinstance(ret, UnitResult):
 
 				if ret.adapter_model:
-					ret = self.get_adapter_instance(ret.adapter_model).handle(ret)
+					ret = self.context.loader.get_adapter(
+						self.context, ret.adapter_model, run_id=ingester.run_id
+					).handle(ret)
 
 				if ret.body:
 					body = ret.body
