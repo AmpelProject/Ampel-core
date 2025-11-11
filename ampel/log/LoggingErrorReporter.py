@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File:                ampel/logging/LoggingErrorReporter.py
+# File:                Ampel-core/ampel/log/LoggingErrorReporter.py
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                29.09.2018
-# Last Modified Date:  18.01.2019
+# Last Modified Date:  11.11.2025
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from ampel.log.AmpelLogger import AmpelLogger
@@ -41,7 +41,7 @@ class LoggingErrorReporter:
 		try:
 			# This will fail as well if we have DB connectivity issues
 			report_exception(
-				logger, e, run_id=handler.get_run_id(),
+				logger, e,
 				info = None if bwe_details is None else {'BulkWriteError': str(bwe_details)}
 			)
 		except Exception as ee:
