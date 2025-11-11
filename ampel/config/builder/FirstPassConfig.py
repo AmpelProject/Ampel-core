@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                16.10.2019
-# Last Modified Date:  18.06.2021
+# Last Modified Date:  07.11.2025
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import json
@@ -41,7 +41,11 @@ class FirstPassConfig(dict):
 		"resource": ResourceConfigCollector,
 	}
 
-	def __init__(self, options: DisplayOptions, logger: None | AmpelLogger = None) -> None:
+	def __init__(self,
+		options: DisplayOptions,
+		logger: None | AmpelLogger = None,
+		ignore_exc: list[str] | None = None
+	) -> None:
 
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
 
@@ -52,7 +56,7 @@ class FirstPassConfig(dict):
 
 		d['pwd'] = []
 		d['unit'] = UnitConfigCollector(
-			conf_section="unit", options=options, logger=logger
+			conf_section="unit", options=options, logger=logger, ignore_exc=ignore_exc
 		)
 
 		# Allow process to be defined in root key
@@ -98,8 +102,14 @@ class FirstPassConfig(dict):
 			if isinstance(dd, dict):
 				if getattr(dd, 'has_error', False):
 					ret = True
-					hint = f"(key: '{kk}')" if kk else ""
-					self.logger.warn(f"{dd.__class__.__name__} {hint} has errors")
+					self.logger.warn(f"Errors occurred during configuration build in {dd.__class__.__name__}")
+					if getattr(dd, 'err_fqns', False):
+						self.logger.warn("[blue]───────[/blue]")
+						self.logger.warn("[bold][blue]Summary[/bold][/blue]")
+						self.logger.warn("[blue]───────\n[/blue]")
+						for el in dd.err_fqns: # type: ignore[attr-defined]
+							self.logger.warn(f"[red][bold]{el[0]}[/bold][/red]: {el[1]}")
+						print(" ") # noqa
 				if self.has_nested_error(dd, kk):
 					ret = True
 
