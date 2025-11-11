@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                07.10.2019
-# Last Modified Date:  04.04.2023
+# Last Modified Date:  11.11.2025
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import contextlib
@@ -24,11 +24,10 @@ from ampel.config.AmpelConfig import AmpelConfig
 from ampel.core.AmpelContext import AmpelContext
 from ampel.core.AmpelDB import AmpelDB
 from ampel.core.ContextUnit import ContextUnit
+from ampel.abstract.AbsUnitResultAdapter import AbsUnitResultAdapter
 from ampel.log.AmpelLogger import VERBOSE, AmpelLogger, LogFlag
 from ampel.log.handlers.ChanRecordBufHandler import ChanRecordBufHandler
-from ampel.log.handlers.DefaultRecordBufferingHandler import (
-	DefaultRecordBufferingHandler,
-)
+from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
 from ampel.model.t3.AliasableModel import AliasableModel
 from ampel.model.UnitModel import UnitModel
 from ampel.secret.AmpelVault import AmpelVault
@@ -73,7 +72,10 @@ class UnitLoader:
 		self.provenance = provenance
 		self.unit_defs: dict = config._config['unit']  # noqa: SLF001
 		self.aliases: list[dict] = [config._config['alias'][f"t{el}"] for el in (0, 3, 1, 2)]  # noqa: SLF001
-		self._dyn_register: None | dict[str, type[LogicalUnit] | type[ContextUnit]] = None # potentially updated by DevAmpelContext
+
+		# potentially updated by DevAmpelContext
+		self._dyn_register: dict[str, type[LogicalUnit] | type[ContextUnit]] | None = None
+		self._adapters: dict[str, AbsUnitResultAdapter] = {}
 
 
 	@overload
@@ -160,6 +162,21 @@ class UnitLoader:
 		return self.new(
 			model, unit_type=sub_type or ContextUnit, context=context, **kwargs
 		)
+
+
+	def get_adapter(self, context: AmpelContext, model: UnitModel, run_id: int) -> AbsUnitResultAdapter:
+		akey = f"{context.uuid}_{run_id}_{build_unsafe_dict_id(model.dict())}"
+		if (akey not in self._adapters):
+			self._adapters[akey] = self.new(
+				model, unit_type=AbsUnitResultAdapter, context=context, run_id = run_id
+			)
+
+		return self._adapters[akey]
+
+
+	def clear_adapter_cache(self) -> None:
+		self._adapters.clear()
+
 
 	@overload
 	def new(self, model: UnitModel, *, unit_type: type[T], **kwargs) -> T:
