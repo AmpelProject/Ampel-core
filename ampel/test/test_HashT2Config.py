@@ -44,10 +44,10 @@ def test_recursive_hash(mock_context: DevAmpelContext, ampel_logger):
         "config"
     ]
     assert isinstance(toplevel_config_id, int)
-    toplevel_config = mock_context.get_config().get_conf_id(toplevel_config_id)
+    toplevel_config = mock_context.get_config().get_conf_by_id(toplevel_config_id)
     nested_config_id = toplevel_config["t2_dependency"][0]["config"]
     assert isinstance(nested_config_id, int)
     assert (
-        mock_context.get_config().get_conf_id(nested_config_id)
+        mock_context.get_config().get_conf_by_id(nested_config_id)
         == unit_config["t2_dependency"][0]["config"]
     )

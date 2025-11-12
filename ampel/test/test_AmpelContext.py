@@ -51,13 +51,13 @@ def test_load_old_configids(mock_context: DevAmpelContext, ampel_logger):
     )
     # config was not present before registration
     with pytest.raises(ValueError, match=r"Config with id .* not found"):
-        pre_register_context.config.get_conf_id(hashed_unit_config)
+        pre_register_context.config.get_conf_by_id(hashed_unit_config)
 
     # config is present after registration in the context where it was registered
-    unit_config_from_confid = mock_context.config.get_conf_id(hashed_unit_config)
+    unit_config_from_confid = mock_context.config.get_conf_by_id(hashed_unit_config)
     assert unit_config_from_confid == unit_config
 
     # also in an unrelated context instantiated after registration
     assert (
-        post_register_context.config.get_conf_id(hashed_unit_config) == unit_config
+        post_register_context.config.get_conf_by_id(hashed_unit_config) == unit_config
     ), "unregistered configs loaded from database"

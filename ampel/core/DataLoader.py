@@ -209,7 +209,7 @@ class DataLoader:
 
 		# Resolve config if it's an integer
 		if 'config' in conf and isinstance(conf['config'], int):
-			dict.__setitem__(conf, 'config', self.ctx.config.get_conf_id(conf['config']))
+			dict.__setitem__(conf, 'config', self.ctx.config.get_conf_by_id(conf['config']))
 
 		# check for nested t2_dependencies
 		config_dict = conf.get('config')
