@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                17.07.2021
-# Last Modified Date:  11.11.2025
+# Last Modified Date:  12.11.2025
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import os
@@ -303,8 +303,14 @@ class ConfigCommand(AbsCoreCommand):
 					else:
 						print(yaml.safe_load(f.read()))
 				else:
-					for l in f.readlines():
-						print(l, end='')
+					try:
+						for l in f.readlines():
+							print(l, end='')
+					# Exit cleanly when downstream pipe is closed
+					except BrokenPipeError:
+						import sys, signal # noqa PLC0415
+						signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+						sys.exit(0)
 
 		elif sub_op == 'validate':
 			self._validate(args['file'], args['secrets'])
