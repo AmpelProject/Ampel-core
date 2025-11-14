@@ -4,11 +4,9 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  07.06.2023
+# Last Modified Date:  14.11.2025
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-
-import importlib, importlib.metadata
 import sys, io, os, platform, filecmp, shutil, signal
 import subprocess, tempfile, traceback, ujson, yaml, psutil
 
@@ -20,12 +18,14 @@ from argparse import ArgumentParser
 from time import time, sleep
 
 from ampel.abstract.AbsEventUnit import AbsEventUnit
+from ampel.config.AmpelConfig import ConfigLoadOptions
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
 from ampel.cli.config import get_user_data_config_path
 from ampel.cli.ConfigCommand import ConfigCommand
 from ampel.cli.MaybeIntAction import MaybeIntAction
 from ampel.cli.utils import _maybe_int
+from ampel.cli.main import exit_on_keyboard_interrupt
 from ampel.core.AmpelContext import AmpelContext
 from ampel.core.EventHandler import EventHandler
 from ampel.dev.DevAmpelContext import DevAmpelContext
@@ -355,46 +355,54 @@ class JobCommand(AbsCoreCommand):
 			args, unknown_args, logger,
 			freeze_config = False,
 			ContextClass = DevAmpelContext,
-			purge_db = purge_db,
+			purge_db = False,
 			db_prefix = job.mongo.prefix,
 			require_existing_db = False,
-			one_db = True
+			one_db = True,
+			config_load_options = ConfigLoadOptions(
+				check_installed_versions = False,
+				require_build_section = True
+			)
 		)
 
 		config_dict = ctx.config._config  # noqa: SLF001
 
 		# Check for outdated config
-		if 'build' in config_dict and not args['no_conf_check']:
-			for k in config_dict['build']:
-				if 'ampel-' in k:
-					config_v = config_dict['build'][k]
-					current_v = importlib.metadata.distribution(k).version
-					if (
-						config_v != current_v and
-						yes_no(
-							f'\nVersion of {k} has changed since config was last built '
-							f'(config: {config_v}, current: {current_v}), '
-							f'rebuild and install new config'
-						)
-					):
-						cc = ConfigCommand()
-						a, ua = cc.get_parser('install').parse_known_args()
-						cc.run(vars(a), ua, sub_op = 'install')
+		if not args['no_conf_check']:
 
-						# Reload config
-						ctx = self.get_context(
-							args, unknown_args, logger,
-							freeze_config = False,
-							ContextClass = DevAmpelContext,
-							purge_db = purge_db,
-							db_prefix = job.mongo.prefix,
-							require_existing_db = False,
-							one_db = True
-						)
-						break
+			if mismatch := ctx.config.detect_ampel_mismatch(require_build_section=True):
+				if yes_no(
+					f"\nPackage [blue bold]{mismatch['package']}[/] has changed since config was last built\n"
+					f"   Config version: [salmon1 bold]{mismatch['config_version']}[/]\n"
+					f"Installed version: [red bold]{mismatch['installed_version']}[/]\n\n"
+					f"Rebuild and install new config"
+				):
+					cc = ConfigCommand()
+					a, ua = cc.get_parser('build').parse_known_args()
+					a.verbose = True
+					a.install = True
+					try:
+						cc.run(vars(a), ua, sub_op = 'build')
+					except KeyboardInterrupt:
+						exit_on_keyboard_interrupt()
+
+					# Reload config
+					ctx = self.get_context(
+						args, unknown_args, logger,
+						freeze_config = False,
+						ContextClass = DevAmpelContext,
+						purge_db = False,
+						db_prefix = job.mongo.prefix,
+						require_existing_db = False,
+						one_db = True
+					)
 
 		self._patch_config(config_dict, job, logger)
 		ctx.config._config = recursive_freeze(config_dict)  # noqa: SLF001
+
+		if purge_db:
+			ctx.db.drop_all_databases()
+			ctx.db.init_db()
 
 		# Ensure that job content saved in DB reflects options set dynamically
 		if args['task']:
@@ -541,7 +549,7 @@ class JobCommand(AbsCoreCommand):
 							logger.info(f'{taskd["unit"]}#{replica} return value: {m}')
 
 				except KeyboardInterrupt:
-					sys.exit(1)
+					exit_on_keyboard_interrupt()
 			
 			else:
 				
@@ -565,7 +573,10 @@ class JobCommand(AbsCoreCommand):
 				if profiling:
 					cprofile = start_profiling()
 
-				x = proc.run(event_hdlr)
+				try:
+					x = proc.run(event_hdlr)
+				except KeyboardInterrupt:
+					exit_on_keyboard_interrupt()
 
 				if profiling:
 					report_stats(cprofile, profiling, f'.task{i+1}')
