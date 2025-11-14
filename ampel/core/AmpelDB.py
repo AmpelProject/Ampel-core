@@ -12,6 +12,7 @@ from collections.abc import Sequence
 from contextlib import suppress
 from functools import cached_property
 from typing import Any, Literal
+from typing_extensions import Self
 
 from pymongo import MongoClient
 from pymongo.collection import Collection
@@ -75,7 +76,7 @@ class AmpelDB(AmpelUnit):
 		vault: None | AmpelVault = None,
 		require_exists: bool | str = False,
 		one_db: bool | Literal['auto'] = False
-	) -> 'AmpelDB':
+	) -> Self:
 		"""
 		:param require_exists:
 		- False: AmpelDB instantiation will succeed even if underlying database(s) do not exist
@@ -89,12 +90,15 @@ class AmpelDB(AmpelUnit):
 		:raises: ValueError in case a required config entry is missing
 		"""
 		if one_db == 'auto':
+
 			if require_exists is False:
 				raise ValueError("Option 'one_db' cannot be set to 'auto' if require_exists is False")
+
 			try:
 				return cls._new(config, vault, require_exists, True)
 			except UnknownDatabase:
 				return cls._new(config, vault, require_exists, False)
+
 		return cls._new(config, vault, require_exists, one_db)
 
 
@@ -104,12 +108,15 @@ class AmpelDB(AmpelUnit):
 		vault: None | AmpelVault = None,
 		require_exists: bool | str = False,
 		one_db: bool = False,
-	) -> 'AmpelDB':
+	) -> Self:
 		""" :raises: ValueError in case a required config entry is missing """
+
 		db_config = config.get('mongo', dict, raise_exc=True)
+
 		if isinstance(require_exists, str):
 			dict.__setitem__(db_config, 'prefix', require_exists)
 			require_exists = True
+
 		return cls(
 			mongo_uri = config.get('resource.mongo', str, raise_exc=True),
 			vault = vault,
@@ -217,8 +224,8 @@ class AmpelDB(AmpelUnit):
 
 		if 'w' in mode and col_name not in db.list_collection_names():
 			try:
-				db_creation_feedback = db.name in AmpelLogger.loggers
-				logger = AmpelLogger.get_logger(db.name, console={'aggregate_interval': 2})
+				db_creation_feedback = AmpelLogger.has_logger(db.name)
+				logger = AmpelLogger.get_logger(name=db.name, console={'aggregate_interval': 2})
 				if not db_creation_feedback:
 					nodes = getattr(db.client, 'nodes', None)
 					if isinstance(nodes, (set, frozenset)):
@@ -237,8 +244,9 @@ class AmpelDB(AmpelUnit):
 				if exc.code != 48: # NamespaceExists
 					raise
 		self.mongo_collections[col_name][mode] = db.get_collection(
-			col_name,
-			read_preference=SecondaryPreferred(max_staleness=self.max_staleness) if self.read_from_secondary else None
+			col_name, read_preference = SecondaryPreferred(
+				max_staleness = self.max_staleness
+			) if self.read_from_secondary else None
 		)
 
 		return self.mongo_collections[col_name][mode]
@@ -300,7 +308,7 @@ class AmpelDB(AmpelUnit):
 
 		db = self._get_pymongo_db(db_name, role=role)
 		if logger is None:
-			logger = AmpelLogger.get_logger(db_name)
+			logger = AmpelLogger.get_logger(name=db_name)
 		logger.info(f"Creating collection '{col_config.name}'")
 		col = db.create_collection(col_config.name, **col_config.args)
 
