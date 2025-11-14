@@ -27,13 +27,15 @@ from ampel.util.mappings import set_by_path
 class DevAmpelContext(AmpelContext):
 
 	def __init__(self,
-		db_prefix: None | str = None, purge_db: bool = False,
-		custom_conf: None | dict[str, Any] = None, **kwargs
+		db_prefix: str | None = None,
+		purge_db: bool = False,
+		custom_conf: dict[str, Any] | None = None,
+		**kwargs
 	) -> None:
 		"""
 		:db_prefix: customizes the db prefix name
 		(ex: "AmpelTest" will result in the databases: AmpelTest_data, AmpelTest_var, AmpelTest_ext)
-		:purge_db: wheter all databases with the given prefix should be deleted (purged)
+		:purge_db: whether all databases with the given prefix should be deleted (purged)
 		:extra_conf: convenience parameter which allows to overwrite given parameters of the underlying
 		ampel config (possibly frozen) dictionnary. Nested dict keys such as 'general.something' are supported.
 		"""
@@ -43,7 +45,7 @@ class DevAmpelContext(AmpelContext):
 		if db_prefix:
 			dict.__setitem__(self.config._config['mongo'], 'prefix', db_prefix)  # noqa: SLF001
 
-		if custom_conf or db_prefix:
+		if custom_conf:
 			conf = self._get_unprotected_conf()
 			for k, v in (custom_conf or {}).items():
 				set_by_path(conf, k, v)
