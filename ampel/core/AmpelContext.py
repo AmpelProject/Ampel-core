@@ -9,11 +9,11 @@
 
 import uuid
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any
+from typing_extensions import Self
 
 from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.config.AmpelConfig import AmpelConfig
-from ampel.config.builder.DisplayOptions import DisplayOptions
 from ampel.secret.AmpelVault import AmpelVault
 
 # Avoid cyclic import issues
@@ -24,23 +24,39 @@ if TYPE_CHECKING:
 
 class AmpelContext:
 	"""
-	This class is typically instantiated by Ampel controllers
-	and provided to "processor unit" instances.
-	Note: this class might in the future be capable
-	of handling multiple AmpelConfig/AmpelDB instances
+	Execution context for Ampel processes.
+
+	The :class:`AmpelContext` bundles together configuration, database
+	connections, unit loading, and shared resources. It is typically
+	created by Ampel and passed to processor units so they can access
+	system-wide services.
+
+	This class also manages runtime aliases, configuration IDs, and
+	provides utilities for generating unique run identifiers. Future
+	versions may support multiple :class:`~ampel.config.AmpelConfig.AmpelConfig`
+	and :class:`~ampel.core.AmpelDB.AmpelDB` instances.
+
+	.. note::
+	   Auxiliary units are auto-registered globally via ``AuxUnitRegister``.
+	   Run-time aliases must begin with ``%%``.
+	   Convenience constructors (:meth:`load`, :meth:`build`) are provided
+	   to create contexts from configuration files or distribution builders.
 	"""
 
 	def __init__(self,
 		config: AmpelConfig,
 		db: 'AmpelDB',
 		loader: 'UnitLoader', # forward reference to avoid cyclic import issues
-		resource: None | dict[str, Any] = None,
-		admin_msg: None | str = None
+		resource: dict[str, Any] | None = None,
+		admin_msg: str | None = None
 	) -> None:
 		"""
-		:param config: system configuration
-		:param db: database client
-		:param loader: instantiates unit from :class:`~ampel.model.UnitModel.UnitModel`
+		Initialize a new context with configuration, database, and unit loader.
+
+		:param config: ampel configuration
+		:param db: ampel database object instance
+		:param loader: Unit loader for instantiating units
+		:param resource: Optional shared resources dictionary
 		"""
 
 		self.config = config
@@ -61,15 +77,15 @@ class AmpelContext:
 	@classmethod
 	def load(cls,
 		config: str | dict,
-		pwd_file_path: None | str = None,
-		pwds: None | Iterable[str] = None,
+		pwd_file_path: str | None = None,
+		pwds: Iterable[str] | None = None,
 		freeze_config: bool = True,
-		vault: None | AmpelVault = None,
+		vault: AmpelVault | None = None,
 		one_db: bool = False,
 		**kwargs
-	) -> 'AmpelContext':
+	) -> Self:
 		"""
-		Instantiates a new AmpelContext instance.
+		Instantiate a new context from a configuration file or dict.
 
 		:param config: local path to an ampel config file (yaml or json) or loaded config as dict
 		:param pwd_file_path: path to a text file containing one password per line.
@@ -117,15 +133,21 @@ class AmpelContext:
 		pwd_file_path: None | str = None,
 		pwds: None | Iterable[str] = None,
 		freeze_config: bool = True,
-		verbose: bool = False,
-	) -> 'AmpelContext':
+		verbose: bool = False
+	) -> Self:
 		"""
-		Instantiates a new AmpelContext instance.
+		Instantiate a new context by building configuration from local distributions.
 
-		The required underlying ampel configuration (:class:`~ampel.config.AmpelConfig.AmpelConfig`) is built from scratch,
-		meaning all available configurations defined in the various ampel repositories available locally
-		are collected, merged merged together and morphed the info into the final ampel config.
-		This is a convenience method, do not use for production
+		Gathers and merges all available configurations from Ampel distributions found
+		locally and morphs them into a final configuration. This is a convenience method and
+		not intended for production deployments.
+
+		:param ignore_errors: If True, continue building despite non-fatal errors.
+		:param pwd_file_path: Path to a text file containing one password per line.
+		:param pwds: Passwords provided directly; alternative to ``pwd_file_path``.
+		:param freeze_config: Whether to convert the built config into immutable structures.
+		:param verbose: If True, show verbose distribution loading output.
+		:returns: A new :class:`AmpelContext` instance.
 		"""
 
 		if pwd_file_path:
@@ -133,17 +155,16 @@ class AmpelContext:
 				pwds = [l.strip() for l in f.readlines()]
 
 		# Import here to avoid cyclic import error
-		from ampel.config.builder.DistConfigBuilder import (  # noqa: PLC0415
-			DistConfigBuilder,
-		)
+		from ampel.config.builder.DistConfigBuilder import DistConfigBuilder # noqa: PLC0415
+		from ampel.config.builder.DisplayOptions import DisplayOptions # noqa: PLC0415
 		cb = DistConfigBuilder(options=DisplayOptions(verbose=verbose))
 		cb.load_distributions()
 
 		return cls.load(
 			cb.build_config(ignore_errors, pwds=pwds),
-			pwd_file_path=pwd_file_path,
-			pwds=pwds,
-			freeze_config=freeze_config,
+			pwd_file_path = pwd_file_path,
+			pwds = pwds,
+			freeze_config = freeze_config,
 		)
 
 
@@ -164,19 +185,19 @@ class AmpelContext:
 
 	def get_config(self) -> AmpelConfig:
 		"""
-		.. note:: in the future, AmpelContext might hold references to multiple different config
+		.. note:: Future versions may support multiple configurations.
 		"""
 		return self.config
 
 
 	def get_database(self) -> 'AmpelDB':
 		"""
-		.. note:: in the future, this class might hold references to multiple different databases
+		.. note:: Future versions may support multiple databases.
 		"""
 		return self.db
 
 
-	def resolve_conf_id(self, conf_id: int) -> None | dict[str, Any]:
+	def resolve_conf_id(self, conf_id: int) -> dict[str, Any] | None:
 		try:
 			return self.config.get_conf_by_id(conf_id)
 		# confid not found (obsolete or dynamically generated by process)
@@ -203,25 +224,3 @@ class AmpelContext:
 
 	def __repr__(self) -> str:
 		return "<AmpelContext>"
-
-
-	def deactivate_processes(self) -> None:
-		for i in range(4):
-			for p in self.config.get(f'process.t{i}', dict, raise_exc=True).values():
-				p['active'] = False
-
-
-	def activate_process(self,
-		name: str,
-		tier: None | Literal[0, 1, 2, 3] = None
-	) -> bool:
-		"""
-		:returns: False if process was deactivated, True if not found
-		"""
-		for i in range(4):
-			if tier and i != tier:
-				continue
-			if p := self.config.get(f'process.t{i}.{name}', dict):
-				p['active'] = False
-				return False
-		return True
