@@ -56,7 +56,7 @@ class DBConfigCollector(AbsDictConfigCollector):
 			m = AmpelDBModel(**arg)
 
 			if self.verbose:
-				self.logger.log(VERBOSE, f'Configuration of DB collection "{m.name}" is valid')
+				self.logger.log(VERBOSE, f"Integrating specifications for DB collection '{m.name}'")
 
 			if m.name not in [db['name'] for db in dbs]:
 				dbs.append(arg)

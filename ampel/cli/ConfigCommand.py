@@ -54,6 +54,7 @@ hlp = {
 	'distributions': 'Ampel packages to consider. If unspecified, gather all installed ampel distributions',
 	'verbose': 'Verbose',
 	'ext-resource': 'Path to resource config file (yaml) to be integrated into the final ampel config',
+	'ignore-exceptions': 'Allows config building to continue despite listed exceptions',
 	'hide-module-not-found-errors': 'Hide ModuleNotFoundError exception stacks',
 	'hide-stderr': 'Hide stderr messages arising during imports (from healpix for ex.)',
 	'ignore-channels': 'Ignore channel definitions',
@@ -93,7 +94,7 @@ class ConfigCommand(AbsCoreCommand):
 				{'name': 'out', 'type': str},
 				{
 					'name': 'install', 'action': 'store_true',
-					'help': 'Installs the generated config (conda envs are supported)'
+					'help': 'Installs the generated config to app-specific directory (via platformdirs, supports conda)'
 				}
 			]
 		)
@@ -104,6 +105,7 @@ class ConfigCommand(AbsCoreCommand):
 
 		builder.opt('sign', 'build', type=int, default=0)
 		builder.opt('ext-resource', 'build|install')
+		builder.opt('ignore-exceptions', 'build|install', nargs="+", default=[])
 		builder.opt('hide-module-not-found-errors', 'build|install', action='store_true')
 		builder.opt('hide-stderr', 'build|install', action='store_true')
 		builder.opt('ignore-channels', 'build|install', action='store_true')
@@ -127,12 +129,18 @@ class ConfigCommand(AbsCoreCommand):
 		builder.example('build', '-out ampel_conf.yaml')
 		builder.example('build', '-out ampel_conf.yaml -sign -verbose')
 		builder.example('build', '-out ampel_core_conf.yaml -distributions ampel-interface ampel-core')
+		builder.example('build', '-install -ignore-exceptions ImportError ModuleNotFoundError -verbose')
+		builder.example('build', 'show', prepend="See also: ampel config ")
+		builder.example('build', '-path', prepend="See also: ampel config show ")
 		builder.example('show', '')
 		builder.example('show', '-path')
 		builder.example('show', '-json -pretty')
 		builder.example('install', '')
 		builder.example('install', '-stop-on-error 0 -hide-module-not-found-errors -exclude-distributions Ampel-HU-cosmo')
 		builder.example('install', '-ignore-channels -ignore-processes -no-provenance')
+		builder.example('install', '-ignore-exceptions ImportError ModuleNotFoundError')
+		builder.example('install', 'show', prepend="See also: ampel config ")
+		builder.example('install', '-path', prepend="See also: ampel config show ")
 
 		self.parsers.update(
 			builder.get()
@@ -231,6 +239,7 @@ class ConfigCommand(AbsCoreCommand):
 					hide_stderr = args.get('hide_stderr', False),
 					hide_module_not_found_errors = args.get('hide_module_not_found_errors', False)
 				),
+				ignore_exc = args['ignore_exceptions'],
 				logger = logger,
 			)
 

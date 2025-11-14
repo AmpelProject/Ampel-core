@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                03.09.2019
-# Last Modified Date:  01.04.2023
+# Last Modified Date:  09.11.2025
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import datetime
@@ -30,7 +30,6 @@ from ampel.config.builder.DisplayOptions import DisplayOptions
 from ampel.config.builder.FirstPassConfig import FirstPassConfig
 from ampel.config.builder.ProcessMorpher import ProcessMorpher
 from ampel.config.collector.ChannelConfigCollector import ChannelConfigCollector
-from ampel.config.collector.ConfigCollector import ConfigCollector
 from ampel.config.collector.ProcessConfigCollector import ProcessConfigCollector
 from ampel.config.collector.T02ConfigCollector import T02ConfigCollector
 from ampel.log.AmpelLogger import DEBUG, ERROR, VERBOSE, AmpelLogger
@@ -51,13 +50,17 @@ class ConfigBuilder:
 
 	_default_processes = ["DefaultT2Process", "DefaultPurge"]
 
-	def __init__(self, options: DisplayOptions, logger: None | AmpelLogger = None) -> None:
+	def __init__(self,
+		options: DisplayOptions,
+		logger: None | AmpelLogger = None,
+		ignore_exc: list[str] | None = None
+	) -> None:
 
 		self.logger = AmpelLogger.get_logger(
 			console={'level': DEBUG if options.verbose else ERROR}
 		) if logger is None else logger
 
-		self.first_pass_config = FirstPassConfig(options, self.logger)
+		self.first_pass_config = FirstPassConfig(options, self.logger, ignore_exc)
 		self.templates: dict[str, Any] = {}
 		self.verbose = options.verbose
 		self.options = options
@@ -72,7 +75,7 @@ class ConfigBuilder:
 	) -> None:
 
 		if self.verbose:
-			self.logger.log(VERBOSE, f"Loading global ampel conf ({register_file}) from repo {dist_name}")
+			self.logger.log(VERBOSE, "Processing main config")
 
 		# "mongo" "logging" "channel" "unit" "process" "alias" "resource"
 		for k in self.first_pass_config.conf_keys:
@@ -80,7 +83,11 @@ class ConfigBuilder:
 			if k not in d:
 				continue
 
-			if k in ('unit', 'process', 'alias'):
+			# Units are now auto-detected, thus ignoring unit entries leftover in ampel.yml
+			if k == 'unit':
+				continue
+
+			if k in ('process', 'alias'):
 				if isinstance(d[k], list):
 					self.first_pass_config[k].add(d[k], dist_name, version, register_file)
 				elif isinstance(d[k], dict):
@@ -116,11 +123,7 @@ class ConfigBuilder:
 				raise ValueError('Duplicated template: ' + k)
 
 			if self.verbose:
-				self.logger.log(VERBOSE,
-					f'Registering template "{k}" ' +
-					register_file if register_file else '' +
-					ConfigCollector.distrib_hint(distrib=dist_name)
-				)
+				self.logger.log(VERBOSE, f"Registering template '{k}'")
 
 			self.templates[k] = getattr(
 				importlib.import_module(v),
@@ -182,6 +185,7 @@ class ConfigBuilder:
 			self.first_pass_config.has_nested_error() and
 			stop_on_errors > 1
 		):
+			self.logger.error("Config building errors were reported\n")
 			raise ValueError(
 				'\n-------------------------------------------------------------------------\n' +
 				'Error were reported while gathering configurations (first pass config),\n' +

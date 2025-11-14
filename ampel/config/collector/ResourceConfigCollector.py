@@ -49,10 +49,7 @@ class ResourceConfigCollector(AbsDictConfigCollector):
 					scope = ""
 
 				if self.verbose:
-					self.logger.log(VERBOSE,
-						f"Adding {scope} resource '{k}' " +
-						f"from file {register_file}" if register_file else ""
-					)
+					self.logger.log(VERBOSE, f"Adding {scope} resource '{k}'")
 
 				if self.check_duplicates(
 					key, dist_name, version, register_file,

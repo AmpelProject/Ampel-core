@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                16.10.2019
-# Last Modified Date:  02.01.2023
+# Last Modified Date:  11.11.2025
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
@@ -63,9 +63,7 @@ class AliasConfigCollector(AbsDictConfigCollector):
 					scope = "scoped"
 
 				if self.verbose:
-					self.logger.log(VERBOSE,
-						f"Adding {scope} {self.tier} alias: {key}"
-					)
+					self.logger.log(VERBOSE, f"Adding {scope} {self.tier} alias: '{key}'")
 
 				if self.check_duplicates(
 					key, dist_name, version, register_file,

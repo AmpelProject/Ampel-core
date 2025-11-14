@@ -13,7 +13,6 @@ import re
 import sys
 import traceback
 from contextlib import contextmanager
-from os.path import sep
 from typing import Any
 
 from xxhash import xxh64_intdigest
@@ -24,7 +23,6 @@ from ampel.log import VERBOSE
 from ampel.log.handlers.AmpelStreamHandler import AmpelStreamHandler
 from ampel.protocol.LoggingHandlerProtocol import AggregatingLoggingHandlerProtocol
 from ampel.util.collections import ampel_iter
-from ampel.util.distrib import get_files
 
 
 class RemoteUnitDefinition(AmpelBaseModel):
@@ -35,16 +33,17 @@ class RemoteUnitDefinition(AmpelBaseModel):
 class UnitConfigCollector(AbsDictConfigCollector):
 
 
-	def __init__(self, **kwargs) -> None:
+	def __init__(self, ignore_exc: list[str] | None = None, **kwargs) -> None:
 		super().__init__(**kwargs)
 		self.err_fqns: list[tuple[str, Exception]] = []
+		self.ignore_exc = ignore_exc
 
 
 	def add(self, # type: ignore[override]
 		arg: list[dict[str, str] | str],
 		dist_name: str,
 		version: str | float | int,
-		register_file: str
+		register_file: str | list[str]
 	) -> None:
 
 		# Cosmetic
@@ -53,34 +52,20 @@ class UnitConfigCollector(AbsDictConfigCollector):
 			self.logger.handlers[0].aggregate_interval = 1000
 
 		# tolerate list containing only 1 element defined as dict
-		for el in ampel_iter(arg):
+		for i, el in enumerate(ampel_iter(arg)):
+
+			src_def = register_file if isinstance(register_file, str) else register_file[i]
 
 			try:
 
 				if isinstance(el, str):
 
-					# Package definition (ex: ampel.ztf.t3)
-					# Auto-load units in defined package
-					if el.split('.')[-1][0].islower():
-						package_path = el.replace(".", sep)
-						try:
-							for fpath in map(str, get_files(dist_name, lookup_dir=package_path)):
-								if sep in fpath.replace(package_path + sep, ""):
-									continue
-								self.add(
-									[fpath.replace(sep, ".").replace(".py", "")],
-									dist_name, version, register_file
-								)
-						except Exception:
-							self.logger.info(f'Units auto-registration has failed for package {el}')
-							self.has_error = True
-						continue
-
 					# Standart unit definition (ex: ampel.t3.stage.T3AggregatingStager)
 					class_name = self.get_class_name(el)
+
 					if not (ret := self.get_mro(el, class_name)):
-						self.logger.break_aggregation()
 						continue
+
 					entry: dict[str, Any] = {
 						'fqn': el,
 						'base': ret[1],
@@ -93,7 +78,7 @@ class UnitConfigCollector(AbsDictConfigCollector):
 					except Exception:
 						self.error(
 							'Unsupported unit definition (dict)' +
-							self.distrib_hint(dist_name, register_file)
+							self.distrib_hint(dist_name, src_def)
 						)
 						continue
 
@@ -103,17 +88,17 @@ class UnitConfigCollector(AbsDictConfigCollector):
 				else:
 					self.error(
 						'Unsupported unit config format' +
-						self.distrib_hint(dist_name, register_file)
+						self.distrib_hint(dist_name, src_def)
 					)
 					continue
 
-				if self.check_duplicates(class_name, dist_name, version, register_file):
+				if self.check_duplicates(class_name, dist_name, version, src_def):
 					continue
 
-				if "AmpelUnit" not in entry['base'] and "AmpelBaseModel" not in entry['base']:
+				if "AmpelUnit" not in entry['base'] and "AmpelABC" not in entry['base']:
 					self.logger.info(
 						f'Unrecognized base class for {self.conf_section} {class_name} ' +
-						self.distrib_hint(dist_name, register_file)
+						self.distrib_hint(dist_name, src_def)
 					)
 					continue
 
@@ -135,7 +120,7 @@ class UnitConfigCollector(AbsDictConfigCollector):
 
 				self.error(
 					f'Error occured while loading {self.conf_section} {class_name} ' +
-					self.distrib_hint(dist_name, register_file),
+					self.distrib_hint(dist_name, src_def),
 					exc_info=e
 				)
 
@@ -174,6 +159,9 @@ class UnitConfigCollector(AbsDictConfigCollector):
 				UnitClass = getattr(m, class_name)
 		except Exception as e:
 
+			if self.ignore_exc and type(e).__name__ in self.ignore_exc:
+				return None
+
 			self.err_fqns.append((module_fqn, e))
 			self.has_error = True
 
@@ -181,13 +169,14 @@ class UnitConfigCollector(AbsDictConfigCollector):
 				return None
 
 			# Suppress superfluous traceback entries
-			print("", file=sys.stderr)
-			print("Cannot import " + module_fqn, file=sys.stderr)
-			print("-" * (len(module_fqn) + 14), file=sys.stderr)
-			for el in traceback.format_exc().splitlines():
+			self.logger.error("\n[red]Cannot import [bold]" + module_fqn + "[/bold][/red]")
+			self.logger.error("[red]─[/red]" * (len(module_fqn) + 14))
+			for el in traceback.format_exc().splitlines()[:-1]:
 				if "_bootstrap" not in el and "in import_module" not in el:
-					print(el, file=sys.stderr)
+					self.logger.error("   " + el)
 
+			self.logger.error(f"    [bold red]{type(e).__name__}[/bold red]: {e}")
+			self.logger.break_aggregation()
 			return None
 
 		return digest, [
