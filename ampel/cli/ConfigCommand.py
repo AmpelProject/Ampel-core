@@ -217,7 +217,7 @@ class ConfigCommand(AbsCoreCommand):
 					ProcessModel(**process)
 
 	# Mandatory implementation
-	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: None | str = None) -> None:
+	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: str | None = None) -> None:
 
 		logger = AmpelLogger.get_logger(
 			console={'level': DEBUG if args.get('verbose', False) else INFO}
@@ -225,7 +225,7 @@ class ConfigCommand(AbsCoreCommand):
 
 		if sub_op == 'build':
 
-			logger.info('Building config [use -verbose for more details]')
+			logger.info('Building config')
 
 			# Fix ArgParserBuilder/ArgumentParser later
 			if not args.get('out') and not args.get('install'):
@@ -240,18 +240,18 @@ class ConfigCommand(AbsCoreCommand):
 					hide_module_not_found_errors = args.get('hide_module_not_found_errors', False)
 				),
 				ignore_exc = args['ignore_exceptions'],
-				logger = logger,
+				logger = logger
 			)
 
 			cb.load_distributions(
-				prefixes=args['distributions'],
-				raise_exc=args['stop_on_errors'] != 0,
-				exclude=args['exclude_distributions']
+				prefixes = args['distributions'],
+				raise_exc = args['stop_on_errors'] != 0,
+				exclude = args['exclude_distributions']
 			)
 
 			cb.build_config(
 				stop_on_errors = args['stop_on_errors'],
-				skip_default_processes=True,
+				skip_default_processes = True,
 				config_validator = None,
 				save = args.get('out') or get_user_data_config_path(),
 				ext_resource = args.get('ext_resource'),
