@@ -7,18 +7,15 @@
 # Last Modified Date:  27.10.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import sys
+from rich.console import Console
+from rich.prompt import Prompt
 
+console = Console(force_terminal=True, color_system="truecolor")
 
 def yes_no(question: str) -> bool:
 
 	try:
-		while True:
-			c = input(f"{question} ? [y/n]: ").lower()
-			if c in ("y", "yes", "no", "n"):
-				break
-			sys.stdout.write('\x1b[1A')
-			sys.stdout.write('\x1b[2K')
+		c = Prompt.ask(question, choices=["y","n"])
 	except KeyboardInterrupt as e:
 		print('\nAbording...\n\n')  # noqa: T201
 		raise e
