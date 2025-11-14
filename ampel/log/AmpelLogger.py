@@ -7,12 +7,11 @@
 # Last Modified Date:  11.11.2025
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import logging
-import sys
-import traceback
+import sys, logging, traceback
 from os.path import basename
 from sys import _getframe
 from typing import TYPE_CHECKING, Any
+from typing_extensions import Self
 
 from ampel.types import ChannelId
 from ampel.abstract.AbsContextManager import AbsContextManager
@@ -38,43 +37,77 @@ if TYPE_CHECKING:
 
 class AmpelLogger(AbsContextManager):
 
-	loggers: dict[int | str, 'AmpelLogger'] = {}
+	loggers: dict[int | str, Self] = {}
 	_counter: int = 0
 	verbose: int = 0
 
 
 	@classmethod
-	def get_logger(cls,
-		name: None | int | str = 'default',
-		force_refresh: bool = False,
-		**kwargs
-	) -> 'AmpelLogger':
+	def get_logger(cls, force_refresh: bool = False, **kwargs) -> Self:
 		"""
-		Create or return an instance of :obj:`AmpelLogger <ampel.log.AmpelLogger>`
-		that is registered in static dict 'loggers' using the provided name as key.
-		If a logger with the given name already exists, the existing logger instance is returned.
-		If name is None, unique (int) name will be generated
-		:param ``**kwargs``: passed to constructor
+		Get or create an :class:`AmpelLogger <ampel.log.AmpelLogger>` instance
+		based on the provided keyword arguments.
 
-		Typical use:\n
-		.. sourcecode:: python\n
+		The logger is stored in the class-level ``loggers`` registry under a key:
+		- If no arguments are provided, the registry key defaults to ``"default"``.
+		- If ``name`` is provided in ``kwargs``, it serves as registry key.
+		- Otherwise, a unique identifier is derived from the keyword arguments
+		  and used as the key.
+
+		Once the key is determined:
+		- If a logger with the same key already exists, that instance is returned.
+		- If no logger exists for the key, a new one is created and stored.
+		- If ``force_refresh`` is ``True``, a new logger is always created and
+		  replaces any existing one for the key.
+
+		Important notes:
+		- This method is intended primarily for cases where one wants to reuse
+		  a logger across calls. It is not suitable if you need to pass
+		  instantiated handler objects to the logger. In such cases, call the
+		  :class:`AmpelLogger` constructor directly.
+		- All values in ``kwargs`` must be serializable. Passing non-serializable
+		  objects will break the identifier generation.
+
+		:param force_refresh: If ``True``, always create a new logger instance.
+		:param kwargs: Additional keyword arguments passed to the constructor.
+		:returns: An :class:`AmpelLogger` instance.
+
+		Example usage::
+
+			# Default logger with "default" key
 			logger = AmpelLogger.get_logger()
+
+			# Logger with explicit console level
+			logger = AmpelLogger.get_logger(console={'level': DEBUG})
+
+			# Force creation and caching of a new logger
+			logger = AmpelLogger.get_logger(force_refresh=True, console={'level': INFO})
+
+			# Logger with explicit name
+			logger = AmpelLogger.get_logger(name="custom_logger")
 		"""
 
-		if not name:
-			cls._counter += 1
-			name = cls._counter
+		if not kwargs:
+			kwargs["name"] = "default"
 
-		if name not in cls.loggers or force_refresh:
-			cls.loggers[name] = AmpelLogger(name=name, **kwargs)
+		if "name" not in kwargs:
+			kwargs["name"] = build_unsafe_dict_id(kwargs)
 
-		return cls.loggers[name]
+		if force_refresh or kwargs["name"] not in cls.loggers:
+			cls.loggers[kwargs["name"]] = cls(**kwargs)
+
+		return cls.loggers[kwargs["name"]]
+
+
+	@classmethod
+	def has_logger(cls, name: str) -> bool:
+		return name in cls.loggers
 
 
 	@classmethod
 	def from_profile(cls,
-		context: 'AmpelContext', profile: str, run_id: None | int = None, **kwargs
-	) -> 'AmpelLogger':
+		context: 'AmpelContext', profile: str, run_id: int | None = None, **kwargs
+	) -> Self:
 		"""
 		Creates and returns an AmpelLogger instance configured from a named logging profile.
 
@@ -100,12 +133,14 @@ class AmpelLogger(AbsContextManager):
 		- ValueError: If the profile requires a DBLoggingHandler and no run_id is provided.
 		"""
 
-		logger_label = f"{profile}_{run_id}_{build_unsafe_dict_id(kwargs)}_{context.uuid}"
-		if logger_label in cls.loggers:
-			return cls.get_logger(logger_label, **kwargs)
+		logger_id = f"{profile}_{run_id}_{build_unsafe_dict_id(kwargs)}_{context.uuid}"
+		kwargs["name"] = logger_id
+
+		if logger_id in cls.loggers:
+			return cls.get_logger(**kwargs)
 
 		# Note: "console": False ensures DBLoggingHandler is inserted first
-		logger = cls.get_logger(**(kwargs | {"console": False, 'name': logger_label}))
+		logger = cls.get_logger(**(kwargs | {"console": False}))
 
 		profile_dict = context.config.get(f'logging.{profile}', dict, raise_exc=True)
 		if "db" in profile_dict:
@@ -129,7 +164,7 @@ class AmpelLogger(AbsContextManager):
 
 
 	@staticmethod
-	def get_console_level(context: 'AmpelContext', profile: str) -> None | int:
+	def get_console_level(context: 'AmpelContext', profile: str) -> int | None:
 
 		handlers = context.config.get(f'logging.{profile}', dict, raise_exc=True)
 
@@ -151,11 +186,11 @@ class AmpelLogger(AbsContextManager):
 
 	def __init__(self,
 		name: int | str = 0,
-		base_flag: None | LogFlag = None,
-		handlers: None | list[LoggingHandlerProtocol | AggregatingLoggingHandlerProtocol] = None,
-		channel: None | ChannelId | list[ChannelId] = None,
+		base_flag: LogFlag | None = None,
+		handlers: list[LoggingHandlerProtocol | AggregatingLoggingHandlerProtocol] | None = None,
+		channel: ChannelId | list[ChannelId] | None = None,
 		# See AmpelStreamHandler annotations for more details
-		console: None | bool | dict[str, Any] = True
+		console: bool | dict[str, Any] | None = True
 	) -> None:
 
 		self.name = name
@@ -180,7 +215,7 @@ class AmpelLogger(AbsContextManager):
 		self.flush()
 
 
-	def _auto_level(self):
+	def _auto_level(self) -> None:
 
 		self.level = min([h.level for h in self.handlers]) if self.handlers else 0
 		if self.level < INFO:
@@ -207,7 +242,7 @@ class AmpelLogger(AbsContextManager):
 		self._auto_level()
 
 
-	def get_db_logging_handler(self) -> 'None | DBLoggingHandler':
+	def get_db_logging_handler(self) -> 'DBLoggingHandler | None':
 		# avoid circular import
 		from ampel.mongo.update.var.DBLoggingHandler import (  # noqa: PLC0415
 			DBLoggingHandler,
@@ -225,10 +260,10 @@ class AmpelLogger(AbsContextManager):
 
 
 	def error(self, msg: str | dict[str, Any], *args,
-		exc_info: None | Exception = None,
+		exc_info: Exception | None = None,
 		stack_info: bool = False,
 		stacklevel: int = 1,
-		extra: None | dict[str, Any] = None,
+		extra: dict[str, Any] | None = None,
 	):
 		self.log(ERROR, msg, *args, exc_info=exc_info, stack_info=stack_info, stacklevel=stacklevel, extra=extra)
 
@@ -236,22 +271,22 @@ class AmpelLogger(AbsContextManager):
 	def warn(self, msg: str | dict[str, Any], *args,
 		stack_info: bool = False,
 		stacklevel: int = 1,
-		extra: None | dict[str, Any] = None,
+		extra: dict[str, Any] | None = None,
 	):
 		if self.level <= WARNING:
 			self.log(WARNING, msg, *args, stack_info=stack_info, stacklevel=stacklevel, extra=extra)
 
 
-	def info(self, msg: None | str | dict[str, Any], *args,
+	def info(self, msg: str | dict[str, Any] | None, *args,
 		stack_info: bool = False,
 		stacklevel: int = 1,
-		extra: None | dict[str, Any] = None,
+		extra: dict[str, Any] | None = None,
 	) -> None:
 		if self.level <= INFO:
 			self.log(INFO, msg, *args, stack_info=stack_info, stacklevel=stacklevel, extra=extra)
 
 
-	def debug(self, msg: None | str | dict[str, Any], *args,
+	def debug(self, msg: str | dict[str, Any] | None, *args,
 		stack_info: bool = False,
 		stacklevel: int = 1,
 		extra: None | dict[str, Any] = None,
@@ -272,11 +307,11 @@ class AmpelLogger(AbsContextManager):
 
 
 	def log(self,
-		lvl: int, msg: None | str | dict[str, Any], *args,
-		exc_info: None | bool | Exception = None,
+		lvl: int, msg: str | dict[str, Any] | None, *args,
+		exc_info: bool | Exception | None = None,
 		stack_info: bool = False,
 		stacklevel: int = 1,
-		extra: None | dict[str, Any] = None,
+		extra: dict[str, Any] | None = None,
 	):
 
 		if args and isinstance(msg, str):
