@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                18.03.2021
-# Last Modified Date:  11.01.2023
+# Last Modified Date:  12.11.2025
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import json
@@ -17,7 +17,8 @@ from typing import Any, Literal, TypeVar
 from ampel.abstract.AbsCLIOperation import AbsCLIOperation
 from ampel.cli.config import get_user_data_config_path
 from ampel.cli.utils import _maybe_int, get_db, get_vault
-from ampel.config.AmpelConfig import AmpelConfig
+from ampel.config.AmpelConfig import AmpelConfig, ConfigLoadOptions
+from ampel.config.InvalidConfigError import InvalidConfigError
 from ampel.core.AmpelContext import AmpelContext
 from ampel.core.UnitLoader import UnitLoader
 from ampel.log.AmpelLogger import AmpelLogger
@@ -41,22 +42,29 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 
 
 	def load_config(self,
-		config_path: None | str,
+		config_path: str | None,
 		unknown_args: Sequence[str],
-		logger: None | AmpelLogger = None,
+		logger: AmpelLogger | None = None,
 		freeze: bool = True,
-		env_var_prefix: None | str = "AMPEL_CONFIG_",
+		env_var_prefix: str | None = "AMPEL_CONFIG_",
+		config_load_options: ConfigLoadOptions | None = None
 	) -> AmpelConfig:
+
+		if config_load_options is None:
+			config_load_options = ConfigLoadOptions()
 
 		if not config_path:
 			std_conf = get_user_data_config_path()
 			if os.path.exists(std_conf):
-				ampel_conf = AmpelConfig.load(std_conf, freeze=False)
+				try:
+					ampel_conf = AmpelConfig.load(std_conf, freeze=False, options=config_load_options)
+				except InvalidConfigError:
+					sys.exit(1)
 			else:
 				with out_stack():
 					raise ValueError("No default ampel config found -> argument -config required\n")
 		else:
-			ampel_conf = AmpelConfig.load(config_path, freeze=False)
+			ampel_conf = AmpelConfig.load(config_path, freeze=False, options=config_load_options)
 
 		if logger is None:
 			logger = AmpelLogger.get_logger()
@@ -114,11 +122,12 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 	def get_context(self,
 		args: dict[str, Any],
 		unknown_args: Sequence[str],
-		logger: None | AmpelLogger = None,
+		logger: AmpelLogger | None = None,
 		freeze_config: bool = True,
 		ContextClass: type[T] = AmpelContext, # type: ignore[assignment]
 		require_existing_db: bool | str = True,
 		one_db: bool | Literal['auto'] = False,
+		config_load_options: ConfigLoadOptions | None = None,
 		**kwargs
 	) -> T:
 		"""
@@ -128,12 +137,18 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 		if logger is None:
 			logger = AmpelLogger.get_logger()
 
+		if config_load_options is None:
+			config_load_options = ConfigLoadOptions()
+
 		config = self.load_config(
-			args['config'], unknown_args, logger, freeze = freeze_config
+			args['config'], unknown_args, logger,
+			freeze = freeze_config,
+			config_load_options = config_load_options
 		)
 
 		vault = get_vault(args)
 		db = get_db(config, vault, require_existing_db, one_db)
+
 		return ContextClass(
 			config = config,
 			db = db,
