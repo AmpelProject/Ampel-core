@@ -7,10 +7,11 @@
 # Last Modified Date:  23.04.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import importlib
-import sys
-
+import importlib, sys, signal
 from pip._internal.operations import freeze
+
+# Exit silently when a pipe is broken (CTRL-C)
+signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
 # ruff: noqa: T201
 
