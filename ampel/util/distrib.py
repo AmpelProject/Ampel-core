@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                13.03.2021
-# Last Modified Date:  06.11.2025
+# Last Modified Date:  14.11.2025
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import os, re, importlib, json
@@ -48,14 +48,24 @@ def get_files(
 	files: PathList = []
 
 	for dist in metadata.distributions():
+
 		if dist.name != dist_name:
 			continue
 
-		# Try direct_url.json first — even if no .pth file exists
+		# Try direct_url.json first
 		mod_path = resolve_direct_url_path(dist_name)
 		if mod_path and os.path.isdir(mod_path):
 			files.extend(walk_dir(mod_path, lookup_dir, pattern))
 			break  # skip .pth parsing if direct path works
+
+		# dist.files may be None in 3.10
+		if dist.files is None:
+			# fallback: look directly in site-packages
+			sp = Path(str(dist.locate_file("")))
+			conf_dir = sp / (lookup_dir or "") / dist_name
+			if conf_dir.exists():
+				files.extend(walk_dir(str(conf_dir), lookup_dir, pattern))
+			continue
 
 		for p in dist.files or []:
 			if p.suffix == ".pth":
@@ -73,8 +83,8 @@ def get_files(
 							files.extend(walk_dir(mod_path, lookup_dir, pattern))
 						else:
 							raise ValueError(
-								f"Could not resolve module path from editable hook or direct_url.json in {pth_path}. "
-								f"Try installing {dist_name} normally (non-editable)."
+								f"Could not resolve module path from editable hook or direct_url.json "
+								f"in {pth_path}. Try installing {dist_name} normally (non-editable)."
 							)
 					else:
 						raise ValueError(
