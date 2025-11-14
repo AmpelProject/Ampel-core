@@ -18,6 +18,7 @@ import pathlib
 import re
 import subprocess
 import sys
+import signal
 from collections.abc import Iterable
 from importlib import import_module
 from multiprocessing import Pool
@@ -214,17 +215,22 @@ class ConfigBuilder:
 			env = os.environ.get('CONDA_DEFAULT_ENV')
 			out['environment'] = {f'conda_{env}' if env else 'default': all_deps}
 
-			with Pool() as pool:
-				for res in pool.starmap(
-					get_unit_dependencies,
-					[(el['fqn'], env) for el in out['unit'].values()]
-				):
-					if self.verbose:
-						self.logger.log(VERBOSE, f'{res[0]} dependencies: {res[1] or None}')
-					if res[1]:
-						out['unit'][res[0]]['dependencies'] = list(res[1].keys())
-						all_deps.update(res[1])
-
+			with Pool(initializer=init_worker) as pool:
+				try:
+					for res in pool.starmap(
+						get_unit_dependencies,
+						[(el['fqn'], env) for el in out['unit'].values()]
+					):
+						if self.verbose:
+							self.logger.log(VERBOSE, f'{res[0]} dependencies: {res[1] or None}')
+						if res[1]:
+							out['unit'][res[0]]['dependencies'] = list(res[1].keys())
+							all_deps.update(res[1])
+				except KeyboardInterrupt:
+					pool.terminate()
+					pool.join()
+					from ampel.cli.main import exit_on_keyboard_interrupt # noqa
+					exit_on_keyboard_interrupt()
 
 		# Register templates in config
 		out['template'] = {k: v.__module__ for k, v in self.templates.items()}
@@ -634,3 +640,7 @@ def get_unit_dependencies(fqn: str, env: None | str) -> tuple[str, dict]:
 		)
 
 	return fqn.split(".")[-1], eval(ret.stdout.decode("utf-8"))
+
+
+def init_worker():
+	signal.signal(signal.SIGINT, signal.SIG_IGN)
