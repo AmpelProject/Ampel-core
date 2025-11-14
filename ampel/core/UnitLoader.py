@@ -126,7 +126,7 @@ class UnitLoader:
 		# Spawn unit instance
 		unit = self.new_logical_unit(
 			model = um,
-			logger = AmpelLogger.get_logger(
+			logger = AmpelLogger(
 				base_flag = (getattr(logger, 'base_flag', 0) & ~LogFlag.CORE) | LogFlag.UNIT,
 				console = len(logger.handlers) == 1, # to be improved later
 				handlers = [buf_hdlr]
