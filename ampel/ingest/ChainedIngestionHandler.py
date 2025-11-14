@@ -244,7 +244,7 @@ class ChainedIngestionHandler:
 				# We create a logger associated a buffering handler
 				# whose logs entries are later transfered to the main logger
 				buf_hdlr = DefaultRecordBufferingHandler(level=self.logger.level)
-				buf_logger = AmpelLogger.get_logger(
+				buf_logger = AmpelLogger(
 					base_flag = (getattr(self.logger, 'base_flag', 0) & ~LogFlag.CORE) | LogFlag.UNIT,
 					console = False,
 					handlers = [buf_hdlr]
@@ -331,7 +331,7 @@ class ChainedIngestionHandler:
 			# We create a logger associated a buffering handler
 			# whose logs entries are later transfered to the main logger
 			buf_hdlr = DefaultRecordBufferingHandler(level=self.logger.level)
-			buf_logger = AmpelLogger.get_logger(
+			buf_logger = AmpelLogger(
 				base_flag = (getattr(self.logger, 'base_flag', 0) & ~LogFlag.CORE) | LogFlag.UNIT,
 				console = False,
 				handlers = [buf_hdlr]
