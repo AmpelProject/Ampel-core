@@ -118,7 +118,7 @@ class T3BaseStager(AbsT3Stager, DocBuilder, abstract=True):
 		stocks: None | list[StockId] = None
 	) -> T3Document:
 
-		t3d = super().craft_doc(self.event_hdlr, t3_unit, res, ts, doc_type=T3Document)
+		t3d = super().craft_doc(self.context, self.event_hdlr, t3_unit, res, ts, doc_type=T3Document)
 		if self.save_stock_ids and stocks:
 			t3d['stock'] = stocks
 

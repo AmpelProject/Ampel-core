@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                28.05.2021
-# Last Modified Date:  03.04.2023
+# Last Modified Date:  09.11.2025
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import gc
@@ -22,7 +22,6 @@ from pymongo.write_concern import WriteConcern
 
 from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.abstract.AbsIngester import AbsIngester
-from ampel.abstract.AbsUnitResultAdapter import AbsUnitResultAdapter
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.base.decorator import abstractmethod
 from ampel.base.LogicalUnit import LogicalUnit
@@ -183,7 +182,6 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		self._instances: JDict = {}
 
 		self._current_run_id: None | int = None
-		self._adapters: dict[int, AbsUnitResultAdapter] = {}
 
 
 	@abstractmethod
@@ -293,8 +291,13 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 		return doc_counter
 
+
 	@contextmanager
-	def _run_until_signal(self, run_id: int, logger: AmpelLogger, signals: Sequence[signal.Signals] = (signal.SIGINT, signal.SIGTERM, signal.SIGQUIT, signal.SIGHUP)) -> Generator[Event, None, None]:
+	def _run_until_signal(self,
+		run_id: int,
+		logger: AmpelLogger,
+		signals: Sequence[signal.Signals] = (signal.SIGINT, signal.SIGTERM, signal.SIGQUIT, signal.SIGHUP)
+	) -> Generator[Event, None, None]:
 		self._current_run_id = run_id
 		try:
 			with stop_on_signal(signals, logger) as stop_token:
@@ -302,7 +305,8 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		finally:
 			self._current_run_id = None
 			self._instances.clear()
-			self._adapters.clear()
+			self.context.loader.clear_adapter_cache()
+
 
 	def _processing_error(self,
 		logger: AmpelLogger, doc: T, body: UBson,
@@ -475,22 +479,6 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 			)
 
 		return self._instances[k]
-
-
-	def get_adapter_instance(self, model: UnitModel) -> AbsUnitResultAdapter:
-		assert self._current_run_id is not None
-		config_id = build_unsafe_dict_id(model.dict())
-
-		if config_id not in self._adapters:
-			unit_instance = self._loader.new_context_unit(
-				model = model,
-				context = self.context,
-				run_id = self._current_run_id,
-				sub_type = AbsUnitResultAdapter,
-			)
-			self._adapters[config_id] = unit_instance
-
-		return self._adapters[config_id]
 
 
 def register_stats(tier: int) -> tuple[Histogram, TimingCounter, Summary]:

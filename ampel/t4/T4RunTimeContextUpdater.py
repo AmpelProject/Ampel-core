@@ -54,4 +54,4 @@ class T4RunTimeContextUpdater(AbsT4ControlUnit, DocBuilder):
 		for k, v in aliases.items():
 			self.context.add_run_time_alias(k, v)
 
-		yield self.craft_doc(self.event_hdlr, self, aliases, ts, doc_type=T4Document)
+		yield self.craft_doc(self.context, self.event_hdlr, self, aliases, ts, doc_type=T4Document)

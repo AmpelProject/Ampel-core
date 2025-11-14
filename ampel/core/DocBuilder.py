@@ -4,23 +4,20 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                04.04.2023
-# Last Modified Date:  04.04.2023
+# Last Modified Date:  09.11.2025
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from datetime import datetime, timezone
 from typing import Literal, TypeVar
-from importlib import import_module
 
-from ampel.abstract.AbsUnitResultAdapter import AbsUnitResultAdapter
 from ampel.base.AmpelUnit import AmpelUnit
 from ampel.content.MetaRecord import MetaRecord
 from ampel.content.T3Document import T3Document
 from ampel.content.T4Document import T4Document
-from ampel.core.ContextUnit import ContextUnit
 from ampel.core.EventHandler import EventHandler
+from ampel.core.AmpelContext import AmpelContext
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.enum.MetaActionCode import MetaActionCode
-from ampel.model.UnitModel import UnitModel
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import ChannelId, OneOrMany, Tag, UBson, ubson
 from ampel.util.hash import build_unsafe_dict_id
@@ -29,7 +26,7 @@ from ampel.util.tag import merge_tags
 T = TypeVar("T", T3Document, T4Document)
 
 
-class DocBuilder(ContextUnit):
+class DocBuilder: # intended for mixin with ContextUnit
 
 	channel: None | OneOrMany[ChannelId] = None
 
@@ -49,32 +46,8 @@ class DocBuilder(ContextUnit):
 	human_timestamp_format: str = "%Y-%m-%d %H:%M:%S.%f"
 
 
-	def __init__(self, **kwargs) -> None:
-		super().__init__(**kwargs)
-		self.adapters: dict[int, AbsUnitResultAdapter] = {}
-
-
-	def get_adapter_instance(self, model: UnitModel, event_hdlr: EventHandler) -> AbsUnitResultAdapter:
-		config_id = build_unsafe_dict_id(model.dict())
-
-		if (
-			config_id not in self.adapters or
-			self.adapters[config_id].run_id != event_hdlr.get_run_id()
-		):
-			unit_instance = getattr(
-				import_module(f"ampel.core.adapter.{model.unit}"),
-				model.unit
-			)(context=self.context, run_id=event_hdlr.get_run_id())
-
-			if not isinstance(unit_instance, AbsUnitResultAdapter):
-				raise ValueError("Please provide a valid adapter")
-
-			self.adapters[config_id] = unit_instance
-
-		return self.adapters[config_id]
-
-	
 	def craft_doc(self,
+		context: AmpelContext,
 		event_hdlr: EventHandler,
 		unit: AmpelUnit,
 		res: None | UBson | UnitResult,
@@ -100,11 +73,11 @@ class DocBuilder(ContextUnit):
 		}
 
 		confid = build_unsafe_dict_id(conf)
-		self.context.db.add_conf_id(confid, conf)
+		context.db.add_conf_id(confid, conf)
 
 		# Live dangerously
-		if confid not in self.context.config._config['confid']:  # noqa: SLF001
-			dict.__setitem__(self.context.config._config['confid'], confid, conf)  # noqa: SLF001
+		if confid not in context.config._config['confid']:  # noqa: SLF001
+			dict.__setitem__(context.config._config['confid'], confid, conf)  # noqa: SLF001
 
 		d['confid'] = confid
 
@@ -137,7 +110,11 @@ class DocBuilder(ContextUnit):
 			if res.body:
 
 				if res.adapter_model:
-					res = self.get_adapter_instance(res.adapter_model, event_hdlr).handle(res)
+					res = context.loader.get_adapter(
+						model = res.adapter_model,
+						context = context,
+						run_id = event_hdlr.get_run_id()
+					).handle(res)
 
 				d['body'] = res.body
 				actact |= MetaActionCode.ADD_BODY
