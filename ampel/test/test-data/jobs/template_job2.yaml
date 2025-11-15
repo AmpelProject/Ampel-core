@@ -1,0 +1,3 @@
+mongo: {reset: true, prefix: _PyTestDB}
+name: foo
+task: []

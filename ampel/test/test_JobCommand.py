@@ -1,5 +1,5 @@
 import sys
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from pathlib import Path
 from typing import Any
 
@@ -168,3 +168,33 @@ def test_job_file(
         is None
     )
     assert proceed.called
+
+
+def test_job_db_prefix(
+    testing_config: Path,
+    integration_context,
+):
+    assert (
+        run(
+            [
+                "ampel",
+                "job",
+                "--config",
+                testing_config,
+                "--no-conf-check",
+                "--schema",
+                testing_config.parent / "jobs" / "template_job2.yaml",
+            ]
+        )
+        is None
+    )
+    db_names = integration_context.db.mongo_clients["writer"].list_database_names()
+    right_custom_db_name = any(name == "_PyTestDB" for name in db_names)
+	
+    with suppress(Exception):
+        integration_context.db.mongo_clients["writer"].drop_database("_PyTestDB")
+
+    assert right_custom_db_name
+
+    for client in integration_context.db.mongo_clients.values():
+        client.close()
