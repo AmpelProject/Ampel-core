@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.06.2018
-# Last Modified Date: 27.08.2022
+# Last Modified Date: 15.11.2025
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import collections.abc
@@ -151,6 +151,12 @@ class AmpelDB(AmpelUnit):
 		):
 			raise UnknownDatabase(f"Database(s) with prefix {self.prefix} do not exist")
 
+
+	def __del__(self):
+		with suppress(Exception):
+			self.close()
+
+
 	def close(self) -> None:
 		for mc in self.mongo_clients.values():
 			mc.close()
@@ -161,18 +167,22 @@ class AmpelDB(AmpelUnit):
 			with suppress(AttributeError):
 				delattr(self, attr)
 
+
 	@cached_property
 	def col_trace_ids(self) -> Collection:
 		return self.get_collection('trace')
 	
+
 	@cached_property
 	def col_conf_ids(self) -> Collection:
 		return self.get_collection('conf')
+
 
 	@cached_property
 	def trace_ids(self) -> set[int]:
 		return get_ids(self.col_trace_ids)
 	
+
 	@cached_property
 	def conf_ids(self) -> set[int]:
 		return get_ids(self.col_conf_ids)
