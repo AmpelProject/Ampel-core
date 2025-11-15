@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                10.06.2020
-# Last Modified Date:  01.04.2023
+# Last Modified Date:  15.11.2025
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from collections.abc import Sequence
@@ -49,7 +49,11 @@ class DevAmpelContext(AmpelContext):
 			conf = self._get_unprotected_conf()
 			for k, v in (custom_conf or {}).items():
 				set_by_path(conf, k, v)
-			self._set_new_conf(conf)
+			self.config = AmpelConfig(conf, True)
+
+		if custom_conf or db_prefix:
+			self.db = AmpelDB.new(self.config, self.loader.vault, self.db.require_exists, self.db.one_db)
+			self.loader = UnitLoader(self.config, db=self.db, vault=self.loader.vault)
 
 		if purge_db:
 			self.db.drop_all_databases()
@@ -65,7 +69,7 @@ class DevAmpelContext(AmpelContext):
 		conf = self._get_unprotected_conf()
 		for k, v in cm.__dict__.items():
 			set_by_path(conf, f"channel.{name}.{k}", v)
-		self._set_new_conf(conf)
+		self.config = AmpelConfig(conf, True)
 
 
 	def register_units(self, *Classes: type[AmpelUnit]) -> None:
@@ -99,16 +103,11 @@ class DevAmpelContext(AmpelContext):
 
 		return Class
 
+
 	def _get_unprotected_conf(self) -> dict[str, Any]:
 		if self.config.is_frozen():
 			return recursive_unfreeze(self.config._config) # type: ignore[arg-type]  # noqa: SLF001
 		return self.config._config  # noqa: SLF001
-
-
-	def _set_new_conf(self, conf: dict[str, Any]) -> None:
-		self.config = AmpelConfig(conf, True)
-		self.db = AmpelDB.new(self.config, self.loader.vault, self.db.require_exists, self.db.one_db)
-		self.loader = UnitLoader(self.config, db=self.db, vault=self.loader.vault)
 
 
 	def new_context_unit(self, unit: str, **kwargs) -> ContextUnit:
