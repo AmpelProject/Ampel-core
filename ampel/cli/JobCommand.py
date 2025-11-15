@@ -460,7 +460,7 @@ class JobCommand(AbsCoreCommand):
 		elif len(run_ids) > 1:
 			feedback += ", run ids: " + " ".join([str(el) for el in run_ids]) + ")"
 		else:
-			feedback = ")"
+			feedback += ")"
 
 		logger.info(feedback)
 		logger.info(f'Time required: {get_time_delta(start_time)}\n')
