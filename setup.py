@@ -48,7 +48,7 @@ entry_points = {
 		'config Build, show or install config = ampel.cli.ConfigCommand',
 		#'start Run ampel continuously. Processes are scheduled according to config = ampel.cli.StartCommand',
 		't2 Match and either reset or view raw t2 documents = ampel.cli.T2Command',
-		'buffer Match and view or save ampel buffers = ampel.cli.BufferCommand'
+		'buffer Match and view or save ampel buffers = ampel.cli.BufferCommand',
 		'event Show events information = ampel.cli.EventCommand'
 	]
 }
@@ -62,7 +62,7 @@ setup(
     maintainer_email = 'jakob.van.santen@desy.de',
     url = 'https://ampelproject.github.io',
     zip_safe = False,
-    packages = find_namespace_packages(),
+    packages = find_namespace_packages(include=["ampel*", "conf*"]),
     package_data = package_data,
     install_requires = install_requires,
     extras_require = extras_require,
