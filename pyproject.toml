@@ -20,12 +20,10 @@ exclude = [
     "ampel/py.typed",
 ]
 include = [
-    'conf/*/*.json',
-    'conf/*/*/*.json',
-    'conf/*/*.yaml',
-    'conf/*/*/*.yaml',
-    'conf/*/*.yml',
-    'conf/*/*/*.yml',
+  { path = "conf/**/*.yaml", format = "wheel" },
+  { path = "conf/**/*.yaml", format = "sdist" },
+  { path = "conf/**/*.yml",  format = "wheel" },
+  { path = "conf/**/*.yml",  format = "sdist" }
 ]
 
 [tool.poetry.scripts]
