@@ -260,7 +260,7 @@ class AmpelLogger(AbsContextManager):
 
 
 	def error(self, msg: str | dict[str, Any], *args,
-		exc_info: Exception | None = None,
+		exc_info: bool | Exception | None = None,
 		stack_info: bool = False,
 		stacklevel: int = 1,
 		extra: dict[str, Any] | None = None,
