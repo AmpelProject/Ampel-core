@@ -109,6 +109,7 @@ class JobCommand(AbsCoreCommand):
 			'print-schema': 'print (potentially edited) schema before execution',
 			'print-schema-after': 'print (potentially edited) schema after execution',
 			'stdin': 'read job schema from stdin',
+			'log-profile': 'log profile as defined in the ampel config',
 		})
 
 		parser.req('config', type=str)
@@ -133,6 +134,7 @@ class JobCommand(AbsCoreCommand):
 		parser.opt('secrets', type=str)
 		parser.opt('wait-pid', type=int, default=0)
 		parser.opt('profiling', type=str)
+		parser.opt('log-profile', type=str)
 		parser.opt('print-schema', action='store_true')
 		parser.opt('print-schema-after', action='store_true')
 		parser.opt('stdin', action='store_true')
