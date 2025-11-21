@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                09.10.2019
-# Last Modified Date:  18.12.2022
+# Last Modified Date:  21.11.2025
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import re
@@ -29,14 +29,13 @@ class DistConfigBuilder(ConfigBuilder):
 
 	def __init__(self,
 		options: DisplayOptions,
-		logger: None | AmpelLogger = None,
+		logger: AmpelLogger | None = None,
 		ignore_exc: list[str] | None = None
 	) -> None:
 		super().__init__(options, logger, ignore_exc)
-		self.units_parent: dict[str, list[str]] = {}
-		self.units_ancestry: dict[str, list[str]] = {}
-		self.discover_distrib_units('ampel-interface') # populates self.units_parent
-		self.visited = {'ampel-interface'}
+		self.visited: set[str] = set()
+		self.units_parents: dict[str, dict[str, list[str]]] = {}
+		self.mark_distrib_units('ampel-interface')
 
 
 	def load_distributions(self,
@@ -44,7 +43,7 @@ class DistConfigBuilder(ConfigBuilder):
 		conf_dirs: Sequence[str] = ("conf",),
 		exts: Sequence[str] = ("json", "yaml", "yml"),
 		raise_exc: bool = True,
-		exclude: None | list[str] = None
+		exclude: list[str] | None = None
 	) -> None:
 		"""
 		:param prefixes: loads all known conf files from all distributions with name starting with prefixes
@@ -74,12 +73,14 @@ class DistConfigBuilder(ConfigBuilder):
 
 			for conf_dir in conf_dirs:
 				for ext in exts:
-					self.load_distrib(dist_name, conf_dir, ext, raise_exc=raise_exc)
+					self.load_distrib(dist_name, conf_dir, ext, raise_exc=raise_exc, register_units=False)
 
-			self.add_distrib_units(dist_name)
+			self.mark_distrib_units(dist_name)
 
 			if self.verbose:
 				self.logger.log(VERBOSE, f"Done scanning distribution '{dist_name}'")
+
+		self.register_distrib_units()
 
 		if self.verbose:
 			self.logger.break_aggregation()
@@ -90,7 +91,8 @@ class DistConfigBuilder(ConfigBuilder):
 		dist_name: str,
 		conf_dir: str = "conf",
 		ext: str = "json",
-		raise_exc: bool = True
+		raise_exc: bool = True,
+		register_units: bool = True
 	) -> None:
 		"""
 		Loads all known conf files of the provided distribution (name)
@@ -149,7 +151,10 @@ class DistConfigBuilder(ConfigBuilder):
 				suffix = "s" if len(all_conf_files) > 1 else ""
 				self.logger.info(f"Unprocessed config file{suffix}: {all_conf_files}")
 
-			self.add_distrib_units(dist_name)
+			if dist_name not in self.visited:
+				self.mark_distrib_units(dist_name)
+				if register_units:
+					self.register_distrib_units()
 
 		except Exception as e:
 			if raise_exc:
@@ -161,55 +166,48 @@ class DistConfigBuilder(ConfigBuilder):
 			)
 
 
-	def add_distrib_units(self, dist_name: str) -> None:
+	def mark_distrib_units(self, dist_name: str) -> None:
 
 		if dist_name in self.visited:
 			return
 
 		self.visited.add(dist_name)
 
-		units = self.discover_distrib_units(dist_name)
+		if units := get_classes_info_from_dist(dist_name):
 
-		if self.verbose and units:
-			self.logger.log(VERBOSE, "Discovered unit" + "s:" if len(units) > 1 else ":")
-			for el in units:
-				self.logger.log(VERBOSE, f"{el}")
+			self.units_parents[dist_name] = units
 
-		self.first_pass_config['unit'].add(
-			["ampel." + k.split("ampel/")[1].replace("/", ".").removesuffix(".py") for k in units],
-			dist_name, metadata.distribution(dist_name).version, list(units.keys())
-		)
+			if self.verbose:
+				self.logger.log(VERBOSE, f"Marking following unit{'s'[:len(units)!=1]} for scanning:")
+				for el in units:
+					self.logger.log(VERBOSE, f"{el}")
 
 
-	def discover_distrib_units(self,
-		dist_name: str,
+	def register_distrib_units(self,
 		required_parents: Sequence[str] = ['AmpelABC'],
 		exclude_parents: Sequence[str] = (
 			'Secret', 'AbsCLIOperation', 'ConfigCollector',
 			'AbsForwardConfigCollector', 'NonDiscoverableUnit'
 		)
-	) -> dict[str, list[str]]:
+	):
 		"""
 		Discover and filters unit classes from a distribution.
 		Updates internal parents and ancestry maps
 		"""
-		dist_classes_info = get_classes_info_from_dist(dist_name)
-		self.units_parent |= dist_classes_info
 
-		get_classes_ancestry(
-			self.units_parent,
-			self.units_ancestry,
+		units_ancestry = get_classes_ancestry(
+			{k: v for d in self.units_parents.values() for k, v in d.items()},
 			required_parents = required_parents,
 			exclude_parents = exclude_parents
 		)
 
-		"""
-		for k in dist_classes_info:
-			if k in self.units_ancestry:
-				print(k, self.units_ancestry[k])
-		"""
-
-		return {k: dist_classes_info[k] for k in dist_classes_info if k in self.units_ancestry}
+		for dist_name, units_parents in self.units_parents.items():
+			for fpath in units_parents:
+				if fpath in units_ancestry:
+					self.first_pass_config['unit'].add(
+						"ampel." + fpath.split("ampel/")[1].replace("/", ".").removesuffix(".py"),
+						dist_name, metadata.distribution(dist_name).version, fpath
+					)
 
 
 	def register_tier_conf(self,
