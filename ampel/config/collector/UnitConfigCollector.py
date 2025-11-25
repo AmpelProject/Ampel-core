@@ -108,7 +108,7 @@ class UnitConfigCollector(AbsDictConfigCollector):
 
 				if self.options.verbose:
 					self.logger.log(VERBOSE,
-						f'Adding {self.conf_section}: {class_name}'
+						f'Adding {self.conf_section}: {class_name} ({dist_name})'
 					)
 
 				self.__setitem__(class_name, entry)
