@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ampel-core"
-version = "0.10.6a17"
+version = "0.10.6a18"
 description = "Alice in Modular Provenance-Enabled Land"
 authors = ["Valery Brinnel"]
 maintainers = ["Jakob van Santen <jakob.van.santen@desy.de>"]
@@ -50,14 +50,11 @@ xxhash = "^3.0.0"
 psutil = "^7.0.0"
 prometheus-client = ">=0.16"
 rich = "*"
-# encrypted-secrets
-sjcl = {version = "^0.2.1", optional = true}
 # queue
 mongomock = {version = "^4.3", optional = true}
 
 
 [tool.poetry.extras]
-encrypted-secrets = ["sjcl"]
 queue = ["mongomock"]
 
 [tool.poetry.group.dev.dependencies]
@@ -109,7 +106,6 @@ disable_error_code = "empty-body"
 
 [[tool.mypy.overrides]]
 module = [
-    "sjcl",
     "IPython.*",
     "matplotlib",
 ]
