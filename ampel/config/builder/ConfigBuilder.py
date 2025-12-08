@@ -19,7 +19,6 @@ import re
 import subprocess
 import sys
 import signal
-from collections.abc import Iterable
 from importlib import import_module
 from multiprocessing import Pool
 from typing import Any
@@ -38,7 +37,6 @@ from ampel.log.utils import log_exception
 from ampel.secret.AESecret import AESecret
 from ampel.template.ChannelWithProcsTemplate import ChannelWithProcsTemplate
 from ampel.util.mappings import dictify, get_by_path, set_by_path
-from ampel.util.recursion import walk_and_process_dict
 
 
 class ConfigBuilder:

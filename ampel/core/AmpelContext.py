@@ -8,7 +8,6 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import uuid
-from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any
 from typing_extensions import Self
 
