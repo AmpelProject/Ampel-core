@@ -57,6 +57,7 @@ class ConfigCollector(dict):
 
 	def report_duplicated_entry(self,
 		conf_key: str,
+		arg: dict[str, Any],
 		prev_file: str,
 		prev_dist: str,
 		new_file: str,
@@ -65,22 +66,27 @@ class ConfigCollector(dict):
 	) -> None:
 
 		t = Template(
-			'Duplicated $what definition: "$conf_key"\n' +
+			'$adjective $what definition: "$conf_key"\n' +
 			' Previously defined by $prev\n' +
 			' Redefined by $new'
 		)
 
 		prev = self.distrib_hint(prev_dist, prev_file)
 		new = self.distrib_hint(new_dist, new_file)
+		conflict = arg != self[conf_key]
 
-		self.error(
-			t.substitute(
-				what = section_detail if section_detail else self.conf_section,
-				conf_key = conf_key,
-				prev = prev,
-				new = new if new else 'unknown',
-			)
+		message = t.substitute(
+			adjective = 'Conflicting' if conflict else 'Duplicated',
+			what = section_detail if section_detail else self.conf_section,
+			conf_key = conf_key,
+			prev = prev,
+			new = new if new else 'unknown',
 		)
+
+		if conflict:
+			self.error(message)
+		else:
+			self.logger.warn(message)
 
 
 	@staticmethod

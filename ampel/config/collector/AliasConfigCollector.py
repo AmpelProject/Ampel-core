@@ -66,7 +66,7 @@ class AliasConfigCollector(AbsDictConfigCollector):
 					self.logger.log(VERBOSE, f"Adding {scope} {self.tier} alias: '{key}'")
 
 				if self.check_duplicates(
-					key, dist_name, version, register_file,
+					key, v, dist_name, version, register_file,
 					section_detail = f"{self.tier} {scope} alias"
 				):
 					continue

@@ -38,7 +38,7 @@ class ChannelConfigCollector(AbsDictConfigCollector):
 				self.logger.log(VERBOSE, f'Adding channel: {chan_name}')
 
 			# Check duplicated channel names between distribs
-			if self.check_duplicates(chan_name, dist_name, version, register_file):
+			if self.check_duplicates(chan_name, chan_dict, dist_name, version, register_file):
 				return
 
 			if not ('NO_HASH' in chan_dict.get('policy', []) or isinstance(chan_name, int)):

@@ -52,7 +52,7 @@ class ResourceConfigCollector(AbsDictConfigCollector):
 					self.logger.log(VERBOSE, f"Adding {scope} resource '{k}'")
 
 				if self.check_duplicates(
-					key, dist_name, version, register_file,
+					key, v, dist_name, version, register_file,
 					section_detail = f"{scope} resource"
 				):
 					continue

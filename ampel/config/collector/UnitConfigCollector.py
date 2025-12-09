@@ -92,9 +92,6 @@ class UnitConfigCollector(AbsDictConfigCollector):
 					)
 					continue
 
-				if self.check_duplicates(class_name, dist_name, version, src_def):
-					continue
-
 				if "AmpelUnit" not in entry['base'] and "AmpelABC" not in entry['base']:
 					self.logger.info(
 						f'Unrecognized base class for {self.conf_section} {class_name} ' +
@@ -105,6 +102,9 @@ class UnitConfigCollector(AbsDictConfigCollector):
 				for base in ("AmpelABC", "AmpelUnit"):
 					if base in entry["base"]:
 						entry["base"].remove(base)
+
+				if self.check_duplicates(class_name, entry, dist_name, version, src_def):
+					continue
 
 				if self.options.verbose:
 					self.logger.log(VERBOSE,
