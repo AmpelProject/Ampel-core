@@ -8,7 +8,6 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import uuid
-from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any
 from typing_extensions import Self
 
@@ -77,8 +76,6 @@ class AmpelContext:
 	@classmethod
 	def load(cls,
 		config: str | dict,
-		pwd_file_path: str | None = None,
-		pwds: Iterable[str] | None = None,
 		freeze_config: bool = True,
 		vault: AmpelVault | None = None,
 		one_db: bool = False,
@@ -88,9 +85,6 @@ class AmpelContext:
 		Instantiate a new context from a configuration file or dict.
 
 		:param config: local path to an ampel config file (yaml or json) or loaded config as dict
-		:param pwd_file_path: path to a text file containing one password per line.
-		The underlying AmpelVault will be initialized with an AESecretProvider configured with these pwds.
-		:param pwds: Same as 'pwd_file_path' except a list of passwords is provided directly via this parameter.
 		:param freeze_config:
 			whether to convert the elements contained of ampel config
 			into immutable structures (:class:`dict` ->
@@ -106,17 +100,6 @@ class AmpelContext:
 		if vault is None:
 			vault = AmpelVault([])
 
-		if pwd_file_path and not pwds:
-			with open(pwd_file_path) as f:
-				pwds = [l.strip() for l in f.readlines()]
-
-		if pwds:
-			# AESecretProvider is optional
-			from ampel.secret.AESecretProvider import AESecretProvider  # noqa: PLC0415
-			vault.providers.append(
-				AESecretProvider(pwds)
-			)
-
 		db = AmpelDB.new(alconf, vault, one_db=one_db)
 
 		return cls(
@@ -130,8 +113,6 @@ class AmpelContext:
 	@classmethod
 	def build(cls,
 		ignore_errors: bool = False,
-		pwd_file_path: None | str = None,
-		pwds: None | Iterable[str] = None,
 		freeze_config: bool = True,
 		verbose: bool = False
 	) -> Self:
@@ -143,16 +124,10 @@ class AmpelContext:
 		not intended for production deployments.
 
 		:param ignore_errors: If True, continue building despite non-fatal errors.
-		:param pwd_file_path: Path to a text file containing one password per line.
-		:param pwds: Passwords provided directly; alternative to ``pwd_file_path``.
 		:param freeze_config: Whether to convert the built config into immutable structures.
 		:param verbose: If True, show verbose distribution loading output.
 		:returns: A new :class:`AmpelContext` instance.
 		"""
-
-		if pwd_file_path:
-			with open(pwd_file_path) as f:
-				pwds = [l.strip() for l in f.readlines()]
 
 		# Import here to avoid cyclic import error
 		from ampel.config.builder.DistConfigBuilder import DistConfigBuilder # noqa: PLC0415
@@ -161,9 +136,7 @@ class AmpelContext:
 		cb.load_distributions()
 
 		return cls.load(
-			cb.build_config(ignore_errors, pwds=pwds),
-			pwd_file_path = pwd_file_path,
-			pwds = pwds,
+			cb.build_config(ignore_errors),
 			freeze_config = freeze_config,
 		)
 

@@ -19,7 +19,6 @@ import re
 import subprocess
 import sys
 import signal
-from collections.abc import Iterable
 from importlib import import_module
 from multiprocessing import Pool
 from typing import Any
@@ -35,10 +34,8 @@ from ampel.config.collector.ProcessConfigCollector import ProcessConfigCollector
 from ampel.config.collector.T02ConfigCollector import T02ConfigCollector
 from ampel.log.AmpelLogger import DEBUG, ERROR, VERBOSE, AmpelLogger
 from ampel.log.utils import log_exception
-from ampel.secret.AESecret import AESecret
 from ampel.template.ChannelWithProcsTemplate import ChannelWithProcsTemplate
 from ampel.util.mappings import dictify, get_by_path, set_by_path
-from ampel.util.recursion import walk_and_process_dict
 
 
 class ConfigBuilder:
@@ -137,7 +134,6 @@ class ConfigBuilder:
 		config_validator: None | str = "ConfigChecker",
 		skip_default_processes: bool = False,
 		json_serializable: bool = True,
-		pwds: None | Iterable[str] = None,
 		ext_resource: None | str = None,
 		get_unit_env: bool = True,
 		ignore_channels: bool = False,
@@ -158,15 +154,10 @@ class ConfigBuilder:
 
 		:param get_unit_env: whether to get a full list of dependencies for each ampel unit (for trace ids)
 
-		:param pwds: config section 'resource' might contain AES encrypted entries.
-		If passwords are provided to this method, thoses entries will be decrypted.
-
 		:param ext_resource: path to resource config file (yaml) to be integrated into the final ampel config.
 		The file must not contain the key "resource:", only content (ex: "mongo: mongodb://localhost:27050")
 		Note that resources defined externally (by this config file) will prevale over resources (with the same keys)
-		gathered from the repositories. "Secrets" can be used, they will be resolved during config building
-		if AES keys are provided with the parameter 'pwds', otherwise, they will be decrypted at run time just as with
-		regular resource.
+		gathered from the repositories.
 
 		:param json_serializable: if True, stringify int keys in section 'confid' and potential int channel names.
 
@@ -391,29 +382,6 @@ class ConfigBuilder:
 					yaml.safe_load(f)
 				)
 
-		# Optionaly decrypt aes encrypted config entries
-		if pwds:
-			from ampel.secret.AESecretProvider import AESecretProvider  # noqa: PLC0415
-
-			self.logger.info('Resolving AES secrets')
-			sp = AESecretProvider(pwds)
-			enc_confs: list[tuple[dict, str, AESecret, str]] = []
-			walk_and_process_dict(
-				arg = out,
-				callback = self._gather_aes_config_callback,
-				enc_confs = enc_confs
-			)
-
-			for tup in enc_confs:
-				self.logger.info(f"Resolving {tup[3]}")
-				d = tup[0]
-				k = tup[1]
-				secret = tup[2]
-				if not sp.tell(secret, str):
-					self.logger.info(" -> Secret not resolvable with specified password(s)")
-				else:
-					d[k] = secret.get()
-
 		self.logger.info('Done building config')
 
 		# Error Summary
@@ -439,7 +407,6 @@ class ConfigBuilder:
 				'config_validator': config_validator,
 				'skip_default_processes': skip_default_processes,
 				'json_serializable': json_serializable,
-				'pwds': pwds is not None,
 				'ext_resource': ext_resource is not None,
 				'get_unit_env': get_unit_env,
 				'ignore_channels': ignore_channels,
@@ -450,7 +417,7 @@ class ConfigBuilder:
 		for k in ('ampel-interface', 'ampel-core'):
 			d['build'][k] = importlib.metadata.distribution(k).version
 
-		dists: set[tuple[str, str | float | int]] = set()
+		dists: set[tuple[str, str | int]] = set()
 		for k in ('unit', 'channel'):
 			for kk, v in out[k]._origin.items():  # noqa: SLF001
 				dists.add((v[0], v[1]))
@@ -472,13 +439,13 @@ class ConfigBuilder:
 			if el[0] not in d['build']:
 				d['build'][el[0]] = el[1]
 
-		d |= dictify(out)
+		d |= dictify(out)  # type: ignore[arg-type]
 
 		# Cosmetic: sort units first by category, then alphabetically
 		u = d['unit']
 		d['unit'] = {}
 		for el in ("AbsEventUnit", "ContextUnit", "LogicalUnit"):
-			dd = {k: u[k] for k in sorted(u.keys()) if el in u[k]['base']}
+			dd = {k: u[k] for k in sorted(u.keys()) if el in u[k]['base']}  # type: ignore[index]
 			d['unit'] |= dd
 			for k in dd:
 				del u[k]
@@ -607,17 +574,6 @@ class ConfigBuilder:
 
 	def print(self) -> None:
 		self.first_pass_config.print()
-
-
-	def _gather_aes_config_callback(self, path, k, d, **kwargs) -> None:
-
-		if d[k] and 'iv' in d[k]:
-			try:
-				secret = AESecret(**k[d])
-			except Exception:
-				return
-			# dict, key, secret, string path (debug)
-			kwargs['enc_confs'].append((d, k, secret, f"{path}.{k}"))
 
 
 def get_unit_dependencies(fqn: str, env: None | str) -> tuple[str, dict]:
