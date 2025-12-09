@@ -34,7 +34,6 @@ from ampel.config.collector.ProcessConfigCollector import ProcessConfigCollector
 from ampel.config.collector.T02ConfigCollector import T02ConfigCollector
 from ampel.log.AmpelLogger import DEBUG, ERROR, VERBOSE, AmpelLogger
 from ampel.log.utils import log_exception
-from ampel.secret.AESecret import AESecret
 from ampel.template.ChannelWithProcsTemplate import ChannelWithProcsTemplate
 from ampel.util.mappings import dictify, get_by_path, set_by_path
 
@@ -575,17 +574,6 @@ class ConfigBuilder:
 
 	def print(self) -> None:
 		self.first_pass_config.print()
-
-
-	def _gather_aes_config_callback(self, path, k, d, **kwargs) -> None:
-
-		if d[k] and 'iv' in d[k]:
-			try:
-				secret = AESecret(**k[d])
-			except Exception:
-				return
-			# dict, key, secret, string path (debug)
-			kwargs['enc_confs'].append((d, k, secret, f"{path}.{k}"))
 
 
 def get_unit_dependencies(fqn: str, env: None | str) -> tuple[str, dict]:
