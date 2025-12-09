@@ -24,6 +24,7 @@ class AbsDictConfigCollector(ConfigCollector, AmpelABC, abstract=True):
 
 	def check_duplicates(self,
 		key: str,
+		arg: dict[str, Any],
 		dist_name: str,
 		version: str | float | int,
 		register_file: str,
@@ -32,6 +33,7 @@ class AbsDictConfigCollector(ConfigCollector, AmpelABC, abstract=True):
 		if self._origin.get(key):
 			self.report_duplicated_entry(
 				conf_key = key,
+				arg = arg,
 				section_detail = section_detail or f'{self.tier} {self.conf_section}',
 				new_dist = dist_name,
 				new_file = register_file,

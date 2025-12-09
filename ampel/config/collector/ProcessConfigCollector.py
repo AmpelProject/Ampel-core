@@ -41,7 +41,7 @@ class ProcessConfigCollector(AbsDictConfigCollector):
 			self.logger.log(VERBOSE, f"Adding {self.tier} process: '{proc_name}'")
 
 		if not self.check_duplicates(
-			proc_name, dist_name, version, register_file,
+			proc_name, arg, dist_name, version, register_file,
 			section_detail = f"{arg['tier']}.process"
 		):
 			self.__setitem__(proc_name, arg)
