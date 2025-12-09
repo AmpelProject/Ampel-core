@@ -54,7 +54,6 @@ class FirstPassConfig(dict):
 			for k, Klass in self.conf_keys.items() if Klass
 		}
 
-		d['pwd'] = []
 		d['unit'] = UnitConfigCollector(
 			conf_section="unit", options=options, logger=logger, ignore_exc=ignore_exc
 		)

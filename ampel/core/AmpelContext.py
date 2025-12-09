@@ -76,7 +76,6 @@ class AmpelContext:
 	@classmethod
 	def load(cls,
 		config: str | dict,
-		pwd_file_path: str | None = None,
 		freeze_config: bool = True,
 		vault: AmpelVault | None = None,
 		one_db: bool = False,
@@ -114,7 +113,6 @@ class AmpelContext:
 	@classmethod
 	def build(cls,
 		ignore_errors: bool = False,
-		pwd_file_path: None | str = None,
 		freeze_config: bool = True,
 		verbose: bool = False
 	) -> Self:
@@ -139,7 +137,6 @@ class AmpelContext:
 
 		return cls.load(
 			cb.build_config(ignore_errors),
-			pwd_file_path = pwd_file_path,
 			freeze_config = freeze_config,
 		)
 
