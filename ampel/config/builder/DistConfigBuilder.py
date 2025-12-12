@@ -40,7 +40,7 @@ class DistConfigBuilder(ConfigBuilder):
 
 	def load_distributions(self,
 		prefixes: Sequence[str] = ("pyampel-", "ampel-"),
-		conf_dirs: Sequence[str] = ("conf",),
+		conf_dirs: Sequence[str] = ("conf", "ampel/conf"),
 		exts: Sequence[str] = ("json", "yaml", "yml"),
 		raise_exc: bool = True,
 		exclude: list[str] | None = None
