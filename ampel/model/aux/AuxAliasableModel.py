@@ -11,12 +11,13 @@ from typing import Any
 
 from pydantic import model_validator
 
+from ampel.base.AmpelABC import AmpelABC
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.model.UnitModel import UnitModel
 
 
-class AuxAliasableModel(AmpelBaseModel):
+class AuxAliasableModel(AmpelABC, AmpelBaseModel, abstract=True):
 	"""
 	A model that can be initialized from the name of an aux unit
 	"""
