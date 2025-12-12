@@ -65,11 +65,11 @@ class DevAmpelContext(AmpelContext):
 
 
 	def add_channel(self, name: int | str, access: Sequence[str] = ()):
-		cm = ChannelModel(channel=name, access=access, version=0)
-		conf = self._get_unprotected_conf()
-		for k, v in cm.__dict__.items():
-			set_by_path(conf, f"channel.{name}.{k}", v)
-		self.config = AmpelConfig(conf, True)
+		dict.__setitem__(
+			self.config._config['channel'],  # noqa: SLF001
+			str(name),
+			ChannelModel(channel=name, access=access, version=0).model_dump()
+		)
 
 
 	def register_units(self, *Classes: type[AmpelUnit]) -> None:
