@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                22.04.2020
-# Last Modified Date:  15.12.2022
+# Last Modified Date:  25.01.2026
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
@@ -49,3 +49,9 @@ class LightLogRecord:
 
 	def __getattr__(self, k):
 		return self.__dict__.get(k, None)
+
+	def __getstate__(self):
+		return self.__dict__
+
+	def __setstate__(self, state):
+		self.__dict__.update(state)
