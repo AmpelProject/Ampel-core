@@ -19,6 +19,7 @@ from ampel.core.DocBuilder import DocBuilder
 from ampel.core.EventHandler import EventHandler
 from ampel.enum.JournalActionCode import JournalActionCode
 from ampel.log.AmpelLogger import AmpelLogger
+from ampel.mongo.update.var.DBLoggingHandler import DBLoggingHandler
 from ampel.model.UnitModel import UnitModel
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
 from ampel.struct.T3Store import T3Store
@@ -56,6 +57,8 @@ class T3BaseStager(AbsT3Stager, DocBuilder, abstract=True):
 	def __init__(self, **kwargs) -> None:
 
 		super().__init__(**kwargs)
+
+		self.db_logging_handler = next((h for h in self.logger.handlers if isinstance(h, DBLoggingHandler)), None)
 		self.stock_updr = MongoStockUpdater(
 			ampel_db = self.context.db,
 			tier = 3,
@@ -91,8 +94,10 @@ class T3BaseStager(AbsT3Stager, DocBuilder, abstract=True):
 	) -> None | T3Document:
 
 		# Let's consider logs as a result product
-		if (buf_hdlr := getattr(t3_unit, '_buf_hdlr', None)) and buf_hdlr.buffer:
-			buf_hdlr.forward(self.logger, extra=log_extra)
+		if self.db_logging_handler and (buf_hdlr := getattr(t3_unit, '_buf_hdlr', None)):
+			buf_hdlr.flush()
+			if buf_hdlr.buffer:
+				buf_hdlr.forward(self.db_logging_handler, unit=t3_unit.__class__.__name__, extra=log_extra)
 
 		if isinstance(res, UnitResult):
 			if stocks and res.journal:
@@ -139,7 +144,7 @@ class T3BaseStager(AbsT3Stager, DocBuilder, abstract=True):
 		"""
 
 		try:
-			self.logger.info("Running T3 unit", extra={'unit': t3_unit.__class__.__name__})
+			self.logger.info("Running T3 unit", unit=t3_unit.__class__.__name__)
 			ts = time()
 			if (
 				((ret := t3_unit.process(view_generator, t3s)) or self.save_stock_ids) and
