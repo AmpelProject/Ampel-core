@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File:                Ampel-core/ampel/logging/LogFlag.py
+# File:                Ampel-core/ampel/log/LogFlag.py
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                14.12.2017
-# Last Modified Date:  11.03.2020
+# Last Modified Date:  25.01.2026
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from enum import IntFlag
@@ -17,7 +17,8 @@ class LogFlag(IntFlag):
 	bits 0-5: tier
 	bits 5-7: run type
 	bits 7-8: location (core system or base units)
-	bits 9-14: log level
+	bits 9-10: instance info (live or job system)
+	bits 11-16: log level
 	"""
 
 	# Execution layer
@@ -35,10 +36,14 @@ class LogFlag(IntFlag):
 	UNIT                    = 128
 	CORE                    = 256
 
+	# Ampel instance info
+	LIVE                    = 1<<9
+	JOB                     = 1<<10
+
 	# Log level
-	DEBUG                   = 1<<9
-	VERBOSE                 = 1<<10
-	INFO                    = 1<<11
-	SHOUT                   = 1<<12 # SHOUT is for convenience only, saved as INFO into DB
-	WARNING                 = 1<<13
-	ERROR                   = 1<<14
+	DEBUG                   = 1<<11
+	VERBOSE                 = 1<<12
+	INFO                    = 1<<13
+	SHOUT                   = 1<<14 # SHOUT is for convenience only, saved as INFO into DB
+	WARNING                 = 1<<15
+	ERROR                   = 1<<16
