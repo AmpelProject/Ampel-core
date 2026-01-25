@@ -101,7 +101,7 @@ class T3Processor(AbsEventUnit):
 				)
 			)
 
-			logger.info("Running stager", extra={'unit': self.stage.unit})
+			logger.info("Running stager", unit=self.stage.unit)
 
 			if (doc_gen := stager.stage(supplier.supply(t3s), t3s)):
 				for t3d in doc_gen:
