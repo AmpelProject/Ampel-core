@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                27.09.2018
-# Last Modified Date:  11.11.2025
+# Last Modified Date:  23.01.2026
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import sys, logging, traceback
@@ -13,7 +13,7 @@ from sys import _getframe
 from typing import TYPE_CHECKING, Any
 from typing_extensions import Self
 
-from ampel.types import ChannelId
+from ampel.types import ChannelId, UnitId
 from ampel.abstract.AbsContextManager import AbsContextManager
 from ampel.log.handlers.AmpelStreamHandler import AmpelStreamHandler
 from ampel.log.LightLogRecord import LightLogRecord
@@ -35,12 +35,12 @@ DEBUG = LogFlag.DEBUG
 if TYPE_CHECKING:
 	from ampel.core.AmpelContext import AmpelContext
 
+
 class AmpelLogger(AbsContextManager):
 
 	loggers: dict[int | str, Self] = {}
 	_counter: int = 0
 	verbose: int = 0
-
 
 	@classmethod
 	def get_logger(cls, force_refresh: bool = False, **kwargs) -> Self:
@@ -170,8 +170,10 @@ class AmpelLogger(AbsContextManager):
 
 		if "console" in handlers:
 			if 'level' in handlers['console']:
+				if isinstance(handlers['console']['level'], str):
+					return int(getattr(LogFlag, handlers['console']['level'].upper()))
 				return handlers['console']['level']
-			return LogFlag.INFO.__int__()
+			return int(LogFlag.INFO)
 
 		return None
 
@@ -195,18 +197,21 @@ class AmpelLogger(AbsContextManager):
 
 		self.name = name
 		self.base_flag = base_flag.__int__() if base_flag else 0
-		self.handlers = handlers or []
 		self.channel = channel
 		self.level = 0
 		self.fname = _getframe().f_code.co_filename
 
-		if console:
-			shargs: dict[str, Any] = {"color": False} if (base_flag and LogFlag.UNIT in base_flag) else {}
+		self.handlers: list[LoggingHandlerProtocol | AggregatingLoggingHandlerProtocol] = []
+		self.provenance = False
+
+		if handlers:
+			for h in handlers:
+				self.addHandler(h)
+		elif console:
+			shargs: dict[str, Any] = {}
 			if isinstance(console, dict):
 				shargs |= console
 			self.addHandler(AmpelStreamHandler(**shargs))
-		else:
-			self.provenance = False
 
 		self._auto_level()
 
@@ -259,40 +264,60 @@ class AmpelLogger(AbsContextManager):
 				el.break_aggregation()
 
 
-	def error(self, msg: str | dict[str, Any], *args,
+	def error(self,
+		msg: str | dict[str, Any], *args,
 		exc_info: bool | Exception | None = None,
 		stack_info: bool = False,
 		stacklevel: int = 1,
 		extra: dict[str, Any] | None = None,
+		unit: UnitId | None = None
 	):
-		self.log(ERROR, msg, *args, exc_info=exc_info, stack_info=stack_info, stacklevel=stacklevel, extra=extra)
+		self.log(
+			ERROR, msg, *args, exc_info=exc_info, stack_info=stack_info,
+			stacklevel=stacklevel, extra=extra, unit=unit
+		)
 
 
-	def warn(self, msg: str | dict[str, Any], *args,
+	def warn(self,
+		msg: str | dict[str, Any], *args,
 		stack_info: bool = False,
 		stacklevel: int = 1,
 		extra: dict[str, Any] | None = None,
+		unit: UnitId | None = None
 	):
 		if self.level <= WARNING:
-			self.log(WARNING, msg, *args, stack_info=stack_info, stacklevel=stacklevel, extra=extra)
+			self.log(
+				WARNING, msg, *args, stack_info=stack_info,
+				stacklevel=stacklevel, extra=extra, unit=unit
+			)
 
 
-	def info(self, msg: str | dict[str, Any] | None, *args,
+	def info(self,
+		msg: str | dict[str, Any] | None, *args,
 		stack_info: bool = False,
 		stacklevel: int = 1,
 		extra: dict[str, Any] | None = None,
+		unit: UnitId | None = None
 	) -> None:
 		if self.level <= INFO:
-			self.log(INFO, msg, *args, stack_info=stack_info, stacklevel=stacklevel, extra=extra)
+			self.log(
+				INFO, msg, *args, stack_info=stack_info,
+				stacklevel=stacklevel, extra=extra, unit=unit
+			)
 
 
-	def debug(self, msg: str | dict[str, Any] | None, *args,
+	def debug(self,
+		msg: str | dict[str, Any] | None, *args,
 		stack_info: bool = False,
 		stacklevel: int = 1,
 		extra: None | dict[str, Any] = None,
+		unit: UnitId | None = None
 	):
 		if self.level <= DEBUG:
-			self.log(DEBUG, msg, *args, stack_info=stack_info, stacklevel=stacklevel, extra=extra)
+			self.log(
+				DEBUG, msg, *args, stack_info=stack_info,
+				stacklevel=stacklevel, extra=extra, unit=unit
+			)
 
 
 	def handle(self, record: LightLogRecord | logging.LogRecord) -> None:
@@ -312,6 +337,7 @@ class AmpelLogger(AbsContextManager):
 		stack_info: bool = False,
 		stacklevel: int = 1,
 		extra: dict[str, Any] | None = None,
+		unit: UnitId | None = None
 	):
 
 		if args and isinstance(msg, str):
@@ -335,6 +361,9 @@ class AmpelLogger(AbsContextManager):
 			if (unit := (extra.pop("unit", None))):
 				record.unit = unit
 			record.extra = extra
+
+		if unit:
+			record.unit = unit
 
 		if exc_info:
 
