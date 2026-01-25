@@ -3,7 +3,7 @@ default:
     std_stream: stdout
     datefmt: '%Y-%m-%d '
     timefmt: '%H:%M:%S '
-    level: 2048
+    level: INFO
     aggregate_interval: 1.0
     density: default
     terminator: "\n"
@@ -17,58 +17,57 @@ default:
     cline: 'rosy_brown'
     clvl: 'grey53'
   db:
-    level: 2048
+    level: INFO
 
 compact:
   console:
-    level: 2048
+    level: INFO
     density: compact
-    log_sep: ''
   db:
-    level: 2048
+    level: INFO
 
-headerless:
+inline:
   console:
-    level: 2048
-    density: headerless
+    level: INFO
+    density: inline
   db:
-    level: 2048
+    level: INFO
 
 prod:
   console:
     std_stream: stderr
-    level: 4096
+    level: SHOUT
   db:
-    level: 2048
+    level: INFO
 
 verbose:
   console:
     std_stream: stdout
-    level: 1024
+    level: VERBOSE
   db:
-    level: 1024
+    level: VERBOSE
 
 debug:
   console:
     std_stream: stdout
-    level: 512
+    level: DEBUG
   db:
-    level: 512
+    level: DEBUG
 
 silent: {}
 
 console_quiet:
   console:
-    level: 4096
+    level: SHOUT
 
 console_info:
   console:
-    level: 2048
+    level: INFO
 
 console_verbose:
   console:
-    level: 1024
+    level: VERBOSE
 
 console_debug:
   console:
-    level: 512
+    level: DEBUG
