@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  14.11.2025
+# Last Modified Date:  25.01.2026
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import sys, io, os, platform, filecmp, shutil, signal
@@ -31,6 +31,8 @@ from ampel.core.EventHandler import EventHandler
 from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogFlag import LogFlag
+from ampel.mongo.update.var.DBLoggingHandler import DBLoggingHandler
+from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
 
 from ampel.model.job.JobModel import JobModel
 from ampel.model.job.JobTaskModel import JobTaskModel
@@ -140,10 +142,10 @@ class JobCommand(AbsCoreCommand):
 		parser.opt('stdin', action='store_true')
 
 		# Example
-		parser.example(f'{op} job_file.yaml')
+		parser.example(f'{op} job.yaml')
 		parser.example(f'{op} job_part1.yaml job_part2.yaml')
-		parser.example(f'{op} -keep-db -task last job_file.yaml')
-		parser.example(f'{op} -show-plots job.yaml')
+		parser.example(f'{op} -keep-db -task last job.yaml')
+		parser.example(f'{op} -show-plots -log-profile inline job.yaml')
 		parser.example(f'{op} -fzf  [requires fzf command line utility]')
 		parser.example(f'pbpaste | ampel {op} -stdin -no-conf-check -show-plots', prepend="")
 		return parser
@@ -155,6 +157,8 @@ class JobCommand(AbsCoreCommand):
 		start_time = time()
 		psys = platform.system().lower()
 		logger = AmpelLogger.get_logger(base_flag=LogFlag.MANUAL_RUN)
+		buf_handler = DefaultRecordBufferingHandler(logger.level)
+		logger.addHandler(buf_handler)
 
 		if args['no_mp']:
 			"""
@@ -450,9 +454,16 @@ class JobCommand(AbsCoreCommand):
 			upsert=True
 		)
 
+		log_profile = args.get('log_profile') or "default"
+		profile_dict = ctx.config.get(f'logging.{log_profile}', dict, raise_exc=True)
+		if "db" in profile_dict:
+			db_logging_handler = DBLoggingHandler(ctx.db, run_id=0, **profile_dict['db'])
+			buf_handler.forward(db_logging_handler, unit="JobCommand")
+			db_logging_handler.flush()
+
 		# Heavy lifting happens here
 		run_ids = self.run_tasks(
-			ctx, job, jtasks, schema_descr, logger,
+			ctx, job, jtasks, schema_descr, logger, log_profile,
 			profiling = _maybe_int(args.get('profiling'))
 		)
 
@@ -466,6 +477,14 @@ class JobCommand(AbsCoreCommand):
 
 		logger.info(feedback)
 		logger.info(f'Time required: {get_time_delta(start_time)}\n')
+
+		if "db" in profile_dict:
+			# to be improved later if need be. using run_id=0 would disturb log ordering
+			# because of how dblogginghandler generates _id
+			run_id = max(run_ids) if len(run_ids) > 1 else (run_ids[0] if len(run_ids) == 1 else 0)
+			db_logging_handler = DBLoggingHandler(ctx.db, run_id=run_id, **profile_dict['db'])
+			buf_handler.forward(db_logging_handler, unit="JobCommand")
+			db_logging_handler.flush()
 
 		if args.get('show_plots') or args.get('show_plots_cmd'):
 
@@ -505,6 +524,7 @@ class JobCommand(AbsCoreCommand):
 		jtasks: list[dict[str, Any]],
 		schema_descr: str,
 		logger: AmpelLogger,
+		log_profile: str,
 		profiling: None | str | int | bool = None
 	) -> list[int]:
 
@@ -538,7 +558,15 @@ class JobCommand(AbsCoreCommand):
 						result_queue: Queue = Queue()
 						p = Process(
 							target = run_mp_process,
-							args = (result_queue, ctx.config._config, taskd, process_name),  # noqa: SLF001
+							kwargs = dict(
+								result_queue = result_queue,
+								config = ctx.config._config, # noqa: SLF001
+								tast_unit_model = taskd,
+								process_name = process_name,
+								log_profile = log_profile,
+								task_nbr = i,
+								job_sig = job.sig
+							),
 							daemon = True
 						)
 						p.start()
@@ -559,6 +587,7 @@ class JobCommand(AbsCoreCommand):
 					model = UnitModel(**taskd),
 					context = ctx,
 					process_name = process_name,
+					log_profile = log_profile,
 					job_sig = job.sig,
 					sub_type = AbsEventUnit,
 					base_log_flag = LogFlag.MANUAL_RUN

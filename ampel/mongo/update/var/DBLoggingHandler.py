@@ -4,14 +4,14 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                14.12.2017
-# Last Modified Date:  15.12.2022
+# Last Modified Date:  25.01.2026
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import socket
 import struct
 from logging import LogRecord
 from traceback import format_exc
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from bson import ObjectId
 from pymongo.errors import BulkWriteError
@@ -67,7 +67,20 @@ class DBLoggingHandler(AmpelUnit):
 	expand_extra: bool = False # Whether extra keys should be moved as root LogDocument keys
 	flush_len: int = 1000
 	auto_flush: bool = False
-	log_provenance: bool = True
+	log_provenance: bool = False
+
+
+	@classmethod
+	def validate(cls, value: dict) -> Any:
+		lvl = value.get("level")
+		if isinstance(lvl, str):
+			try:
+				value = dict(value) # avoid mutating caller's dict
+				value["level"] = int(getattr(LogFlag, lvl.upper()))
+			except AttributeError as err:
+				raise TypeError(f"Unknown log level: {lvl!r}") from err
+
+		return super().validate(value)
 
 
 	def __init__(self, ampel_db: 'AmpelDB', run_id: int, **kwargs) -> None:
@@ -80,7 +93,11 @@ class DBLoggingHandler(AmpelUnit):
 		:param flush_len: How many log documents should be kept in memory before attempting a database bulk_write operation.
 		"""
 
+		if isinstance(kwargs.get('level'), str):
+			kwargs['level'] = int(getattr(LogFlag, kwargs['level'].upper()))
+
 		super().__init__(**kwargs)
+
 		self._ampel_db = ampel_db
 		self.run_id = run_id
 
@@ -110,7 +127,7 @@ class DBLoggingHandler(AmpelUnit):
 				prev_record and
 				(record.name is None or record.name == prev_record.name) and
 				record.levelno <= prev_record.levelno and
-				record.created - prev_record.created < self.aggregate_interval and
+				(record.created - prev_record.created) < self.aggregate_interval and
 				compare_dict_values(rd, prev_record.__dict__, self.fields_check)
 			):
 
@@ -247,6 +264,7 @@ class DBLoggingHandler(AmpelUnit):
 
 		try:
 			# pymongo drops the GIL while sending and receiving data over the network
+			# (current thread is still blocked though)
 			self.col.insert_many(dicts, ordered=False)
 
 		except BulkWriteError as bwe:

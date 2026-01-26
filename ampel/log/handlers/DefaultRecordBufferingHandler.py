@@ -4,14 +4,14 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                05.05.2020
-# Last Modified Date:  15.12.2022
+# Last Modified Date:  23.01.2026
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
 
 from ampel.log.handlers.RecordBufferingHandler import RecordBufferingHandler
 from ampel.protocol.LoggingHandlerProtocol import LoggingHandlerProtocol
-from ampel.types import ChannelId, StockId
+from ampel.types import ChannelId, StockId, UnitId
 
 
 class DefaultRecordBufferingHandler(RecordBufferingHandler):
@@ -19,17 +19,16 @@ class DefaultRecordBufferingHandler(RecordBufferingHandler):
 	MemoryHandler-like class that can grown infinitely and features a convenience method called 'forward'
 	"""
 
-	__slots__ = '_extra', '_unit'
+	__slots__ = ('_extra',)
 
-
-	def __init__(self, level: int, extra: None | dict[str, Any] = None, unit: None | str = None) -> None:
+	def __init__(self, level: int, extra: None | dict[str, Any] = None) -> None:
 		super().__init__(level)
 		self._extra = extra or {}
-		self._unit = unit
 
 
 	def forward(self,
 		target: LoggingHandlerProtocol,
+		unit: None | UnitId = None,
 		channel: None | ChannelId = None,
 		stock: None | StockId = None,
 		extra: None | dict = None,
@@ -39,6 +38,7 @@ class DefaultRecordBufferingHandler(RecordBufferingHandler):
 		Forwards saved log records to provided logger/handler instance.
 		Clears the internal record buffer.
 		"""
+
 		for rec in self.buffer:
 
 			if rec.levelno < target.level:
@@ -62,8 +62,8 @@ class DefaultRecordBufferingHandler(RecordBufferingHandler):
 				else:
 					rec.extra = self._extra
 
-			if self._unit:
-				rec.unit = self._unit
+			if unit:
+				rec.unit = unit
 
 			target.handle(rec)
 

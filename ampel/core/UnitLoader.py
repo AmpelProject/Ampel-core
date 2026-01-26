@@ -4,12 +4,10 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                07.10.2019
-# Last Modified Date:  11.11.2025
+# Last Modified Date:  23.01.2026
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import contextlib
-import os
-import sys
+import contextlib, os, sys
 from collections.abc import Iterator
 from contextlib import contextmanager
 from hashlib import blake2b
@@ -28,6 +26,8 @@ from ampel.abstract.AbsUnitResultAdapter import AbsUnitResultAdapter
 from ampel.log.AmpelLogger import VERBOSE, AmpelLogger, LogFlag
 from ampel.log.handlers.ChanRecordBufHandler import ChanRecordBufHandler
 from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
+from ampel.log.handlers.AmpelStreamHandler import AmpelStreamHandler
+from ampel.protocol.LoggingHandlerProtocol import AggregatingLoggingHandlerProtocol, LoggingHandlerProtocol
 from ampel.model.t3.AliasableModel import AliasableModel
 from ampel.model.UnitModel import UnitModel
 from ampel.secret.AmpelVault import AmpelVault
@@ -120,16 +120,26 @@ class UnitLoader:
 		if logger.verbose:
 			logger.log(VERBOSE, f"Instantiating unit {um.unit}")
 
-		buf_hdlr = ChanRecordBufHandler(logger.level, _chan, {'unit': um.unit}) if _chan \
-			else DefaultRecordBufferingHandler(logger.level, {'unit': um.unit})
+		# Extract stream handler from master logger (if any)
+		stream_hdlr = None
+		for h in logger.handlers:
+			if isinstance(h, AmpelStreamHandler):
+				stream_hdlr = h
+				break
+
+		buf_hdlr = ChanRecordBufHandler(logger.level, _chan) if _chan \
+			else DefaultRecordBufferingHandler(logger.level)
+
+		handlers: list[LoggingHandlerProtocol | AggregatingLoggingHandlerProtocol] = [buf_hdlr]
+		if stream_hdlr is not None:
+			handlers.append(stream_hdlr)
 
 		# Spawn unit instance
 		unit = self.new_logical_unit(
 			model = um,
 			logger = AmpelLogger(
 				base_flag = (getattr(logger, 'base_flag', 0) & ~LogFlag.CORE) | LogFlag.UNIT,
-				console = len(logger.handlers) == 1, # to be improved later
-				handlers = [buf_hdlr]
+				handlers = handlers
 			),
 			sub_type = unit_type
 		)
