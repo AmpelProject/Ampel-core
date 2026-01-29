@@ -153,7 +153,7 @@ class AmpelContext:
 				{'$inc': {'value': 1}},
 				new=True, upsert=True
 			) \
-			.get('value')
+			.get('value')  # type: ignore[union-attr]
 
 
 	def get_config(self) -> AmpelConfig:
