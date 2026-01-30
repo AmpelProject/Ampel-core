@@ -34,8 +34,12 @@ from ampel.test.dummy import (
     DummyPointT2Unit,
     DummyStateT2Unit,
     DummyStockT2Unit,
+    DummyTiedStateT2Unit,
 )
+from ampel.config.alter.HashT2Config import HashT2Config
 from ampel.util.freeze import recursive_unfreeze
+from ampel.t2.T2Worker import T2Worker
+from ampel.model.DPSelection import DPSelection
 
 
 @pytest.fixture
@@ -111,6 +115,16 @@ def get_handler(
         # need to disable provenance for dynamically registered unit
         _provenance=False,
     )
+    # hash t2 configs
+    if directives:
+        directives = [
+            IngestDirective(**d)
+            for d in HashT2Config().alter(
+                context,
+                {"directives": [d.model_dump(exclude_unset=True) for d in directives]},
+                logger,
+            )["directives"]
+        ]
     return ChainedIngestionHandler(
         context=context,
         logger=logger,
@@ -132,7 +146,7 @@ def test_no_directive(dev_context):
 @pytest.fixture
 def datapoints() -> list[DataPoint]:
     return [
-        {"id": i, "stock": "stockystock", "body": {"thing": i}}  # type: ignore[typeddict-item]
+        {"id": i, "stock": "stockystock", "body": {"thing": i, "constant": 11}}  # type: ignore[typeddict-item]
         for i in range(3)
     ]
 
@@ -271,7 +285,9 @@ def test_queue_ingester(
         handler.ingest(datapoints, [(0, True)], stock_id="stockystock")
     assert len(items := handler.ingester._producer.items) == 1
     assert acknowledge_callback.call_count == 1, "acknowledge callback called"
-    assert list(acknowledge_callback.call_args[0][0]) == [sentinel], "callback payload contains sentinel"
+    assert list(acknowledge_callback.call_args[0][0]) == [sentinel], (
+        "callback payload contains sentinel"
+    )
     with handler.ingester.group():
         handler.ingest(datapoints, [(0, True)], stock_id="stockystock")
     assert len(items := handler.ingester._producer.items) == 2, (
@@ -565,3 +581,85 @@ def test_t0_ttl(
             f"ttl updated for dp {dp['id']}"
         )
         assert len(dp["meta"]) == 1, "no extra meta entries added"
+
+
+@pytest.mark.usefixtures("_dummy_units")
+def test_link_override_order(
+    mock_context: DevAmpelContext,
+    datapoints: list[DataPoint],
+    mocker: MockFixture,
+):
+    """
+    T2Compute.ingest and T2StateDependency.link_override select the same
+    document when sorted on a non-unique field, because a) list.sort is stable,
+    and b) ChainedIngestionHandler and T2Worker see datapoints in the same
+    order.
+    """
+    for unit in (DummyStateT2Unit, DummyTiedStateT2Unit):
+        mock_context.register_unit(unit)
+
+    directives = [
+        IngestDirective(
+            channel="TEST_CHANNEL",
+            ingest=IngestBody(
+                point_t2=[
+                    T2Compute(
+                        unit="DummyPointT2Unit",
+                        # sort on a non-unique field to test stability
+                        ingest=DPSelection(sort="constant", select="last"),
+                    )
+                ],
+                combine=[
+                    T1Combine(
+                        unit="T1SimpleCombiner",
+                        state_t2=[
+                            T2Compute(
+                                unit="DummyTiedStateT2Unit",
+                                config={
+                                    "t2_dependency": [
+                                        {
+                                            "unit": "DummyPointT2Unit",
+                                            "link_override": {
+                                                "sort": "constant",
+                                                "select": "last",
+                                            },
+                                        }
+                                    ]
+                                },
+                            )
+                        ],
+                    )
+                ],
+            ),
+        ),
+    ]
+
+    handler = get_handler(mock_context, directives)
+    assert isinstance(handler.ingester, MongoIngester)
+    datapoints_reversed = list(reversed(datapoints))
+    handler.ingest(
+        datapoints_reversed,  # type: ignore[arg-type]
+        [(0, True)],
+        stock_id="stockystock",
+    )
+    handler.ingester._updates_buffer.push_updates()
+
+    col_t1 = mock_context.db.get_collection("t1")
+    t1_doc = col_t1.find_one({"stock": "stockystock"})
+    assert t1_doc is not None
+    assert t1_doc["dps"] != [dp["id"] for dp in datapoints_reversed], (
+        "T1 doc does not preserve input order"
+    )
+    col_t2 = mock_context.db.get_collection("t2")
+
+    assert col_t2.find_one({"unit": "DummyTiedStateT2Unit", "code": DocumentCode.NEW})
+
+    T2Worker(
+        context=mock_context,
+        process_name="test",
+        raise_exc=True,
+    ).run()
+
+    assert (
+        col_t2.find_one({"unit": "DummyTiedStateT2Unit"})["code"] == DocumentCode.OK  # type: ignore[index]
+    ), "Dependencies were found and processed"
