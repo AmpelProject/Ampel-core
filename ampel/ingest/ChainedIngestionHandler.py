@@ -622,12 +622,12 @@ class ChainedIngestionHandler:
 		stock_id: StockId,
 		channel: ChannelId,
 		ttl: None | timedelta,
-		state_t2: list[T2Block],
+		point_t2: list[T2Block],
 		add_other_tag: None | MetaActivity = None,
 		meta_extra: None | dict[str, Any] = None
 	) -> None:
 
-		for t2b in state_t2:
+		for t2b in point_t2:
 
 			# Filter group selection / veto
 			if t2b.group and isinstance(fres, int) and fres not in t2b.group:
