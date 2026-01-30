@@ -626,6 +626,9 @@ class ChainedIngestionHandler:
 		add_other_tag: None | MetaActivity = None,
 		meta_extra: None | dict[str, Any] = None
 	) -> None:
+		# Present datapoints in the same order as they are stored in the T1 document
+		if self.t1_compiler.sort:
+			dps = sorted(dps, key=lambda x: x["id"])
 
 		for t2b in point_t2:
 
