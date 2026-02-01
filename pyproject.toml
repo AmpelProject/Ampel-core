@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ampel-core"
-version = "0.10.6a21"
+version = "0.10.6a22"
 description = "Alice in Modular Provenance-Enabled Land"
 authors = ["Valery Brinnel"]
 maintainers = ["Jakob van Santen <jakob.van.santen@desy.de>"]
