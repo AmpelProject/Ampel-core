@@ -72,7 +72,7 @@ mongo:
       indexes:
       - field: process
     role:
-      r: logger
+      r: writer
       w: writer
   prefix: AmpelTest
   mongo_options:

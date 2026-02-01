@@ -622,12 +622,15 @@ class ChainedIngestionHandler:
 		stock_id: StockId,
 		channel: ChannelId,
 		ttl: None | timedelta,
-		state_t2: list[T2Block],
+		point_t2: list[T2Block],
 		add_other_tag: None | MetaActivity = None,
 		meta_extra: None | dict[str, Any] = None
 	) -> None:
+		# Present datapoints in the same order as they are stored in the T1 document
+		if self.t1_compiler.sort:
+			dps = sorted(dps, key=lambda x: x["id"])
 
-		for t2b in state_t2:
+		for t2b in point_t2:
 
 			# Filter group selection / veto
 			if t2b.group and isinstance(fres, int) and fres not in t2b.group:
