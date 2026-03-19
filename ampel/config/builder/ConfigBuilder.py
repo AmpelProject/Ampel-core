@@ -595,7 +595,7 @@ def get_unit_dependencies(fqn: str, env: None | str) -> tuple[str, dict]:
 			check = True
 		)
 
-	return fqn.split(".")[-1], eval(ret.stdout.decode("utf-8"))
+	return fqn.rsplit(".", maxsplit=1)[-1], eval(ret.stdout.decode("utf-8"))
 
 
 def init_worker():
