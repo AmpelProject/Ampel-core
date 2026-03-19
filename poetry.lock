@@ -1583,4 +1583,4 @@ queue = ["mongomock"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10"
-content-hash = "1f55a667af8511d81e00ce77e2c4fe5a0a58528cc5ae55ed1498d60b918a9c9f"
+content-hash = "f8b48a3af542eacebecedca27cd814386c4d737077c47d864a0b6f343eefaaf6"
