@@ -48,12 +48,6 @@ class T2Compiler(AbsCompiler):
 		super().__init__(**kwargs)
 		self.t2s: dict[T2Compiler.UnitKey, T2Compiler.DocInfo] = {}
 
-
-	@property
-	def link_ids(self) -> set[T2Link]:
-		return {k.link for k in self.t2s}
-
-
 	def add(self, # type: ignore[override]
 		unit: UnitId,
 		config: None | int,
