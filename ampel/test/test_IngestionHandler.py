@@ -1,7 +1,7 @@
 import contextlib
 import datetime
 from collections import defaultdict
-from collections.abc import Generator
+from collections.abc import Generator, Iterable
 from itertools import count
 from typing import Any
 
@@ -11,7 +11,7 @@ from pytest_mock import MockerFixture, MockFixture
 
 from ampel.abstract.AbsIngester import AbsIngester
 from ampel.config.AmpelConfig import AmpelConfig
-from ampel.content.DataPoint import DataPoint
+from ampel.content.DataPoint import DataPoint, DataPointId
 from ampel.content.MetaRecord import MetaRecord
 from ampel.content.T1Document import T1Document
 from ampel.content.T2Document import T2Document
@@ -36,6 +36,7 @@ from ampel.test.dummy import (
     DummyStockT2Unit,
     DummyTiedStateT2Unit,
 )
+from ampel.t1.T1SimpleCombiner import T1SimpleCombiner
 from ampel.config.alter.HashT2Config import HashT2Config
 from ampel.util.freeze import recursive_unfreeze
 from ampel.t2.T2Worker import T2Worker
@@ -663,3 +664,50 @@ def test_link_override_order(
     assert (
         col_t2.find_one({"unit": "DummyTiedStateT2Unit"})["code"] == DocumentCode.OK  # type: ignore[index]
     ), "Dependencies were found and processed"
+
+
+def test_combine_excludes_datapoints(
+    dev_context: DevAmpelContext,
+    datapoints: list[DataPoint],
+):
+
+    excluded_ids = {2}
+
+    @dev_context.register_unit
+    class T1ExcludeCombiner(T1SimpleCombiner):
+        def combine(self, datapoints: Iterable[DataPoint]) -> list[DataPointId]:
+            return [i for i in super().combine(datapoints) if i not in excluded_ids]
+
+    directive = IngestDirective(
+        channel="TEST_CHANNEL",
+        ingest=IngestBody(
+            combine=[
+                T1Combine(
+                    unit="T1ExcludeCombiner",
+                )
+            ],
+        ),
+    )
+
+    handler = get_handler(dev_context, [directive])
+    assert isinstance(handler.ingester, MongoIngester)
+
+    handler.ingest(
+        datapoints,  # type: ignore[arg-type]
+        [(0, True)],
+        stock_id="stockystock",
+    )
+    handler.ingester._updates_buffer.push_updates()
+
+    t0 = dev_context.db.get_collection("t0")
+    t1 = dev_context.db.get_collection("t1")
+    t1_doc = t1.find_one({"stock": "stockystock"})
+    assert t1_doc is not None
+
+    assert (
+        set(dp["id"] for dp in datapoints).difference(set(t1_doc["dps"]))
+        == excluded_ids
+    ), "T1 document excludes specified datapoint ids"
+    assert set(t1_doc["dps"]) == set(dp["id"] for dp in t0.find()), (
+        "Only selected datapoints are ingested"
+    )

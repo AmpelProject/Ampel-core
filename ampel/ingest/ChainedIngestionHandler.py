@@ -10,7 +10,7 @@
 from collections.abc import Callable, Sequence
 from datetime import timedelta
 from time import time
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from ampel.abstract.AbsApplicable import AbsApplicable
 from ampel.abstract.AbsIngester import AbsIngester
@@ -598,6 +598,11 @@ class ChainedIngestionHandler:
 		########
 		now = int(time()) if self.int_time else time()
 
+		# Forget datapoints that are not referenced by at least one state or point t2 doc
+		self.t0_compiler.drop_all_except(
+			self.t1_compiler.datapoint_ids
+			| cast(set[DataPointId], self.point_t2_compiler.link_ids)
+		)
 		self.t0_compiler.commit(self.ingester.t0, now)
 
 		if self.t1_compiler.t1s:

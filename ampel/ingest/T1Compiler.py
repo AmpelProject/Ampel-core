@@ -77,6 +77,18 @@ class T1Compiler(AbsCompiler):
 		self.t1s: dict[T1Compiler.UnitKey, T1Compiler.LinkTarget] = {}
 
 
+	@property
+	def datapoint_ids(self) -> set[DataPointId]:
+		"""
+		Returns the set of all datapoint ids that have been added to this compiler instance.
+		"""
+		return set(
+			dp_id
+			for t1 in self.t1s
+			for dp_id in t1.dps
+		)
+
+
 	def add(self, # type: ignore[override]
 		dps: Sequence[DataPointId],
 		channel: ChannelId,

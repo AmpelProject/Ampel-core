@@ -67,6 +67,12 @@ class T0Compiler(AbsCompiler):
 			if dp['id'] not in self.retained or ttl > self.retained[dp['id']]:
 					self.retained[dp['id']] = ttl
 
+
+	def drop_all_except(self, dps: set[DataPointId]) -> None:
+		self.register = {k: v for k, v in self.register.items() if k in dps}
+		self.retained = {k: v for k, v in self.retained.items() if k in dps}
+
+
 	# Override
 	def commit(self, ingester: DocIngesterProtocol[DataPoint], now: int | float, **kwargs) -> None:
 		"""
