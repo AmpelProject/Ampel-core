@@ -81,7 +81,7 @@ class JobCommand(AbsCoreCommand):
 		parser = AmpelArgumentParser(op)
 		parser.args_not_required = True
 		parser.set_help_descr({
-			'debug': '   ',
+			'debug': 'Debug',
 			#'verbose': 'increases verbosity',
 			'config': 'path to an ampel config file (yaml/json)',
 			'schema': 'path to YAML job file (multiple files will be aggregated)',
