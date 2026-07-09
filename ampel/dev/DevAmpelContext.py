@@ -83,7 +83,7 @@ class DevAmpelContext(AmpelContext):
 			self.config._config['unit'],  # noqa: SLF001
 			Class.__name__,
 			{
-				'fqn': Class.__module__,
+				'fqn': Class.__module__ if Class.__qualname__ == Class.__name__ else None,
 				'base': [el.__name__ for el in Class.__mro__[:-1] if 'ampel' in el.__module__],
 				'distrib': 'unspecified',
 				'file': 'unspecified',

@@ -483,6 +483,8 @@ class ChainedIngestionHandler:
 
 		for i, fres in filter_results:
 
+			selected_dps_ids: set[DataPointId] = set()
+
 			# Add alert and shaper version info to stock journal entry
 			jentry: dict[str, Any] = {
 				'action': JournalActionCode.STOCK_ADD_CHANNEL | JournalActionCode.STOCK_BUMP_UPD,
@@ -497,6 +499,24 @@ class ChainedIngestionHandler:
 			else: # New stock
 				ib = ibs[-i][1]
 
+			# Non-muxed T1 and associated T2 ingestions
+			if ib.combine:
+				selected_dps_ids.update(
+					self.ingest_t12(
+						dps, fres, stock_id, jentry, ib.combine, t1_comb_cache, t1_comp_cache,
+						add_other_tag, meta_extra = jm_extra if self.include_extra_meta else None
+					)
+				)
+				
+			# Non-muxed point T2s
+			if ib.point_t2:
+				selected_dps_ids.update(
+					self.ingest_point_t2s(
+						dps, fres, stock_id, ib.channel, ib.ttl, ib.point_t2, add_other_tag,
+						jm_extra if self.include_extra_meta > 1 else None
+					)
+				)
+
 			# Muxer requested
 			if mux := ib.mux:
 
@@ -510,6 +530,28 @@ class ChainedIngestionHandler:
 				else:
 					dps_insert, dps_combine = mux.unit.process(dps, stock_id)
 					mux_cache[mux.unit] = dps_insert, dps_combine, {ib.channel}
+
+				# Muxed T1 and associated T2 ingestions
+				if dps_combine and mux.combine:
+					selected_dps_ids = self.ingest_t12(
+						dps_combine, fres, stock_id, jentry, mux.combine,
+						t1_comb_cache, t1_comp_cache, add_other_tag,
+						jm_extra if self.include_extra_meta else None
+					)
+					# Discard datapoints that were not selected for combination
+					dps_combine = [dp for dp in dps_combine if dp['id'] in selected_dps_ids]
+					if dps_insert:
+						dps_insert = [dp for dp in dps_insert if dp['id'] in selected_dps_ids]
+
+				if dps_insert and mux.point_t2:
+					selected_dps_ids.update(
+						self.ingest_point_t2s(
+							dps_insert, fres, stock_id, ib.channel, ib.ttl, mux.point_t2, add_other_tag,
+							jm_extra if self.include_extra_meta > 1 else None
+						)
+					)
+					# Discard datapoints that were not selected for combination or point t2 insertion
+					dps_insert = [dp for dp in dps_insert if dp['id'] in selected_dps_ids]
 
 				if dps_combine:
 
@@ -531,37 +573,11 @@ class ChainedIngestionHandler:
 					jentry['upsert'] = [el['id'] for el in dps_insert]
 					jentry['action'] |= JournalActionCode.T0_ADD_CHANNEL
 
-					if mux.point_t2:
-						jentry['action'] |= JournalActionCode.T2_ADD_CHANNEL
-						self.ingest_point_t2s(
-							dps_insert, fres, stock_id, ib.channel, ib.ttl, mux.point_t2, add_other_tag,
-							jm_extra if self.include_extra_meta > 1 else None
-						)
-
-				# Muxed T1 and associated T2 ingestions
-				if dps_combine and mux.combine:
-					self.ingest_t12(
-						dps_combine, fres, stock_id, jentry, mux.combine,
-						t1_comb_cache, t1_comp_cache, add_other_tag,
-						jm_extra if self.include_extra_meta else None
-					)
-
 			else:
+				# Discard datapoints that were not selected for combination or point t2 insertion
+				if (ib.combine or ib.point_t2):
+					dps = [dp for dp in dps if dp['id'] in selected_dps_ids]
 				self.t0_compiler.add(dps, ib.channel, ib.ttl, self.shaper_trace_id)
-
-			# Non-muxed T1 and associated T2 ingestions
-			if ib.combine:
-				self.ingest_t12(
-					dps, fres, stock_id, jentry, ib.combine, t1_comb_cache, t1_comp_cache,
-					add_other_tag, meta_extra = jm_extra if self.include_extra_meta else None
-				)
-				
-			# Non-muxed point T2s
-			if ib.point_t2:
-				self.ingest_point_t2s(
-					dps, fres, stock_id, ib.channel, ib.ttl, ib.point_t2, add_other_tag,
-					jm_extra if self.include_extra_meta > 1 else None
-				)
 
 			# Stock T2s
 			if ib.stock_t2:
@@ -625,10 +641,12 @@ class ChainedIngestionHandler:
 		point_t2: list[T2Block],
 		add_other_tag: None | MetaActivity = None,
 		meta_extra: None | dict[str, Any] = None
-	) -> None:
+	) -> set[DataPointId]:
 		# Present datapoints in the same order as they are stored in the T1 document
 		if self.t1_compiler.sort:
 			dps = sorted(dps, key=lambda x: x["id"])
+
+		selected_dps: set[DataPointId] = set()
 
 		for t2b in point_t2:
 
@@ -653,11 +671,15 @@ class ChainedIngestionHandler:
 						t2b.unit, t2b.config, stock_id, el['id'], channel,
 						ttl, self.base_trace_id, add_other_tag, meta_extra
 					)
+					selected_dps.add(el['id'])
 			else:
 				self.point_t2_compiler.add(
 					t2b.unit, t2b.config, stock_id, f['id'], channel,
 					ttl, self.base_trace_id, add_other_tag, meta_extra
 				)
+				selected_dps.add(f['id'])
+
+		return selected_dps
 
 
 	def ingest_t12(self,
@@ -666,9 +688,10 @@ class ChainedIngestionHandler:
 		t1_comb_cache: T1CombineCache, t1_comp_cache: T1ComputeCache,
 		add_other_tag: None | MetaActivity = None,
 		meta_extra: None | dict[str, Any] = None,
-	) -> None:
+	) -> set[DataPointId]:
 
 		tdps = tuple(el['id'] for el in dps)
+		selected_dps: set[DataPointId] = set()
 
 		# Loop through t1 blocks
 		for t1b in t1bs:
@@ -749,6 +772,8 @@ class ChainedIngestionHandler:
 							tag = add_other_tag['tag'] if add_other_tag else None # type: ignore[arg-type]
 						)
 					continue
+
+				selected_dps.update(t1_dps)
 
 				# On the fly t1 computation requested
 				if t1b.compute.unit:
@@ -840,3 +865,6 @@ class ChainedIngestionHandler:
 						fres, stock_id, t1b.channel, t1b.ttl, t1b.point_t2, add_other_tag,
 						meta_extra if self.include_extra_meta > 1 else None
 					)
+
+		return selected_dps
+					
