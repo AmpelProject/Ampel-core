@@ -531,12 +531,12 @@ class ChainedIngestionHandler:
 					jentry['upsert'] = [el['id'] for el in dps_insert]
 					jentry['action'] |= JournalActionCode.T0_ADD_CHANNEL
 
-					if mux.point_t2:
-						jentry['action'] |= JournalActionCode.T2_ADD_CHANNEL
-						self.ingest_point_t2s(
-							dps_insert, fres, stock_id, ib.channel, ib.ttl, mux.point_t2, add_other_tag,
-							jm_extra if self.include_extra_meta > 1 else None
-						)
+				if dps_combine and mux.point_t2:
+					jentry['action'] |= JournalActionCode.T2_ADD_CHANNEL
+					self.ingest_point_t2s(
+						dps_combine, fres, stock_id, ib.channel, ib.ttl, mux.point_t2, add_other_tag,
+						jm_extra if self.include_extra_meta > 1 else None
+					)
 
 				# Muxed T1 and associated T2 ingestions
 				if dps_combine and mux.combine:
