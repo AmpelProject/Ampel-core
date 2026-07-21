@@ -205,7 +205,7 @@ class DistConfigBuilder(ConfigBuilder):
 			for fpath in units_parents:
 				if fpath in units_ancestry:
 					self.first_pass_config['unit'].add(
-						"ampel." + fpath.split("ampel/")[1].replace("/", ".").removesuffix(".py"),
+						"ampel." + fpath.rpartition("ampel/")[2].replace("/", ".").removesuffix(".py"),
 						dist_name, metadata.distribution(dist_name).version, fpath
 					)
 
