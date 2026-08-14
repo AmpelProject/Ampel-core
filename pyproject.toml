@@ -149,6 +149,7 @@ ignore = [
     "RUF012", # mutable class properties (are harmless everywhere BaseModel is used)
     "RUF018", # assignment expressions in asserts are fine
     "RUF023", # unsorted __slots__ are fine
+    "RUF036", # don't enforce None at end of type unions
 ]
 
 [tool.ruff.lint.per-file-ignores]
