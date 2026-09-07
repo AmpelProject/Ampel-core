@@ -125,6 +125,14 @@ class T2QueueWorker(T2Worker):
 				item["t2"] = [self._sub_existing_doc(doc) for doc in item["t2"]]
 
 				with ingester.group([item]):
+					# make stock, t0, t1 available to the ingester for the duration of the group
+					for stock in item["stock"]:
+						ingester.stock.ingest(stock)
+					for dp in item["t0"]:
+						ingester.t0.ingest(dp)
+					for t1 in item["t1"]:
+						ingester.t1.ingest(t1)
+
 					for input_doc, doc in zip(input_docs, item["t2"], strict=True):
 						if doc is input_doc:
 							# not found in the database; process for the first time
@@ -132,12 +140,6 @@ class T2QueueWorker(T2Worker):
 								self.process_doc(doc, ingester, logger)
 					doc_counter += 1
 
-					for stock in item["stock"]:
-						ingester.stock.ingest(stock)
-					for dp in item["t0"]:
-						ingester.t0.ingest(dp)
-					for t1 in item["t1"]:
-						ingester.t1.ingest(t1)
 					# NB: ingest the input docs as they were before
 					# substitution in order to pick up any requested updates
 					# to meta, channels, tags, expiry, etc.

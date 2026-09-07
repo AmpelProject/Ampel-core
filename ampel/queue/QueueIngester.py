@@ -83,14 +83,16 @@ class QueueIngester(AbsIngester):
                 if tags:
                     doc["tag"] = list(tags.union(doc.get("tag", [])))
                 
-                if self.bump_updated:
+                if self.bump_updated and (ts := jrec.get("ts")) is not None:
                     for chan in ("any", *channels):
-                        self._update_ts(doc, chan, jrec["ts"])
+                        self._update_ts(doc, chan, ts)
 
             return jrec
 
         @staticmethod
         def _update_ts(doc: StockDocument, channel: ChannelId, ts: int | float) -> None:
+            if "ts" not in doc:
+                doc["ts"] = {}
             if channel in doc["ts"]:
                 if "upd" in doc["ts"][channel]:
                     doc["ts"][channel]["upd"] = max(ts, doc["ts"][channel]["upd"])

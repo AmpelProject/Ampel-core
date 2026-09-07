@@ -37,8 +37,10 @@ class MongoStockIngester(AbsDocIngester[StockDocument], HasUpdatesBuffer):
 
 		upd = {
 			'$addToSet': add_to_set,
+			# ts.any.tied set on insert, so is the earliest by construction
 			'$min': {f'ts.{chan}.tied': now for chan in doc['channel']},
-			'$max': {f'ts.{chan}.upd': now for chan in doc['channel']},
+			# ts.*.upd set to the latest journal timestamp
+			'$max': {f'ts.{chan}.upd': now for chan in ("any", *doc['channel'])},
 			'$push': {'journal': maybe_use_each(doc['journal'])}
 		}
 
