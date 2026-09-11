@@ -16,6 +16,7 @@ from ampel.content.T2Document import T2Document
 from ampel.enum.JournalActionCode import JournalActionCode
 from ampel.model.UnitModel import UnitModel
 from ampel.mongo.update.MongoStockUpdater import BaseStockUpdater
+from ampel.mongo.update.T2DocumentMatch import T2DocumentMatch
 from ampel.protocol.StockIngesterProtocol import StockIngesterProtocol
 from ampel.queue.AbsProducer import AbsProducer
 from ampel.struct.JournalAttributes import JournalAttributes
@@ -52,7 +53,7 @@ class QueueIngester(AbsIngester):
             name: None | str | Sequence[str] = None,
             trace_id: None | dict[str, int] = None,
             action_code: None | JournalActionCode = None,
-            doc_id: None | ObjectId = None,
+            doc_id: None | ObjectId | T2DocumentMatch = None,
             unit: None | int | str = None,
             channel: None | ChannelId | Sequence[ChannelId] = None,
             now: None | int | float = None,

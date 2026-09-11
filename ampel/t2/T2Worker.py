@@ -40,6 +40,7 @@ from ampel.log import AmpelLogger
 from ampel.log.utils import convert_dollars, report_error, report_exception
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.model.UnitModel import UnitModel
+from ampel.mongo.update.T2DocumentMatch import T2DocumentMatch
 from ampel.mongo.utils import maybe_match_array
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import (
@@ -196,10 +197,29 @@ class T2Worker(AbsWorker[T2Document]):
 				({'t2unit': t2_unit._trace_id} if t2_unit._trace_id else {})  # noqa: SLF001
 			)
 
+			doc_id = doc.get('_id')
+			if isinstance(doc_id, ObjectId):
+				doc_match: ObjectId | T2DocumentMatch = doc_id
+			elif "origin" in doc:
+				doc_match = T2DocumentMatch(
+					stock = doc['stock'],
+					link = doc['link'],
+					config = doc['config'],
+					unit = doc['unit'],
+					origin = doc['origin']
+				)
+			else:
+				doc_match = T2DocumentMatch(
+					stock = doc['stock'],
+					link = doc['link'],
+					config = doc['config'],
+					unit = doc['unit']
+				)
+
 			jrec = ingester.stock.update.add_journal_record(
 				stock = doc['stock'],
 				channel = doc['channel'],
-				doc_id = doc.get('_id'),  # type: ignore[arg-type]
+				doc_id = doc_match,
 				trace_id = trace_id or None,
 				unit = doc['unit']
 			)

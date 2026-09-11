@@ -3,6 +3,7 @@ from contextlib import contextmanager
 from time import time
 from typing import Any
 
+from mongomock import ObjectId
 import pytest
 from pymongo.errors import OperationFailure
 from pytest_mock import MockerFixture
@@ -334,3 +335,14 @@ def test_queue_worker(
     assert "tied" in stock_doc["ts"]["any"]
     t2_journal_entries = [j for j in stock_doc.get("journal", []) if j.get("tier") == 2]
     assert len(t2_journal_entries) == 2, "t2 journal entry added to stock doc"
+
+    for journal in t2_journal_entries:
+        assert "doc" in journal
+        if isinstance(journal["doc"], bytes):
+            query = {"_id": ObjectId(journal["doc"])}
+        else:
+            query = journal["doc"]
+        t2_doc = mock_context.db.get_collection("t2").find_one(query)
+        assert t2_doc is not None
+        assert t2_doc["code"] == DocumentCode.OK
+        assert t2_doc["unit"] == journal["unit"]
