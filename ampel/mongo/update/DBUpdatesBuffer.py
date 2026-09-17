@@ -88,6 +88,7 @@ class DBUpdatesBuffer:
 		logger: AmpelLogger,
 		error_callback: None | Callable[[], None] = None,
 		acknowledge_callback: None | Callable[[Iterator[Any]], None] = None,
+		write_callbacks: None | dict[AmpelMainCol, Callable[[list[DBOp]], None]] = None,
 		log_doc_ids: None | Iterable[int] = None,
 		push_interval: None | float = 3,
 		max_size: None | int = None,
@@ -117,6 +118,7 @@ class DBUpdatesBuffer:
 		self._new_buffer()
 		self.error_callback = error_callback
 		self.acknowledge_callback = acknowledge_callback
+		self.write_callbacks = write_callbacks if write_callbacks else {}
 
 		self._cols: dict[AmpelMainCol, Collection] = {
 			col_name: ampel_db.get_collection(col_name)
@@ -261,6 +263,15 @@ class DBUpdatesBuffer:
 				*zip(*((col_name, ops) for col_name, ops in db_ops.items() if ops), strict=True)
 			):
 				pass
+
+			for col_name, ops in db_ops.items():
+				if ops and col_name in self.write_callbacks:
+					try:
+						self.write_callbacks[col_name](ops)
+					except Exception as exc:
+						if self.raise_exc:
+							raise
+						report_exception(self._ampel_db, self.logger, exc=exc)
 
 			if self.acknowledge_callback and messages:
 				try:

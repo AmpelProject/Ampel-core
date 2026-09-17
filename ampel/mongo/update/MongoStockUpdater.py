@@ -212,6 +212,25 @@ class MongoStockUpdater(BaseStockUpdater):
 		return jrec
 
 
+	def resolve_journal_doc_ids(self, filter: Mapping[str, Any]) -> None:
+		"""
+		Replace journal.doc T2DocumentMatch entries with the corresponding t2 document _id
+		"""
+		for entry in self.col_stock.aggregate([
+			{"$match": {"$and": [{"journal.doc": {"$type": "object"}}, filter]}},
+			{"$project": {"journal": 1, "stock": 1, "_id": 0}},
+			{"$unwind": {"path": "$journal", "includeArrayIndex": "_idx"}},
+			{"$match": {"journal.doc": {"$type": "object"}}},
+		]):
+			col = self._ampel_db.get_collection(f"t{entry['journal']['tier']}")
+			target = col.find_one(entry["journal"]["doc"], {"_id": 1})
+			if target is not None:
+				self._add_one_update(
+					entry["stock"],
+					{'$set': {f"journal.{entry['_idx']}.doc": target["_id"]}}
+				)
+
+
 	def add_name(self, stock: StockId, name: str | Sequence[str]) -> None:
 		self._add_one_update(
 			stock,

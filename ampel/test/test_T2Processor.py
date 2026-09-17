@@ -338,11 +338,7 @@ def test_queue_worker(
 
     for journal in t2_journal_entries:
         assert "doc" in journal
-        if isinstance(journal["doc"], bytes):
-            query = {"_id": ObjectId(journal["doc"])}
-        else:
-            query = journal["doc"]
-        t2_doc = mock_context.db.get_collection("t2").find_one(query)
+        t2_doc = mock_context.db.get_collection("t2").find_one({"_id": ObjectId(journal["doc"])})
         assert t2_doc is not None
         assert t2_doc["code"] == DocumentCode.OK
         assert t2_doc["unit"] == journal["unit"]

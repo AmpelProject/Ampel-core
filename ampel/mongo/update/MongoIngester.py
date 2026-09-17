@@ -13,7 +13,7 @@ from ampel.content.StockDocument import StockDocument
 from ampel.content.T1Document import T1Document
 from ampel.content.T2Document import T2Document
 from ampel.model.UnitModel import UnitModel
-from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
+from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer, DBOp, UpdateMany, UpdateOne
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
 from ampel.protocol.StockIngesterProtocol import StockIngesterProtocol
 from ampel.types import OneOrMany, Tag
@@ -49,6 +49,9 @@ class MongoIngester(AbsIngester):
             self.logger,
             error_callback=self.error_callback,
             acknowledge_callback=self.acknowledge_callback,
+            write_callbacks={
+                "stock": self._resolve_journal_doc_ids
+            },
             max_size=self.updates_buffer.max_size,
             push_interval=self.updates_buffer.push_interval,
             raise_exc=self.raise_exc,
@@ -98,6 +101,10 @@ class MongoIngester(AbsIngester):
         )
 
         self._updates_buffer = updates_buffer
+
+    def _resolve_journal_doc_ids(self, ops: list[DBOp]) -> None:
+        filter = {"$or": [op._filter for op in ops if isinstance(op, UpdateOne|UpdateMany)]}  # noqa: SLF001
+        self._stock.update.resolve_journal_doc_ids(filter)
 
     def __enter__(self) -> "Self":
         self._updates_buffer.__enter__()
