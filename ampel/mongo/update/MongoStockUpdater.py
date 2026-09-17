@@ -20,6 +20,7 @@ from ampel.core.AmpelDB import AmpelDB
 from ampel.enum.JournalActionCode import JournalActionCode
 from ampel.log import VERBOSE, AmpelLogger
 from ampel.log.utils import report_exception
+from ampel.mongo.update.T2DocumentMatch import T2DocumentMatch
 from ampel.mongo.utils import maybe_use_each
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.types import ChannelId, StockId, Tag
@@ -69,7 +70,7 @@ class BaseStockUpdater:
 		unit: None | int | str = None,
 		channels: None | ChannelId | Sequence[ChannelId] = None,
 		action_code: None | JournalActionCode = None,
-		doc_id: None | ObjectId = None,
+		doc_id: None | ObjectId | T2DocumentMatch = None,
 		jattrs: None | JournalAttributes = None,
 		trace_id: None | dict[str, int] = None,
 		now: None | int | float = None
@@ -89,8 +90,10 @@ class BaseStockUpdater:
 		if unit:
 			ret['unit'] = unit
 
-		if doc_id:
+		if isinstance(doc_id, ObjectId):
 			ret['doc'] = doc_id.binary
+		elif doc_id:
+			ret['doc'] = doc_id   # type: ignore[typeddict-item]
 
 		if self.extra_tag:
 			ret['tag'] = self.extra_tag
@@ -150,7 +153,7 @@ class MongoStockUpdater(BaseStockUpdater):
 		name: None | str | Sequence[str] = None,
 		trace_id: None | dict[str, int] = None,
 		action_code: None | JournalActionCode = None,
-		doc_id: None | ObjectId = None,
+		doc_id: None | ObjectId | T2DocumentMatch = None,
 		unit: None | int | str = None,
 		channel: None | ChannelId | Sequence[ChannelId] = None,
 		now: None | int | float = None
@@ -207,6 +210,25 @@ class MongoStockUpdater(BaseStockUpdater):
 				self._add_one_update(stock, upd)
 
 		return jrec
+
+
+	def resolve_journal_doc_ids(self, filter: Mapping[str, Any]) -> None:
+		"""
+		Replace journal.doc T2DocumentMatch entries with the corresponding t2 document _id
+		"""
+		for entry in self.col_stock.aggregate([
+			{"$match": {"$and": [{"journal.doc": {"$type": "object"}}, filter]}},
+			{"$project": {"journal": 1, "stock": 1, "_id": 0}},
+			{"$unwind": {"path": "$journal", "includeArrayIndex": "_idx"}},
+			{"$match": {"journal.doc": {"$type": "object"}}},
+		]):
+			col = self._ampel_db.get_collection(f"t{entry['journal']['tier']}")
+			target = col.find_one(entry["journal"]["doc"], {"_id": 1})
+			if target is not None:
+				self._add_one_update(
+					entry["stock"],
+					{'$set': {f"journal.{entry['_idx']}.doc": target["_id"]}}
+				)
 
 
 	def add_name(self, stock: StockId, name: str | Sequence[str]) -> None:

@@ -3,6 +3,7 @@ from contextlib import contextmanager
 from time import time
 from typing import Any
 
+from mongomock import ObjectId
 import pytest
 from pymongo.errors import OperationFailure
 from pytest_mock import MockerFixture
@@ -15,6 +16,7 @@ from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 from ampel.model.UnitModel import UnitModel
 from ampel.queue.QueueIngester import AbsProducer, QueueIngester
 from ampel.t2.T2QueueWorker import AbsConsumer, QueueItem, T2QueueWorker
+from ampel.ingest.IngestionWorker import IngestionWorker
 from ampel.t2.T2Worker import T2Worker
 from ampel.test.conftest import make_tied_ingestion_handler
 from ampel.test.dummy import DummyPointT2Unit
@@ -198,28 +200,41 @@ def test_slow_dependency(
     assert db_doc["code"] == DocumentCode.OK
 
 
+@pytest.mark.parametrize("ingester_impl", ["mongo", "queue"])
 def test_queue_worker(
-    mock_context: DevAmpelContext, mocker: MockerFixture, ampel_logger
+    mock_context: DevAmpelContext, mocker: MockerFixture, ampel_logger, ingester_impl: str
 ):
     """
     Simulate a race conditions between parallel T2 workers
     """
-    items: list[AbsProducer.Item] = []
+
+    queues: dict[str, list[AbsProducer.Item]] = {
+        "t2": [],
+        "ingest": []
+    }
 
     @mock_context.register_unit
     class DummyProducer(AbsProducer):
+
+        channel: str
+
         def produce(self, item: AbsProducer.Item, delivery_callback=None):
-            items.append(item)
+            queues[self.channel].append(item)
+            if delivery_callback:
+                delivery_callback()
 
         def __exit__(self, exc_type, exc_val, exc_tb):
             pass
 
     @mock_context.register_unit
     class DummyConsumer(AbsConsumer):
+
+        channel: str
+
         def consume(self) -> None | QueueItem:
-            if not items:
+            if not queues[self.channel]:
                 return None
-            item = items.pop()
+            item = queues[self.channel].pop()
             return {"stock": item.stock, "t0": item.t0, "t1": item.t1, "t2": item.t2}
 
         def acknowledge(self, docs: Iterable[QueueItem]) -> None:
@@ -238,7 +253,7 @@ def test_queue_worker(
         "DummyStateT2Unit",
         UnitModel(
             unit="QueueIngester",
-            config={"producer": {"unit": "DummyProducer"}},
+            config={"producer": {"unit": "DummyProducer", "config": {"channel": "t2"}}},
         ),
     )
 
@@ -251,7 +266,8 @@ def test_queue_worker(
 
     t2 = T2QueueWorker(
         context=mock_context,
-        consumer={"unit": "DummyConsumer"},
+        consumer={"unit": "DummyConsumer", "config": {"channel": "t2"}},
+        ingester={"unit": "QueueIngester", "config": {"producer": {"unit": "DummyProducer", "config": {"channel": "ingest"}}}} if ingester_impl == "queue" else {"unit": "MongoIngester"},
         raise_exc=True,
         process_name="t2",
         run_dependent_t2s=True,
@@ -266,6 +282,17 @@ def test_queue_worker(
     acks = list(acks_iter)
     assert acks
     assert acks[0]["stock"][0]["stock"] == "stockystock"
+
+    if ingester_impl == "queue":
+        assert len(queues["ingest"]) == 1, "ingest queue should have been populated"
+
+        ingest = IngestionWorker(
+            context=mock_context,
+            process_name="ingest",
+            consumer={"unit": "DummyConsumer", "config": {"channel": "ingest"}},
+        )
+
+        assert ingest.run() == 1
 
     assert mock_context.db.get_collection("stock").count_documents({}) == 1
     assert mock_context.db.get_collection("t0").count_documents({}) == 3
@@ -284,6 +311,11 @@ def test_queue_worker(
     
     assert t2.run() == 1
 
+    if ingester_impl == "queue":
+        assert len(queues["ingest"]) == 1, "ingest queue should have been populated"
+
+        assert ingest.run() == 1
+
     assert mock_context.db.get_collection("t1").count_documents({}) == 1
     t1_doc = mock_context.db.get_collection("t1").find_one({})
     assert t1_doc is not None
@@ -292,3 +324,21 @@ def test_queue_worker(
     assert len(docs) == 2
     assert len(docs[0]["body"]) == 1, "doc was not re-run"
     assert len(docs[0]["meta"]) == 3, "meta entry added to t2 doc"
+
+    stock_doc = mock_context.db.get_collection("stock").find_one({})
+    assert stock_doc is not None
+    assert "ts" in stock_doc
+    for k in stock_doc["ts"]:
+        assert "tied" in stock_doc["ts"][k]
+        assert "upd" in stock_doc["ts"][k]
+        assert stock_doc["ts"][k]["upd"] >= stock_doc["ts"][k]["tied"]
+    assert "tied" in stock_doc["ts"]["any"]
+    t2_journal_entries = [j for j in stock_doc.get("journal", []) if j.get("tier") == 2]
+    assert len(t2_journal_entries) == 2, "t2 journal entry added to stock doc"
+
+    for journal in t2_journal_entries:
+        assert "doc" in journal
+        t2_doc = mock_context.db.get_collection("t2").find_one({"_id": ObjectId(journal["doc"])})
+        assert t2_doc is not None
+        assert t2_doc["code"] == DocumentCode.OK
+        assert t2_doc["unit"] == journal["unit"]

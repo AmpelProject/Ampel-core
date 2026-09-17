@@ -16,6 +16,7 @@ from ampel.content.T2Document import T2Document
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.mongo.update.HasUpdatesBuffer import HasUpdatesBuffer
 from ampel.mongo.utils import maybe_use_each
+from ampel.mongo.update.T2DocumentMatch import T2DocumentMatch
 
 
 class MongoT2Ingester(AbsDocIngester[T2Document], HasUpdatesBuffer):
@@ -27,7 +28,7 @@ class MongoT2Ingester(AbsDocIngester[T2Document], HasUpdatesBuffer):
 		set_on_insert: dict[str, Any] = {'code': DocumentCode.NEW} if new else {}
 		add_to_set: dict[str, Any] = {'channel': maybe_use_each(doc['channel'])}
 
-		match = {
+		match: T2DocumentMatch = {
 			'stock': doc['stock'],
 			'unit': doc['unit'],
 			'config': doc['config'],

@@ -16,6 +16,7 @@ from ampel.content.T2Document import T2Document
 from ampel.enum.JournalActionCode import JournalActionCode
 from ampel.model.UnitModel import UnitModel
 from ampel.mongo.update.MongoStockUpdater import BaseStockUpdater
+from ampel.mongo.update.T2DocumentMatch import T2DocumentMatch
 from ampel.protocol.StockIngesterProtocol import StockIngesterProtocol
 from ampel.queue.AbsProducer import AbsProducer
 from ampel.struct.JournalAttributes import JournalAttributes
@@ -52,7 +53,7 @@ class QueueIngester(AbsIngester):
             name: None | str | Sequence[str] = None,
             trace_id: None | dict[str, int] = None,
             action_code: None | JournalActionCode = None,
-            doc_id: None | ObjectId = None,
+            doc_id: None | ObjectId | T2DocumentMatch = None,
             unit: None | int | str = None,
             channel: None | ChannelId | Sequence[ChannelId] = None,
             now: None | int | float = None,
@@ -83,14 +84,16 @@ class QueueIngester(AbsIngester):
                 if tags:
                     doc["tag"] = list(tags.union(doc.get("tag", [])))
                 
-                if self.bump_updated:
+                if self.bump_updated and (ts := jrec.get("ts")) is not None:
                     for chan in ("any", *channels):
-                        self._update_ts(doc, chan, jrec["ts"])
+                        self._update_ts(doc, chan, ts)
 
             return jrec
 
         @staticmethod
         def _update_ts(doc: StockDocument, channel: ChannelId, ts: int | float) -> None:
+            if "ts" not in doc:
+                doc["ts"] = {}
             if channel in doc["ts"]:
                 if "upd" in doc["ts"][channel]:
                     doc["ts"][channel]["upd"] = max(ts, doc["ts"][channel]["upd"])

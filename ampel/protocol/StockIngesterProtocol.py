@@ -6,6 +6,7 @@ from bson import ObjectId
 from ampel.content.JournalRecord import JournalRecord
 from ampel.content.StockDocument import StockDocument
 from ampel.enum.JournalActionCode import JournalActionCode
+from ampel.mongo.update.T2DocumentMatch import T2DocumentMatch
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.types import ChannelId, StockId, Tag
 
@@ -18,7 +19,7 @@ class StockUpdaterProtocol(Protocol):
 		name: None | str | Sequence[str] = None,
 		trace_id: None | dict[str, int] = None,
 		action_code: None | JournalActionCode = None,
-		doc_id: None | ObjectId = None,
+		doc_id: None | ObjectId | T2DocumentMatch = None,
 		unit: None | int | str = None,
 		channel: None | ChannelId | Sequence[ChannelId] = None,
 		now: None | int | float = None
