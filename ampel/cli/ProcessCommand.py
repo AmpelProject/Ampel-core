@@ -20,9 +20,13 @@ from typing import Any
 import yaml
 
 from ampel.abstract.AbsEventUnit import AbsEventUnit
-from ampel.cli.AbsCoreCommand import AbsCoreCommand
+from ampel.config.AmpelConfig import OutdatedConfigError
+from ampel.cli.AbsCoreCommand import AbsCoreCommand, get_vault
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
+from ampel.cli.ArgParserBuilder import ArgParserBuilder
+from ampel.core.UnitLoader import UnitLoader
 from ampel.core.EventHandler import EventHandler
+from ampel.core.AmpelContext import AmpelContext
 from ampel.core.Schedulable import Schedulable
 from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.log.AmpelLogger import AmpelLogger
@@ -39,6 +43,31 @@ def _handle_traceback(signal, frame):
     print(traceback.print_stack(frame))
 
 
+help = {
+    "run": "Execute the process",
+    "validate": "Validate the process definition",
+    "debug": "enable traceback printing",
+    "handle-exc": "record exceptions in the db",
+    "log-profile": "logging profile to use",
+    "config": "path to an ampel config file (yaml/json)",
+    "schema": "path to YAML job file",
+    "name": "task name",
+    "workflow": "parent workflow name",
+    "secrets": "path to a secret store; either SOPS YAML or mounted k8s Secret directory",
+    "db": "database to use",
+    "channel": "path to YAML channel file",
+    "alias": "path to YAML alias file",
+}
+
+
+class MockAmpelDB:
+    def __init__(self) -> None:
+        self.conf_ids: dict[int, dict[str, Any]] = {}
+
+    def add_conf_id(self, confid: int, conf: dict[str, Any]):
+        self.conf_ids[confid] = conf
+
+
 class ProcessCommand(AbsCoreCommand):
     """
     Runs a single process from a task definition (YAML file)
@@ -46,79 +75,97 @@ class ProcessCommand(AbsCoreCommand):
     A process is a single step of a Job (see JobCommand), with all templates resolved.
     """
 
-    def __init__(self):
-        self.parser = None
-
     @staticmethod
-    def get_sub_ops() -> None | list[str]:
-        return None
+    def get_sub_ops() -> list[str]:
+        return ["run", "validate"]
 
     # Mandatory implementation
     def get_parser(
         self, sub_op: None | str = None
     ) -> ArgumentParser | AmpelArgumentParser:
 
-        if self.parser:
-            return self.parser
+        if sub_op is None:
+            sub_op = "run"
+        if sub_op in self.parsers:
+            return self.parsers[sub_op]
 
-        parser = AmpelArgumentParser("process")
-        parser.set_help_descr(
-            {
-                "debug": "enable traceback printing",
-                "handle-exc": "record exceptions in the db",
-                "log-profile": "logging profile to use",
-                "config": "path to an ampel config file (yaml/json)",
-                "schema": "path to YAML job file",
-                "name": "task name",
-                "workflow": "parent workflow name",
-                "secrets": "path to a secret store; either SOPS YAML or mounted k8s Secret directory",
-                "db": "database to use",
-                "channel": "path to YAML channel file",
-                "alias": "path to YAML alias file",
-            }
-        )
+        sub_ops = self.get_sub_ops()
+        if sub_op is None or sub_op not in sub_ops:
+            return AmpelArgumentParser.build_choice_help(
+                "process",
+                sub_ops,
+                help,
+                description="Run a single process from a task definition (YAML file).",
+            )
 
-        parser.req("config")
-        parser.req("schema")
-        parser.req("name")
-        parser.req("db", type=str)
+        builder = ArgParserBuilder("process")
+        builder.add_parsers(sub_ops, help)
+        builder.notation_add_note_references()
+        builder.notation_add_example_references()
 
-        parser.opt("resources-in")
-        parser.opt("resources-out")
+        builder.req("config")
+        builder.req("schema")
+        builder.req("name", "run")
+        builder.opt("name", "validate")
+        builder.req("db", "run", type=str)
+        builder.opt("db", "validate", type=str)
 
-        parser.opt("channel")
-        parser.opt("alias")
-        parser.opt("workflow", default=None, type=str)
-        parser.opt("log-profile", default="prod")
-        parser.opt("debug", default=False, action="store_true")
-        parser.opt("handle-exc", default=False, action="store_true")
-        parser.opt("secrets", type=str)
+        builder.opt("resources-in")
+        builder.opt("resources-out")
+
+        builder.opt("channel")
+        builder.opt("alias")
+        builder.opt("workflow", default=None, type=str)
+        builder.opt("log-profile", default="prod")
+        builder.opt("debug", default=False, action="store_true")
+        builder.opt("handle-exc", default=False, action="store_true")
+        builder.opt("secrets", type=str)
 
         # Example
-        parser.example(
-            "process -config ampel_conf.yaml schema task_file.yaml -db processing -name taskytask"
+        builder.example(
+            "run",
+            "-config ampel_conf.yaml schema task_file.yaml -db processing -name taskytask",
         )
-        return parser
+        builder.example(
+            "validate",
+            "-config ampel_conf.yaml schema task_file.yaml",
+        )
+        self.parsers.update(builder.get())
+
+        return self.parsers[sub_op]
 
     def _get_context(
         self,
         args: dict[str, Any],
         unknown_args: Sequence[str],
+        sub_op: str | None,
         logger: AmpelLogger,
-    ) -> DevAmpelContext:
+    ) -> AmpelContext:
 
         # DevAmpelContext hashes automatically confid from potential IngestDirectives
-        ctx = super().get_context(
-            args,
-            unknown_args,
-            logger,
-            freeze_config=False,
-            ContextClass=DevAmpelContext,
-            purge_db=False,
-            db_prefix=args["db"],
-            require_existing_db=False,
-            one_db=True,
-        )
+        if sub_op == "run":
+            ctx = super().get_context(
+                args,
+                unknown_args,
+                logger,
+                freeze_config=False,
+                ContextClass=DevAmpelContext,
+                purge_db=False,
+                db_prefix=args["db"],
+                require_existing_db=False,
+                one_db=True,
+            )
+        else:
+            # Do not connect to the database for validation, just mock the conf_id store
+            config = self.load_config(
+                args["config"], unknown_args, logger, freeze=False
+            )
+            vault = get_vault(args)
+            return AmpelContext(
+                config=config,
+                db=MockAmpelDB(),  # type: ignore[arg-type]
+                loader=UnitLoader(config, db=None, vault=vault, provenance=False),
+            )
 
         config_dict = ctx.config._config  # noqa: SLF001
 
@@ -170,7 +217,7 @@ class ProcessCommand(AbsCoreCommand):
         args: dict[str, Any],
         unknown_args: Sequence[str],
         sub_op: None | str = None,
-    ) -> None:
+    ) -> int | None:
 
         if args["debug"]:
             signal.signal(signal.SIGUSR1, _handle_traceback)
@@ -178,20 +225,33 @@ class ProcessCommand(AbsCoreCommand):
         start_time = time()
         logger = AmpelLogger.get_logger(base_flag=LogFlag.MANUAL_RUN)
 
-        ctx = self._get_context(
-            args,
-            unknown_args,
-            logger,
-        )
-
-        logger.info(f"Running task {args['name']}")
+        try:
+            ctx = self._get_context(
+                args,
+                unknown_args,
+                sub_op or "run",
+                logger=logger,
+            )
+        except OutdatedConfigError:
+            return 1
 
         with open(args["schema"]) as f:
             taskd = yaml.safe_load(f)
             if "template" in taskd:
                 taskd = apply_templates(ctx, taskd["template"], taskd, logger)
                 taskd.pop("template")
-            unit_model = UnitModel(**taskd)
+
+        if sub_op == "validate":
+            with ctx.loader.validate_unit_models():
+                try:
+                    UnitModel(**taskd)
+                except TypeError as e:
+                    logger.error(f"Invalid task definition in {args['schema']}: {e}")
+                    return 1
+                return None
+
+        logger.info(f"Running task {args['name']}")
+        unit_model = UnitModel(**taskd)
 
         # always raise exceptions
         unit_model.override = (unit_model.override or {}) | {
@@ -199,7 +259,7 @@ class ProcessCommand(AbsCoreCommand):
         }
 
         if args["workflow"]:
-            process_name = f'{args["workflow"]}.{args["name"]}'
+            process_name = f"{args['workflow']}.{args['name']}"
         else:
             process_name = args["name"]
 
@@ -239,3 +299,5 @@ class ProcessCommand(AbsCoreCommand):
             f"Task processing done. Time required: {round(dm[0])} minutes {round(dm[1])} seconds\n"
         )
         logger.flush()
+
+        return None

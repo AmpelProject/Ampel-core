@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 
 import pytest
 import yaml
+from typing import Any
 from pytest_mock import MockerFixture
 
 from ampel.cli.main import main
@@ -23,8 +24,7 @@ def argv_context(args: list[str]):
 def run(args: list[str]) -> None | int | str:
     try:
         with argv_context(args):
-            main()
-        return None
+            return main() or None
     except SystemExit as se:
         return se.code
 
@@ -37,8 +37,8 @@ def dump(payload, tmpdir, name: str) -> Path:
 
 
 @pytest.fixture
-def vault(tmpdir):
-    return dump({"foo": "bar"}, tmpdir, "secrets.yml")
+def vault(tmpdir, secrets):
+    return dump(secrets, tmpdir, "secrets.yml")
 
 
 @pytest.fixture
@@ -48,6 +48,7 @@ def secrets():
         "key.with.bunch.of.dots": "nesty",
         "dict": {"user": "none", "password": 1.5},
         "list": [1, 2, 3.5, "flerp"],
+        "int": 42,
     }
 
 
@@ -136,73 +137,71 @@ def test_resource_passing(
     run_task(reader)
 
 
-def test_templates(
-    testing_config,
+@pytest.fixture
+def process_args(testing_config, vault):
+    return [
+        "--config",
+        str(testing_config),
+        "--secrets",
+        str(vault),
+        "--db",
+        "whatevs",
+        "--log-profile",
+        "console_debug",
+        "--name",
+        "task_1",
+    ]
+
+
+def ingest_config(unit_config: dict[str, Any]):
+    return {
+        "template": "hash_t2_config",
+        "unit": "DummyIngestUnit",
+        "config": dict(
+            directives=[
+                dict(
+                    channel="TEST",
+                    ingest=dict(
+                        combine=[
+                            dict(
+                                unit="T1SimpleCombiner",
+                                state_t2=[
+                                    dict(
+                                        unit="DummyTiedStateT2Unit",
+                                        config={
+                                            "t2_dependency": [
+                                                {
+                                                    "unit": "DummyStateT2Unit",
+                                                    "config": unit_config,
+                                                }
+                                            ]
+                                        },
+                                    )
+                                ],
+                            )
+                        ]
+                    ),
+                )
+            ]
+        ),
+    }
+
+
+def test_run_template(
     mock_db: MagicMock,
-    vault: Path,
+    process_args: list[str],
     tmpdir,
 ):
     """ProcessCommand resolves templates"""
     task = dump(
-        {
-            "template": "hash_t2_config",
-            "unit": "DummyIngestUnit",
-            "config": dict(
-                directives=[
-                    dict(
-                        channel="TEST",
-                        ingest=dict(
-                            combine=[
-                                dict(
-                                    unit="T1SimpleCombiner",
-                                    state_t2=[
-                                        dict(
-                                            unit="DummyTiedStateT2Unit",
-                                            config={
-                                                "t2_dependency": [
-                                                    {
-                                                        "unit": "DummyStateT2Unit",
-                                                        "config": {"foo": 37},
-                                                    }
-                                                ]
-                                            },
-                                        )
-                                    ],
-                                )
-                            ]
-                        ),
-                    )
-                ]
-            ),
-        },
+        ingest_config({"foo": 37}),
         tmpdir,
         "task.yml",
     )
 
-    def run_task(task_path: Path):
-        assert (
-            run(
-                [
-                    "ampel",
-                    "process",
-                    "--config",
-                    str(testing_config),
-                    "--secrets",
-                    str(vault),
-                    "--db",
-                    "whatevs",
-                    "--log-profile",
-                    "console_debug",
-                    "--schema",
-                    str(task_path),
-                    "--name",
-                    "task_1",
-                ]
-            )
-            is None
-        )
-
-    run_task(task)
+    assert run(["ampel", "process", "--schema", str(task), *process_args]) is None, (
+        "process runs cleanly"
+    )
 
     conf = mock_db("conf")
     # get the last config inserted
@@ -231,4 +230,43 @@ def test_templates(
     assert "t2_dependency" in config
     subconfig = get_config(config["t2_dependency"][0]["config"])
     subconfig.pop("_id")
-    assert subconfig == {"foo": 37}, "config was hashed recursively"
+    assert subconfig == {"foo": 37, "secret": None}, "config was hashed recursively"
+
+
+@pytest.mark.parametrize(
+    ("config", "expected"),
+    [
+        ({"foo": 37, "secret": {"label": "int"}}, None),
+        ({"unknown": 37}, 1),
+        ({"secret": {"label": "unknown"}}, 1),
+        ({"secret": {"label": "str"}}, 1),
+    ],
+    ids=["valid", "unknown-field", "wrong-secret-label", "wrong-secret-type"],
+)
+def test_validate_with_templates(
+    config: dict[str, Any],
+    expected: bool,
+    process_args: list[str],
+    tmpdir,
+):
+    """ProcessCommand validates templates"""
+
+    assert (
+        run(
+            [
+                "ampel",
+                "process",
+                "validate",
+                "--schema",
+                str(
+                    dump(
+                        ingest_config(config),
+                        tmpdir,
+                        "task.yml",
+                    )
+                ),
+                *process_args,
+            ]
+        )
+        == expected
+    )

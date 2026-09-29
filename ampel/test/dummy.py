@@ -31,7 +31,7 @@ from ampel.struct.Resource import Resource
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import StockId, UBson
 from ampel.view.T2DocView import T2DocView
-
+from ampel.secret.NamedSecret import NamedSecret
 
 class Sleepy(AbsEventUnit):
     """
@@ -99,6 +99,7 @@ class DummyPointT2Unit(AbsPointT2Unit):
 
 class DummyStateT2Unit(AbsStateT2Unit):
     foo: int = 42
+    secret: NamedSecret[int] | None = None
 
     def process(self, compound, datapoints):
         return {"len": len(datapoints)}

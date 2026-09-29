@@ -8,11 +8,13 @@
 # Last Modified By:    jvs
 
 from ampel.abstract.AbsStateT2Unit import AbsStateT2Unit
+from ampel.secret.NamedSecret import NamedSecret
 
 
 class DummyStateT2Unit(AbsStateT2Unit):
 
     foo: int = 42
+    secret: NamedSecret[int] | None = None
 
     def process(self, compound, datapoints):
         return {"len": len(datapoints)}
