@@ -13,7 +13,7 @@ def test_load_old_configids(mock_context: DevAmpelContext, ampel_logger):
     Configuration hashes stored via HashT2Config.alter are loaded from the
     database when a new DevAmpelContext is instantiated
     """
-    unit_config = {"foo": 37}
+    unit_config = {"foo": 37, "secret": None}
     mock_context.register_unit(DummyStateT2Unit)
     pre_register_context = DevAmpelContext(
         config=AmpelConfig(copy.deepcopy(mock_context.config.get())),

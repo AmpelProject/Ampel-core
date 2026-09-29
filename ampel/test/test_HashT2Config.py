@@ -10,7 +10,7 @@ def test_recursive_hash(mock_context: DevAmpelContext, ampel_logger):
     HashT2Config.alter should hash nested t2 configs
     """
     unit_config = {
-        "t2_dependency": [{"unit": "DummyStateT2Unit", "config": {"foo": 37}}]
+        "t2_dependency": [{"unit": "DummyStateT2Unit", "config": {"foo": 37, "secret": None}}]
     }
     for u in (DummyStateT2Unit, DummyTiedStateT2Unit):
         mock_context.register_unit(u)

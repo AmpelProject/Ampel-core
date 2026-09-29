@@ -28,8 +28,7 @@ def argv_context(args: list[str]):
 def run(args: list[Any]) -> None | int | str:
     try:
         with argv_context([str(e) for e in args]):
-            main()
-        return None
+            return main() or None
     except SystemExit as se:
         return se.code
 

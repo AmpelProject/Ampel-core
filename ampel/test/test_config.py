@@ -2,12 +2,10 @@ import io
 import os
 import subprocess
 import tempfile
-from contextlib import nullcontext
 from pathlib import Path
 
 import pytest
 import yaml
-from pydantic import ValidationError
 from pytest_mock import MockerFixture
 
 from ampel.abstract.AbsEventUnit import AbsEventUnit
@@ -97,7 +95,7 @@ def test_ConfigChecker(testing_config, monkeypatch):
 
 @pytest.mark.parametrize(
     ("patch", "result"),
-    [({}, None), ({"channel.LONG_CHANNEL.purge": {}}, ValidationError)],
+    [({}, None), ({"channel.LONG_CHANNEL.purge": {}}, 1)],
 )
 def test_validate_config(testing_config, tmpdir, patch, result):
     """Validate validates config"""
@@ -107,19 +105,18 @@ def test_validate_config(testing_config, tmpdir, patch, result):
     for path, item in patch.items():
         set_by_path(config, path, item)
     tmp_config.write_text(yaml.dump(config), "utf-8")
-    with pytest.raises(result) if result else nullcontext():
-        assert (
-            run(
-                [
-                    "ampel",
-                    "config",
-                    "validate",
-                    "--file",
-                    str(tmp_config),
-                ]
-            )
-            == result
+    assert (
+        run(
+            [
+                "ampel",
+                "config",
+                "validate",
+                "-file",
+                str(tmp_config),
+            ]
         )
+        == result
+    )
 
 
 def test_collect_bad_unit(tmp_path: Path, mocker: MockerFixture) -> None:
