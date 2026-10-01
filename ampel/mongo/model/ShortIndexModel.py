@@ -10,12 +10,13 @@
 from typing import Any, Dict # noqa: UP035
 
 from ampel.base.AmpelBaseModel import AmpelBaseModel
-from ampel.mongo.model.FieldModel import FieldModel
+from ampel.mongo.model.FieldModel import FieldModel, IndexType
 
 
 class ShortIndexModel(AmpelBaseModel):
 
 	field: str
+	direction: IndexType = 1
 	args: None | Dict[str, Any] = None # noqa: UP006
 
 	def dict(self, **kwargs) ->  Dict[str, Any]: # noqa: UP006
@@ -32,4 +33,4 @@ class ShortIndexModel(AmpelBaseModel):
 		Returns an indexId similar to what pymongo index_information outputs.
 		Ex: [('tranId', 1), ('channel', 1)] -> tranId_1_channel_1
 		"""
-		return FieldModel(field=self.field).get_id()
+		return FieldModel(field=self.field, direction=self.direction).get_id()
