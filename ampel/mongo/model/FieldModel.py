@@ -7,18 +7,21 @@
 # Last Modified Date:  13.04.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+from typing import Literal, TypeAlias
+
 from pydantic import model_serializer
 
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 
+IndexType: TypeAlias = Literal[1,-1,'2d','2dsphere','hashed','text']
 
 class FieldModel(AmpelBaseModel):
 
 	field: str
-	direction: int = 1
+	direction: IndexType = 1
 
 	@model_serializer
-	def to_tuple(self) -> tuple[str, int]:
+	def to_tuple(self) -> tuple[str, IndexType]:
 		return (self.field, self.direction)
 
 	def get_id(self) -> str:
