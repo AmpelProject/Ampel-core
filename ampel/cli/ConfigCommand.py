@@ -39,6 +39,7 @@ hlp = {
 	'install': 'Build and install new config as default config for current system ' +
 		'(conda envs supported).\nOption "-config" of other CLI operations becomes then optional',
 	'validate': 'Validate all unit configurations defined a specified config file',
+	'check': 'Check if a config file can be loaded without errors',
 	'file': 'Path to an ampel config file to be installed (generation step won\'t occur)',
 	# Optional
 	'secrets': 'Path to a YAML secrets store in sops format',
@@ -68,7 +69,7 @@ class ConfigCommand(AbsCoreCommand):
 
 	@staticmethod
 	def get_sub_ops() -> list[str]:
-		return ['install', 'build', 'show', 'validate']
+		return ['install', 'build', 'show', 'validate', 'check']
 
 
 	# Implement
@@ -217,7 +218,7 @@ class ConfigCommand(AbsCoreCommand):
 					ProcessModel(**process)
 
 	# Mandatory implementation
-	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: str | None = None) -> None:
+	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: str | None = None) -> int | None:
 
 		logger = AmpelLogger.get_logger(
 			console={'level': DEBUG if args.get('verbose', False) else INFO}
@@ -278,7 +279,7 @@ class ConfigCommand(AbsCoreCommand):
 			if args['file'] and os.path.exists(args['file']):
 				shutil.copy(args['file'], std_conf)
 				logger.info(f'{args["file"]} successfully set as standard config ({std_conf})')
-				return
+				return None
 
 			args['out'] = str(std_conf)
 			self.run(args, unknown_args, sub_op = 'build')
@@ -290,11 +291,11 @@ class ConfigCommand(AbsCoreCommand):
 
 			if args['path']:
 				print(conf_path)
-				return
+				return None
 
 			if not os.path.exists(conf_path):
 				logger.info(f'Config with path {conf_path} not found')
-				return
+				return None
 
 			with open(conf_path) as f:
 				if args['json']:
@@ -314,3 +315,13 @@ class ConfigCommand(AbsCoreCommand):
 
 		elif sub_op == 'validate':
 			self._validate(args['file'], args['secrets'])
+
+		elif sub_op == 'check':
+			try:
+				self.load_config(
+                    args['file'], unknown_args, logger=logger
+				)
+			except Exception:
+				return 1
+
+		return 0
