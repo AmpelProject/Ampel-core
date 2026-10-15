@@ -101,7 +101,7 @@ class DBCommand(AbsCoreCommand):
 	# Mandatory implementation
 	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: None | str = None) -> None:
 
-		ctx: AmpelContext = self.get_context(args, unknown_args, one_db=args['one_db'], require_existing_db=sub_op != 'index')
+		ctx: AmpelContext = self.get_context(args, unknown_args, one_db=args['one_db'], require_existing_db=sub_op not in {'index', 'delete'})
 		db = ctx.db
 
 		logger = AmpelLogger.from_profile(
