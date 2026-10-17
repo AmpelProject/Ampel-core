@@ -256,9 +256,13 @@ class UnitLoader:
 						self.db.add_trace_id(trace_id, trace_dict)
 
 				# Non-serializable content
-				except Exception:
+				except Exception as e:
 					trace_id = 0
-					# raise e
+					raise ValueError(
+						f"Failed to compute trace id for {trace_dict}. "
+						"Ensure that your models are serializable, or set "
+						"provenance=False to disable trace id computation."
+					) from e
 
 			unit._trace_id = trace_id  # noqa: SLF001
 
