@@ -1,39 +1,12 @@
-import sys
-from contextlib import contextmanager
 from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-import yaml
 from typing import Any
 from pytest_mock import MockerFixture
 
-from ampel.cli.main import main
 
-
-@contextmanager
-def argv_context(args: list[str]):
-    argv = sys.argv
-    try:
-        sys.argv = args
-        yield
-    finally:
-        sys.argv = argv
-
-
-def run(args: list[str]) -> None | int | str:
-    try:
-        with argv_context(args):
-            return main() or None
-    except SystemExit as se:
-        return se.code
-
-
-def dump(payload, tmpdir, name: str) -> Path:
-    f = Path(tmpdir) / name
-    with f.open("w") as fd:
-        yaml.dump(payload, fd)
-    return f
+from ampel.test.utils import run, dump
 
 
 @pytest.fixture

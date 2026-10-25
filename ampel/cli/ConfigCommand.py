@@ -23,6 +23,7 @@ from ampel.cli.ArgParserBuilder import ArgParserBuilder
 from ampel.cli.config import get_user_data_config_path
 from ampel.config.builder.DisplayOptions import DisplayOptions
 from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
+from ampel.config.AmpelConfig import OutdatedConfigError
 from ampel.core.AmpelContext import AmpelContext
 from ampel.log.AmpelLogger import DEBUG, INFO, AmpelLogger
 from ampel.model.ChannelModel import ChannelModel
@@ -122,7 +123,7 @@ class ConfigCommand(AbsCoreCommand):
 		builder.opt('stop-on-errors', 'build|install', default=2, type=int)
 		builder.opt('distributions', 'build|install', nargs="+", default=["pyampel-", "ampel-"])
 		builder.opt('exclude-distributions', 'build|install', nargs="+", default=[])
-		builder.opt('file', 'install|validate', type=str)
+		builder.opt('file', 'install|validate|check', type=str)
 		builder.opt('secrets', 'validate', type=str)
 
 		# Example
@@ -321,7 +322,7 @@ class ConfigCommand(AbsCoreCommand):
 				self.load_config(
                     args['file'], unknown_args, logger=logger
 				)
-			except Exception:
+			except OutdatedConfigError:
 				return 1
 
 		return 0
