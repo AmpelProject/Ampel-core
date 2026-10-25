@@ -638,7 +638,7 @@ def test_link_override_order(
     assert isinstance(handler.ingester, MongoIngester)
     datapoints_reversed = list(reversed(datapoints))
     handler.ingest(
-        datapoints_reversed,  # type: ignore[arg-type]
+        datapoints_reversed,
         [(0, True)],
         stock_id="stockystock",
     )
