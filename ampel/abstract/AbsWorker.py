@@ -10,7 +10,7 @@
 import gc
 import random
 import signal
-from collections.abc import Generator, Sequence
+from collections.abc import Generator, Mapping, Sequence
 from contextlib import contextmanager
 from math import ceil
 from threading import Event
@@ -310,7 +310,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 			self.context.loader.clear_adapter_cache()
 
 
-	def doc_match(self, doc: T) -> ObjectId | JDict:
+	def doc_match(self, doc: T) -> ObjectId | Mapping[str, Any]:
 		"""
 		Return an identifier for *doc* in the DB.
 
@@ -367,7 +367,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 
 	def commit_update(self,
-		match: ObjectId | JDict,
+		match: ObjectId | Mapping[str, Any],
 		meta: MetaRecord,
 		logger: AmpelLogger, *,
 		payload_op: Literal['$push', '$set'] = '$push',
