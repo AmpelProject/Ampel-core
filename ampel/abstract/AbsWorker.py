@@ -20,6 +20,8 @@ from typing import Any, ClassVar, Generic, Literal, TypeVar
 from pymongo.read_concern import ReadConcern
 from pymongo.write_concern import WriteConcern
 
+from bson import ObjectId
+
 from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.abstract.AbsIngester import AbsIngester
 from ampel.base.AmpelBaseModel import AmpelBaseModel
@@ -308,6 +310,18 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 			self.context.loader.clear_adapter_cache()
 
 
+	def doc_match(self, doc: T) -> ObjectId | JDict:
+		"""
+		Return an identifier for *doc* in the DB.
+
+		Documents processed through :func:`proceed` always carry an '_id', but
+		:func:`process_doc` may be called on documents that do not (e.g. ones
+		that have not been committed yet). Subclasses may override this to
+		derive an equivalent identifier from the document itself.
+		"""
+		return {'_id': doc['_id']} # type: ignore[typeddict-item]
+
+
 	def _processing_error(self,
 		logger: AmpelLogger, doc: T, body: UBson,
 		meta: MetaRecord, msg: None | str = None,
@@ -343,7 +357,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 		meta['extra']['msg'] = msg
 
-		self.commit_update({'_id': doc['_id']}, meta, logger, code=DocumentCode.EXCEPTION) # type: ignore[typeddict-item]
+		self.commit_update(self.doc_match(doc), meta, logger, code=DocumentCode.EXCEPTION)
 
 		info: JDict = (extra or {}) | meta | {'stock': doc['stock'], 'doc': doc}
 		if exception:
@@ -353,7 +367,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 
 	def commit_update(self,
-		match: JDict,
+		match: ObjectId | JDict,
 		meta: MetaRecord,
 		logger: AmpelLogger, *,
 		payload_op: Literal['$push', '$set'] = '$push',
@@ -364,6 +378,10 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		"""
 		Insert/upsert tier docs into DB.
 		"""
+
+		# Accept a bare ObjectId as well as a full match spec
+		if isinstance(match, ObjectId):
+			match = {'_id': match}
 
 		if logger.verbose:
 			if logger.verbose > 1:

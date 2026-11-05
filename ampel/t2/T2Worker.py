@@ -136,6 +136,30 @@ class T2Worker(AbsWorker[T2Document]):
 		"""Would we retry this document later?"""
 		return code in self._pending_codes and self._get_trials(doc) < self.max_try
 
+	def doc_match(self, doc: T2Document) -> ObjectId | T2DocumentMatch:
+		"""
+		Identify a T2 document in the DB. A document need not carry an '_id'
+		(e.g. one that has not been committed yet); in that case an equivalent
+		identifier is built from its defining attributes.
+		"""
+		doc_id = doc.get('_id')
+		if isinstance(doc_id, ObjectId):
+			return doc_id
+		if 'origin' in doc:
+			return T2DocumentMatch(
+				stock = doc['stock'],
+				link = doc['link'],
+				config = doc['config'],
+				unit = doc['unit'],
+				origin = doc['origin']
+			)
+		return T2DocumentMatch(
+			stock = doc['stock'],
+			link = doc['link'],
+			config = doc['config'],
+			unit = doc['unit']
+		)
+
 	def update_doc(self,
 		doc: T2Document,
 		meta: MetaRecord,
@@ -146,7 +170,7 @@ class T2Worker(AbsWorker[T2Document]):
 	) -> None:
 		with stat_time.labels(doc["unit"], "commit_update").time():
 			self.commit_update(
-				{'_id': doc['_id']}, # type: ignore[typeddict-item]
+				self.doc_match(doc),
 				meta, logger, body=body, tag=tag, code=code
 			)
 
@@ -197,24 +221,7 @@ class T2Worker(AbsWorker[T2Document]):
 				({'t2unit': t2_unit._trace_id} if t2_unit._trace_id else {})  # noqa: SLF001
 			)
 
-			doc_id = doc.get('_id')
-			if isinstance(doc_id, ObjectId):
-				doc_match: ObjectId | T2DocumentMatch = doc_id
-			elif "origin" in doc:
-				doc_match = T2DocumentMatch(
-					stock = doc['stock'],
-					link = doc['link'],
-					config = doc['config'],
-					unit = doc['unit'],
-					origin = doc['origin']
-				)
-			else:
-				doc_match = T2DocumentMatch(
-					stock = doc['stock'],
-					link = doc['link'],
-					config = doc['config'],
-					unit = doc['unit']
-				)
+			doc_match = self.doc_match(doc)
 
 			jrec = ingester.stock.update.add_journal_record(
 				stock = doc['stock'],
@@ -284,6 +291,11 @@ class T2Worker(AbsWorker[T2Document]):
 				body = ret
 				activity['action'] |= MetaActionCode.ADD_BODY
 				jrec['action'] |= JournalActionCode.T2_ADD_BODY
+
+			# Unit explicitly returned no content: a valid no-op
+			# (None is part of UBson, but is not an instance of the ubson tuple)
+			elif ret is None:
+				pass
 
 			# Unsupported object returned by unit
 			else:

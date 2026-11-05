@@ -18,6 +18,7 @@ from ampel.queue.QueueIngester import AbsProducer, QueueIngester
 from ampel.t2.T2QueueWorker import AbsConsumer, QueueItem, T2QueueWorker
 from ampel.ingest.IngestionWorker import IngestionWorker
 from ampel.t2.T2Worker import T2Worker
+from ampel.abstract.AbsStockT2Unit import AbsStockT2Unit
 from ampel.test.conftest import make_tied_ingestion_handler
 from ampel.test.dummy import DummyPointT2Unit
 
@@ -38,6 +39,56 @@ def collect_diff(store):
             key = (sample.name, tuple(sample.labels.items()))
             delta[key] = sample.value - (before.get(key) or 0)
     store.update(delta)
+
+
+@pytest.mark.usefixtures("_ingest_stock_t2")
+def test_none_returning_unit(
+    integration_context: DevAmpelContext, ampel_logger, mocker: MockerFixture
+):
+    """
+    A T2 unit whose process() returns None produces no output, which should be
+    treated as a successful no-op: process_doc() returns (None, DocumentCode.OK).
+    """
+
+    @integration_context.register_unit
+    class DummyNoneT2Unit(AbsStockT2Unit):
+        def process(self, stock_doc):
+            return None
+
+    doc: T2Document = {
+        "unit": "DummyNoneT2Unit",
+        "code": DocumentCode.NEW,
+        "config": None,
+        "col": "stock",
+        "stock": "stockystock",
+        "link": "stockystock",
+        "channel": ["TEST_CHANNEL"],
+        "meta": [{"ts": 0, "tier": 2}],
+        "body": [],
+    }
+    integration_context.db.get_collection("t2").insert_one(dict(doc))
+
+    # process_doc() must not require an '_id' on the document it is given:
+    # it derives an equivalent identifier (stock/link/config/unit) instead
+    assert "_id" not in doc
+
+    # Mock the ingester: process_doc() needs run_id and a journal-update service
+    ingester = mocker.MagicMock()
+    ingester.run_id = 0
+    ingester.stock.update.add_journal_record.return_value = {
+        "action": 0, "timestamp": 0
+    }
+
+    t2 = T2Worker(context=integration_context, raise_exc=True, process_name="t2")
+    body, code = t2.process_doc(doc, ingester, ampel_logger)
+
+    # Currently returns (None, DocumentCode.ERROR): a None return is
+    # misinterpreted as invalid content. Desired behavior is a no-op success.
+    assert body is None
+    assert code == DocumentCode.OK, (
+        f"None return from T2 unit process() should mean no output "
+        f"(DocumentCode.OK), not {DocumentCode(code).name}"
+    )
 
 
 @pytest.mark.usefixtures("_ingest_stock_t2")
